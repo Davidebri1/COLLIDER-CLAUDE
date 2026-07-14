@@ -1,0 +1,121 @@
+# Progress & Decisions Log
+
+Running record of what's been built, key infra/credentials, and open items. Update this as work continues instead of relying on chat history — check here first before re-deriving anything.
+
+## Infrastructure
+
+### Supabase (Imagine Market backend)
+- Project: `collider-native`, org "David", project ref `gmenftvasdbhkbinkdux`
+- URL: `https://gmenftvasdbhkbinkdux.supabase.co`
+- Client config: `src/services/supabase.ts` (publishable/anon key only — safe client-side by design). **Never put the secret key in the app.**
+- Schema: `supabase/migrations/20260712000000_market_schema.sql` — `market_items`, `market_likes`, `market_comments`, RLS enabled with permissive policies (anonymous public app, no real auth), trigger keeps `market_items.likes` in sync. **Already run** against the live project (verified: 18 seed rows present, RLS confirmed enabled on all 3 tables).
+- App wiring: `src/services/market.ts` (fetch/publish/like/comment functions, per-device pseudo-identity via AsyncStorage UUID), `src/screens/MarketScreen.tsx` (rewritten to use live queries, falls back to local `DEFAULT_MARKET_ITEMS` with a toast if the network call fails).
+- Known gaps: no real user auth (device-UUID based identity only), `#tag` filters and "my-assets" tab still client-side, no delete policies for items/comments (no delete UI flow exists yet).
+
+### Google Cloud (Calendar/Tasks integration)
+- Project: "Collider AI", project ID `collider-ai-498201`
+- Calendar API and Tasks API: **enabled**
+- OAuth consent screen: publishing status **"Testing"** — only listed test users can sign in. Test user added: `ebridavid@gmail.com`. To let other accounts sign in, add them at Google Cloud Console → Google Auth Platform → Audience → Test users, or publish the app (requires Google review for sensitive scopes).
+- OAuth clients created:
+  - **Web application** "Collider Native Web" — Client ID: `936092858710-36a9kiqprhvmg7534pq9c32dkpu4tahh.apps.googleusercontent.com`. Authorized redirect URIs: `http://localhost:8081`, `http://localhost:19006`. **This is the one actually in use** since the only current test path is `expo start --web`.
+  - **iOS** "Collider Native iOS" — Client ID: `936092858710-bti8eattr6c405jjq8ce5000gsb1kt2d.apps.googleusercontent.com`, bundle ID `app.collider.native` (matches `app.json`). Ready for when a real dev-client/simulator build exists; not usable from the web test path.
+  - **Android**: not created yet. Needs a SHA-1 signing-certificate fingerprint, which only exists once a keystore is generated (happens automatically on the first `eas build -p android` or `expo run:android`). Create this the moment that happens — quick addition once the fingerprint exists.
+- Config: `src/services/googleAuthConfig.ts` (picks client ID by `Platform.OS`), `src/services/googleAuth.ts` (PKCE auth flow, token storage/refresh in AsyncStorage key `collider-google-tokens`, separate from app state), `src/services/googleCalendar.ts` (Calendar v3 + Tasks v1 REST wrappers). Wired into `src/screens/RemindersScreen.tsx` (connect/disconnect UI, per-reminder sync-to-Calendar and push-to-Tasks buttons).
+- **Fragile point**: `GOOGLE_REDIRECT_URI` is hardcoded to `http://localhost:8081`. If the dev server runs on a different port, sign-in fails with `redirect_uri_mismatch` — either force the server onto 8081 (already set in `.claude/launch.json`) or add the actual port as another redirect URI in Google Cloud Console.
+
+### Local dev server
+- `.claude/launch.json` defines `collider-web`: `npx expo start --web --port 8081` (port pinned to match the Google OAuth redirect URI above).
+- `metro.config.js` (new) — required for Supabase's ESM dependency chain to resolve at all; adds `mjs` to `resolver.sourceExts` and disables `unstable_enablePackageExports`. **Do not delete this file** — the app fails to bundle without it.
+
+## Feature status (see docs/AUDIT.md for the original gaps each of these closes)
+
+| Area | Status |
+|---|---|
+| Web/native `<select>` crash | Fixed |
+| Metro/Supabase bundler crash | Fixed |
+| Monetization logic (free=20/day general-only, daily pro/elite credits) | Fixed |
+| Model routing honesty | Fixed |
+| Grid: dropdown category selector, density selector, slim cards | Fixed |
+| Grid: full scrollable per-model history w/ windowed loading | Fixed |
+| Grid: chat bubbles in card previews (was bare text w/ gaps) | Fixed |
+| Streaming responses (SSE, web; graceful fallback native) | Fixed |
+| Global search (grid toolbar → cross-type search+filters) | Built, **unconfirmed live** — automation couldn't reliably click it this session, needs a manual tap-test |
+| Toast system replacing `alert()` | Fixed |
+| Android `elevation` on shadow styles | Fixed |
+| Consensus: real LLM verdict + per-model scoring | Fixed |
+| Consensus: all dissenters shown | Fixed |
+| Consensus: force-directed galaxy layout | Fixed |
+| Consensus: one-page (no scroll) layout | Fixed |
+| Consensus: CardScreen COLLIDE button had no modal wired | Fixed |
+| Consensus: wipe-on-close respects the setting | Fixed |
+| Smart Gen: Artifacts type + screen + CRUD | Fixed |
+| Smart Gen: cross-linking (`links` bag) | Fixed, partial — "Convert to..." doesn't auto-link source↔result yet |
+| Smart Gen: LLM extraction pass (background, additive) | Fixed |
+| Smart Gen: right-drawer relocation (global/scoped) | Fixed |
+| Google Calendar/Tasks integration | Fixed (web OAuth client only; iOS client ready but untested; Android pending a build) |
+| Imagine Market real backend (Supabase) | Fixed, **unconfirmed live** — same automation-targeting issue, needs a manual check |
+| Composer "Default" chip overflow artifact | Fixed |
+
+## Session 2 additions
+- RightDrawer/Smart Gen panel: replaced the horizontal-scroll section ribbon (had a scrollbar, looked cramped) with two dropdowns (type + model filter), both global and per-model-scoped (scoped view defaults the model filter, doesn't lock it).
+- Restored tap-to-open full edit modals for Projects/Reminders/Memories in this panel (regression from the earlier Smart Gen agent pass — the modals still existed in code, just weren't wired in here). Artifacts got a real edit modal too (was read-only before): title/content/kind all editable.
+- Added a shared `LinkedItemsBlock` (App.tsx) used by all four edit modals: shows attached items, lets you attach more via a picker, and now lets you **detach** them too (new `unlinkItems` reducer action in state.tsx, mirrors `linkItems`).
+- Removed "AI Model Context" and "Link to Project" pickers from the Reminder/Memory/Project edit modals — these added user-facing decisions nobody should have to make (which model "owns" a memory, etc). Values are kept (defaulted from creation), just not exposed as UI. `FileEditModal`'s own model-context picker was left alone (different context, not part of this ask).
+- `Priority` simplified app-wide to binary (**none/high** only) — no more low/med tiers. Changed in `state.tsx` (added `collapsePriority()` helper, old low/med kept in the type only so stale persisted data doesn't crash), `smartgen.ts` and `llmExtract.ts`'s local Priority types/prompts (both previously had their own separate `Priority` type not import from state.tsx — worth remembering if this comes up again).
+- `Picker.tsx` no longer uses a raw HTML `<select>` on web — its open-list styling is OS-chrome and can't be restyled, which read as flat/cheap against the app's dark-glass aesthetic. Now a BlurView + gradient bottom-sheet on every platform (drag handle, glow on selected item) — this is the fix for the "flat cartoony elements" complaint, at least for every dropdown built with this shared component.
+
+## Session 2, part 2 — visual/aesthetic pass
+- Header: was a solid opaque `#060608` bar (contradicted the "background must show everywhere" spec) with the category dropdown crammed into the wordmark row, ~2 rows tall. Now a translucent BlurView+gradient (wallpaper visible through it), category dropdown moved down into its own row with the other grid-scoped tools (MODELS/search/OUTPUTS/density/new), overall shorter.
+- CardGrid: root cause of "cards aren't portrait" finally fixed — `columns` and `rows` were literally the same variable `n`, dividing both width and height by the density selector. Columns are now fixed (2, or 1 if only one model selected); `rows` only controls height. Cards are now genuinely taller than wide.
+- Gold (`#ffd166`, both hex and its rgba decimal form `255,209,102`) removed from every non-model UI surface app-wide (~89 occurrences, 18 files, via `sed`) — kept only in `src/models.ts` (model branding) and `ModelCard.tsx`'s locked-badge (model-card-specific), per explicit exception. Replaced with the app's existing violet `#a78bfa`. Also caught a separate stray orange (`#ff9f1c`) on the floating Collide FAB in App.tsx that the gold sed didn't touch (different hex) — same fix.
+- Shadows restored on interactive surfaces that had none: composer `toolBtn`/`send`/`addBtn`/`primaryBtn` (theme.ts), grid toolbar pills (new `localToolbarStyles` in App.tsx). Per direction: black/neutral shadows, not colored glows (model cards were already correct — they use plain black shadows).
+- `Picker.tsx` dropdown restyle (BlurView glass sheet) from the previous session already addressed part of the "flat cartoony" complaint; this pass fixed the remaining flat/uncolored buttons and the gold-everywhere issue specifically.
+- Note for future "AAA polish" asks: the original `docs/AUDIT.md` flagged the CardGrid rows/columns bug and missing Android elevation, but did **not** do a granular color/shadow/typography audit — most of this session's fixes were regressions or omissions introduced by the grid-UI rewrite earlier in this engagement, not pre-existing issues missed by that audit.
+- Not done: custom font (Inter or similar) — flagged by user as "there are better fonts too" but not yet implemented pending confirmation it's worth the added dependency (expo-font + google fonts package). Ask before doing this one, or say "just do it" and it'll be Inter by default.
+
+## Session 2, part 3 — CardGrid aspect ratio, corrected
+The part-2 fix (fixed 2 columns, height = gridHeight/rows) was only half right: at density 3, dividing the viewport height three ways made cards *shorter than wide* — landscape again, just differently broken. Real fix in `src/components/CardGrid.tsx`: height is now derived from width via a fixed portrait ratio (`PORTRAIT_RATIO = 1.5`), never from available vertical space. `rows` (the density selector) now sets **column count** instead — more density = more, smaller, still-always-portrait columns. Overflow scrolls instead of squeezing card height. This guarantees portrait cards at every density setting, verified visually at density 3 (previously the broken case).
+
+## Session 2, part 4 — no-scroll grid supersedes strict portrait
+User clarified the actual priority: **all selected cards must be visible at once, zero vertical scroll in general navigation** — this conflicts with a fixed portrait ratio once enough models are selected (fixed ratio always eventually overflows). Reworked `CardGrid.tsx` again: `rows` is now the target row count; columns are derived as `ceil(N / effectiveRows)` so all N selected cards fit in exactly that many rows; both width and height are computed to exactly fill the available space (never independently), guaranteeing no scroll by construction. The outer `ScrollView` was removed entirely (replaced with a plain `View`) since content can never exceed the container. Cards still read portrait whenever the row/column split allows it, but fitting everything without scroll now wins over strict portraiture when there are many models selected against a low row count — that's an intentional, known tradeoff. Verified visually with all 6 free general models selected (previously the overflow case) — fits exactly, flush against the composer, no cut-off row.
+
+## Session 2, part 5 — CardGrid final model: fixed N×N page, horizontal overflow
+User gave the precise spec, superseding parts 3 and 4: cards are standard objects with a **fixed aspect ratio that never morphs** — they only scale uniformly (shrink/upsize) to fit the viewport, never stretch off-ratio to fill leftover space. `rows` (N) now defines a fixed N×N "page" (3 rows → 3x3 = 9 equal-size cards). Card size = computed once from whichever dimension (available width ÷ N, or available height ÷ N) is more constraining, applying the fixed `CARD_RATIO = 1.5`. Anything beyond the first N² selected models doesn't shrink cards further or cause vertical scroll — it becomes additional columns, revealed by **horizontal** scroll (filled column-major: cards fill top-to-bottom within a column before starting the next one). Rewrote `CardGrid.tsx` around this model (horizontal `ScrollView` of column `View`s, replacing the flex-wrap grid). Verified visually with 6 models selected at rows=3: renders as 2 full columns of 3, empty background correctly visible in the unused 3rd-column space rather than cards stretching into it.
+
+This is the 3rd iteration of CardGrid's sizing logic this session (parts 2/3 tried scroll-then-portrait-ratio, part 4 tried no-scroll-but-flexible-ratio) — if this comes up again, part 5's model (fixed ratio + horizontal overflow) is the one to build on, not the earlier ones.
+
+## Session 2, part 6 — header rework + CardGrid empty-space bug + card labels
+- Header reverted to solid black (`#060608`, "cinematic" — user liked the original solid bar, the only problem was crowding). Now strictly: row 1 = wordmark alone, row 2 = menu (moved down, bigger — 38px, with shadow) + category dropdown + models/search/outputs/density/new. Hard `borderBottomWidth` replaced with a `LinearGradient` fade into the grid.
+- `CategoryDropdownTrigger` no longer has a colored glow border/shadow tied to the category color ("blue highlight under general") — neutral chrome now, category color only shows on the icon/label text.
+- Credits/tier pill removed from the header entirely. Moved to Settings → Account → Subscription row, and made **accurate per-tier** instead of a raw credits number: free tier shows `{daily}/{FREE_DAILY_LIMIT} general messages today`; paid tiers show `unlimited general chat · {credits} daily credits for media/coding`.
+- **Real CardGrid bug found via testing at true mobile width**: with fewer than N² cards selected (e.g. 6 cards at rows=3 → only 2 columns needed), width was still divided by N=3, reserving a phantom empty 3rd column — this was the "so much empty space" complaint. Fixed: width now divides by `min(actual columns present, N)`, so cards grow to fill the space that's really there instead of leaving a void for columns that don't exist.
+- `ModelCard.tsx` header: name truncation ("LLAM…") fixed — `numberOfLines` 1→2, header row `alignItems: flex-start` so the X-dismiss button doesn't center-align against a wrapped 2-line title.
+- Added `marginBottom: 10` to the grid container (App.tsx) so the last row of cards no longer touches the composer.
+- Testing note that mattered here: `resize_window` + `read_page`'s reported "Viewport" size were inconsistent with each other in this session (resize claimed 375×812, read_page kept reporting 420×909) — when diagnosing layout bugs, trust `read_page`'s reported viewport over the resize confirmation, and always do a full `navigate` reload after resizing since `SCREEN_W` is captured once via `Dimensions.get("window")` at load and won't update from a resize alone.
+
+## Session 2, part 7 — model description tray on cards
+`ModelCard.tsx`: description was previously fully hidden until you tapped the header (no visible hint it existed). Now always renders as a one-line row directly below the header (with a chevron), independently tappable — expands into a small tray showing the full text (`numberOfLines` undefined when expanded), `LayoutAnimation` for a smooth expand/collapse. Header itself no longer toggles it (separate tap targets now: header for nothing/display, X to dismiss, desc row to expand).
+
+## Session 2, part 8 — real collision bug + header/toolbar restructure
+- **Real bug, not a testing artifact**: `CardGrid.tsx`'s height math used the full measured `gridHeight` without subtracting its own `ScrollView` `paddingVertical: 6` (×2 = 12px). Cards were sized to fill the whole container, then 12px of padding got added on top, overflowing by exactly that much and clipping the last row against the composer (no vertical scroll exists to reach it). Fixed: `maxHeightFromH` now subtracts `V_PAD * 2` before dividing.
+- Header restructured per explicit direction ("black bar was fine for the title, not for these other things"): the solid black bar now holds **only** the COLLIDER wordmark. Menu + search/outputs/density/new moved into their own **transparent** row below it (wallpaper visible through, matching the rest of the app). Category + Models moved further down still, into a small paired row directly above the grid — no longer a "giant" pill.
+- `CategoryDropdownTrigger` shrunk (34→28px height) and de-flattened: text is now white with a soft colored `textShadow` glow instead of a flat solid-color fill ("no flat colors — every color should be light, diffused, emitting"). Same treatment applied to the new Models chip beside it (`localToolbarStyles.glowChip`).
+- Not done: a full app-wide "no flat colors" pass, and the "review all fonts" ask — both are broad, still-open asks; this pass only touched the category/models chips since those were the specific pieces named. Flag specific remaining flat-color spots if/when noticed rather than expecting a full sweep already happened.
+
+## Session 2, part 9 — CardGrid: drop the fixed ratio (real bug, not a preference)
+User: "we gained a lot of real estate and aren't realizing it... spent on bigger cards always, never dead space." Root cause: `cardWidth = min(widthBound, heightBound/CARD_RATIO)` — on a phone, width is essentially always the tighter constraint, so cards were **permanently width-bound**. Every time the header got shorter (several fixes this session), `gridHeight` grew, but the fixed ratio capped card height at `width * 1.5` regardless — all that freed vertical space went completely unused. Fixed: removed `CARD_RATIO` entirely. Cards now fill both dimensions of their N×N grid cell fully (still uniform size across all cards, still capped at N columns visible with horizontal overflow beyond that — that structural model from part 5 is unchanged, only the ratio-lock is gone). Verified: cards are visibly much larger now, descriptions show more text, most model names fit on one line again.
+
+This supersedes the "fixed aspect ratio, cards never widen" instruction from earlier in the session — the user's later, more emphatic direction ("never dead space") is the one to build on if this file gets touched again.
+
+`CardScreen`'s header also brought in line with the grid header's language (solid black `#060608`, gradient fade instead of a hard `borderBottomWidth` line) per "make sure it carries to card view."
+
+## Known open items (as of last session)
+1. **Manually verify**: tap the search icon (grid toolbar, between MODELS and OUTPUTS) — does it open the search overlay?
+2. **Manually verify**: tap "Imagine Market" in the left drawer — does it open correctly?
+3. "Convert to..." in Memory/Reminders screens doesn't back-link the converted item to its source.
+4. Android OAuth client for Google — create once a real Android build produces a keystore/SHA-1.
+5. Market: `#tag` filters, "my-assets" tab, and delete flows are still local-only / not backed by Supabase.
+
+## Notes on testing this app
+- User has no physical device or paid Apple developer account — `expo start --web` via the `.claude/launch.json` `collider-web` config is the only viable test path right now.
+- When testing via the Claude Browser pane: screenshot pixel coordinates and real click-coordinate space have been observed to mismatch in some sessions — prefer `read_page` → click by `ref` over raw `coordinate` clicks when automating.

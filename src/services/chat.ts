@@ -1,0 +1,538 @@
+// Direct provider calls. User explicitly requested the keys be shipped in-app.
+// Groq is primary; OpenRouter is fallback for models Groq doesn't host.
+// Image generation uses Pollinations (free, no key) plus real OpenRouter
+// image models. Audio STT uses Groq whisper.
+// Web search: Exa (primary, raw results) → Tavily (fallback, raw results).
+// Gemini grounded search was removed deliberately — the user's Gemini key is
+// their own personal dev-usage key (heavily used for app development
+// elsewhere), not a dedicated search budget, and it was already showing
+// 429 RESOURCE_EXHAUSTED in live testing. Exa + Tavily are both independent,
+// dedicated search-API keys with their own quotas.
+import type { ChatMessage, Memory } from "../state";
+
+const GROQ_KEYS = [
+  "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",
+  "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",
+];
+const OPENROUTER_KEY =
+  "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";
+const EXA_KEY = "324b68a6-2633-4b9e-b3b4-f5cd960d595b";
+const TAVILY_KEY = "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";
+
+// ── Exa search (primary) ─────────────────────────────────────────────────────
+// Exa free tier: 1,000 queries/month, no credits system.
+// Returns a formatted block of raw results ready to inject into system prompt.
+async function exaSearch(query: string): Promise<string> {
+  try {
+    const res = await fetch("https://api.exa.ai/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-api-key": EXA_KEY },
+      body: JSON.stringify({
+        query,
+        numResults: 5,
+        useAutoprompt: true,
+        contents: { text: { maxCharacters: 500 } },
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.warn(`[Exa] HTTP ${res.status}: ${errText.slice(0, 200)}`);
+      return "";
+    }
+    const json = await res.json();
+    const results = Array.isArray(json.results) ? json.results : [];
+    const parts: string[] = [];
+    results.forEach((r: any, i: number) => {
+      if (!r?.title) return;
+      const snippet = (r?.text || r?.summary || "").slice(0, 500);
+      parts.push(`[${i + 1}] ${r.title} (${r.url})\n${snippet}`);
+    });
+    if (!parts.length) console.warn("[Exa] No results:", JSON.stringify(json).slice(0, 300));
+    return parts.join("\n\n");
+  } catch (e) {
+    console.warn("[Exa] Network error:", e);
+    return "";
+  }
+}
+
+// ── Tavily search (fallback) ─────────────────────────────────────────────────
+// Kicks in only if Exa returns nothing. Same raw-results shape as Exa so
+// webSearch() can treat them interchangeably.
+async function tavilySearch(query: string): Promise<string> {
+  try {
+    const res = await fetch("https://api.tavily.com/search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: TAVILY_KEY, query, max_results: 5 }),
+    });
+    if (!res.ok) {
+      console.warn(`[Tavily] HTTP ${res.status}: ${(await res.text().catch(() => "")).slice(0, 200)}`);
+      return "";
+    }
+    const json = await res.json();
+    const results = Array.isArray(json.results) ? json.results : [];
+    const parts: string[] = [];
+    results.forEach((r: any, i: number) => {
+      if (!r?.title) return;
+      parts.push(`[${i + 1}] ${r.title} (${r.url})\n${(r?.content || "").slice(0, 500)}`);
+    });
+    if (!parts.length) console.warn("[Tavily] No results:", JSON.stringify(json).slice(0, 300));
+    return parts.join("\n\n");
+  } catch (e) {
+    console.warn("[Tavily] Network error:", e);
+    return "";
+  }
+}
+
+// ── Unified web search ───────────────────────────────────────────────────────
+// Exa (neural search) primary for every mode, Tavily as fallback — both
+// dedicated search-API keys, no dependency on the user's personal Gemini
+// quota (see the removal note above these functions).
+//
+// sendChat runs once per selected model, and every one of those calls hits
+// this same query independently — without caching that's N separate live
+// searches for what's supposed to be "one search, injected into every
+// model." Exa's autoprompt rewriting isn't deterministic call-to-call and
+// either provider can silently fail/rate-limit on any single one of those N
+// calls, so models were actually seeing different search results (or none)
+// despite the UI implying a shared lookup. Caching by query+mode makes every
+// concurrent model call share one real network round trip and one identical
+// result set.
+const searchCache = new Map<string, Promise<string>>();
+async function webSearch(query: string, mode?: string): Promise<string> {
+  const key = `${mode || "default"}::${query}`;
+  const cached = searchCache.get(key);
+  if (cached) return cached;
+  const promise = (async () => {
+    const exa = await exaSearch(query);
+    if (exa) return exa;
+    return tavilySearch(query);
+  })();
+  searchCache.set(key, promise);
+  promise.finally(() => { setTimeout(() => searchCache.delete(key), 5000); });
+  return promise;
+}
+
+
+type Route = {
+  provider: "groq" | "openrouter" | "pollinations-image" | "openrouter-image";
+  remote: string;
+  vision?: boolean;
+  systemOverride?: string;
+  imageAfter?: string; // pollinations style used to generate a reference frame after the chat reply
+};
+const ROUTES: Record<string, Route> = {
+  // ── General · Free — real current models, verified against OpenRouter's
+  // live catalog (fetched directly), not guessed ────────────────────────────
+  "free/claude-haiku-4-5":       { provider: "openrouter", remote: "anthropic/claude-haiku-4.5" },
+  "free/gemini-3-5-flash":       { provider: "openrouter", remote: "google/gemini-3.5-flash",       vision: true },
+  "free/nemotron-super":         { provider: "openrouter", remote: "nvidia/nemotron-3-super-120b-a12b:free" },
+  "free/mistral-small":          { provider: "openrouter", remote: "mistralai/mistral-small-3.2-24b-instruct" },
+  "free/command-r":              { provider: "openrouter", remote: "cohere/command-r-08-2024" },
+  "free/minimax-m2":             { provider: "openrouter", remote: "minimax/minimax-m2" },
+  "free/llama-4-scout":          { provider: "groq",       remote: "meta-llama/llama-4-scout-17b-16e-instruct" },
+  "free/qwen3-30b":              { provider: "openrouter", remote: "qwen/qwen3-30b-a3b-instruct-2507" },
+
+  // ── General · Pro ─────────────────────────────────────────────────────────
+  "pro/gemini-3-1-pro":          { provider: "openrouter", remote: "google/gemini-3.1-pro-preview", vision: true },
+  "pro/claude-sonnet-5":         { provider: "openrouter", remote: "anthropic/claude-sonnet-5",      vision: true },
+  "pro/gpt-5-6-terra":           { provider: "openrouter", remote: "openai/gpt-5.6-terra",           vision: true },
+  "pro/grok-4-5":                { provider: "openrouter", remote: "x-ai/grok-4.5",                 vision: true },
+
+  // ── General · Elite — no Opus, no Fable ───────────────────────────────────
+  "elite/sonar-reasoning-pro":   { provider: "openrouter", remote: "perplexity/sonar-reasoning-pro" },
+  "elite/mistral-large":         { provider: "openrouter", remote: "mistralai/mistral-large-2512" },
+  "elite/nemotron-ultra":        { provider: "openrouter", remote: "nvidia/nemotron-3-ultra-550b-a55b" },
+  "elite/gpt-5-6-sol-pro":       { provider: "openrouter", remote: "openai/gpt-5.6-sol-pro",         vision: true },
+
+  // ── Coding · Free ─────────────────────────────────────────────────────────
+  "free/qwen3-coder":            { provider: "openrouter", remote: "qwen/qwen3-coder:free" },
+  "free/qwen-coder-32b":         { provider: "openrouter", remote: "qwen/qwen-2.5-coder-32b-instruct" },
+
+  // ── Coding · Pro ─────────────────────────────────────────────────────────
+  "pro/gpt-oss-20b":             { provider: "groq",       remote: "openai/gpt-oss-20b" },
+  "pro/qwen3-coder":             { provider: "openrouter", remote: "qwen/qwen3-coder" },
+  "pro/gpt-5-1-codex":           { provider: "openrouter", remote: "openai/gpt-5.1-codex" },
+  "pro/claude-sonnet-5-code":    { provider: "openrouter", remote: "anthropic/claude-sonnet-5" },
+
+  // ── Coding · Elite — no Opus ───────────────────────────────────────────────
+  "elite/codestral-2508":        { provider: "openrouter", remote: "mistralai/codestral-2508" },
+  "elite/qwen3-coder-plus":      { provider: "openrouter", remote: "qwen/qwen3-coder-plus" },
+  "elite/kimi-k2-7-code":        { provider: "openrouter", remote: "moonshotai/kimi-k2.7-code" },
+
+  // ── Image generation — real OpenRouter image models for Pro/Elite (already
+  // using the app's existing OpenRouter key), plus one genuinely-keyless
+  // Pollinations model kept for the free tier — nobody's account is billed
+  // for that one, so it's a reasonable free taste of the category instead
+  // of Image being entirely locked for free users.
+  "img/flux-free":               { provider: "pollinations-image", remote: "flux" },
+  "img/gemini-3-1-flash-image":  { provider: "openrouter-image", remote: "google/gemini-3.1-flash-image" },
+  "img/gpt-5-image-mini":        { provider: "openrouter-image", remote: "openai/gpt-5-image-mini" },
+  "img/gemini-3-pro-image":      { provider: "openrouter-image", remote: "google/gemini-3-pro-image" },
+  "img/gpt-5-image":             { provider: "openrouter-image", remote: "openai/gpt-5-image" },
+
+  // ── Video storyboard + reference frame ───────────────────────────────────
+  "vid/sora-2":  { provider: "openrouter", remote: "openai/gpt-5-mini", imageAfter: "flux-realism", systemOverride: "You are Sora 2's shot planner. Produce a 6-shot cinematic storyboard for the user's prompt. Each shot: SHOT #, framing, camera move, subject action, lighting, duration in seconds. End with a single-line 'REFERENCE FRAME:' description a text-to-image model can use." },
+  "vid/veo-3":   { provider: "openrouter", remote: "openai/gpt-5-mini", imageAfter: "flux", systemOverride: "You are Veo 3's director. Produce a realistic 8-shot storyboard for the user's prompt with camera, action, and audio notes. End with 'REFERENCE FRAME:' followed by a text-to-image prompt." },
+
+  // ── Music arrangement ─────────────────────────────────────────────────────
+  "mus/suno":  { provider: "openrouter", remote: "openai/gpt-5-mini", systemOverride: "You are Suno's songwriter. For the user's prompt, deliver: [GENRE], [TEMPO BPM], [KEY], [STRUCTURE] (verse/chorus labels), full lyrics, and a short [ARRANGEMENT] note describing instruments per section. Keep it under 500 words." },
+  "mus/udio":  { provider: "openrouter", remote: "openai/gpt-5-mini", systemOverride: "You are Udio's composer. For the user's prompt, deliver a full studio arrangement: [STYLE], [BPM], [KEY], [STRUCTURE], lyrics, [INSTRUMENTATION per section], and [MIX NOTES]. Keep it under 600 words." },
+};
+
+
+export function isRoutable(modelId: string) {
+  return !!ROUTES[modelId];
+}
+
+// Providers occasionally return HTTP 200 with an empty message body (rate
+// throttling, moderation no-ops, transient upstream hiccups) — sendChat
+// can't tell that apart from "the model genuinely said nothing", so callers
+// that want resilience against it should go through this wrapper instead of
+// calling sendChat directly. One silent retry, no caller-visible change.
+export async function sendChatWithRetry(
+  modelId: string,
+  history: ChatMessage[],
+  prompt: string,
+  memories: Memory[] = [],
+  opts: ChatOptions = {},
+): Promise<string> {
+  const first = await sendChat(modelId, history, prompt, memories, opts);
+  if (first) return first;
+  return sendChat(modelId, history, prompt, memories, opts);
+}
+
+export type Attachment = { kind: "image"; dataUri: string; mime: string };
+export type ChatOptions = {
+  mode?: "default" | "research" | "deep";
+  webSearch?: boolean;
+  attachments?: Attachment[];
+  // Called with the accumulated text so far as tokens arrive. On web this
+  // streams in real time (browser fetch supports ReadableStream); on native,
+  // fetch's body reader isn't reliably available, so it fires once with the
+  // full text when the response completes — callers must handle both.
+  onToken?: (partial: string) => void;
+};
+
+export async function sendChat(
+  modelId: string,
+  history: ChatMessage[],
+  prompt: string,
+  memories: Memory[] = [],
+  opts: ChatOptions = {},
+): Promise<string> {
+  const route = ROUTES[modelId];
+  if (!route) return "This model is visible in the tray but not yet wired to a provider.";
+
+  if (route.provider === "pollinations-image") {
+    return generateImageUrl(prompt, route.remote);
+  }
+
+  if (route.provider === "openrouter-image") {
+    return callOpenRouterImage(route.remote, prompt || "abstract art");
+  }
+
+  const messages: any[] = [];
+  const sysParts: string[] = [
+    route.systemOverride || "You are Collider, a concise, helpful assistant.",
+    // Never offer-then-wait ("I could look that up / write that / generate
+    // that — want me to?"). If you're capable of producing the thing, and
+    // the user would plausibly say yes, just produce it now in this same
+    // reply. Asking permission for something you could just deliver wastes
+    // a turn for no reason — the user can ignore or discard it if unwanted.
+    "Do not dangle offers. If you can produce something useful (an answer, a draft, a lookup, a generation), do it now in this reply rather than asking permission first.",
+  ];
+  // This answer gets saved as a real Artifact document (see
+  // saveResearchArtifact in App.tsx) — it needs to read as a standalone
+  // report someone opens later, not a chat reply that only makes sense
+  // in-context.
+  if (opts.mode === "research") sysParts.push("Research mode: produce a structured research report with a short title line, a summary, a '## Key Findings' section as a list, and a '## Sources' section citing which search result each finding came from. Note any uncertainty explicitly.");
+  if (opts.mode === "deep") sysParts.push("Deep mode: produce a thorough structured report — title line, '## Analysis' walking through the reasoning step-by-step, '## Edge Cases & Caveats', and '## Conclusion'. This should read as a standalone document, not a conversational reply.");
+  // Research/Deep mode → Exa (neural search for in-depth content).
+  // Web search toggle → Google/Gemini (real Google index, best for current facts).
+  const wantsSearch = opts.webSearch || opts.mode === "research" || opts.mode === "deep";
+  if (wantsSearch && prompt) {
+    const results = await webSearch(prompt, opts.mode);
+    if (results) {
+      sysParts.push(`Live web search results for the user's query — use these as your source of truth for anything time-sensitive or outside your training data, and cite which result each fact came from:\n\n${results}`);
+    } else {
+      sysParts.push("Web search was attempted but returned no results — say so explicitly rather than guessing.");
+    }
+  }
+  if (memories.length) {
+    const lines = memories.slice(0, 40).map((m) => `- ${m.content}`).join("\n");
+    sysParts.push("Persistent user memories (do not repeat unless asked):\n" + lines);
+  }
+  messages.push({ role: "system", content: sysParts.join("\n\n") });
+  for (const m of history) messages.push({ role: m.role, content: m.content });
+
+  const attachments = opts.attachments || [];
+  const hasImages = attachments.some((a) => a.kind === "image");
+  if (hasImages && route.vision) {
+    const content: any[] = [{ type: "text", text: prompt || "Describe what you see." }];
+    for (const a of attachments) {
+      if (a.kind === "image") content.push({ type: "image_url", image_url: { url: a.dataUri } });
+    }
+    messages.push({ role: "user", content });
+  } else {
+    const noteImg = hasImages && !route.vision ? "\n\n[Note: user attached image(s) but this model has no vision — describe based on prompt only]" : "";
+    messages.push({ role: "user", content: (prompt || "Describe the attachment.") + noteImg });
+  }
+
+  // Video/music routes append a second generated asset after the text reply —
+  // streaming the intro text still helps (storyboard/lyrics are the slow part).
+  const reply = route.provider === "groq"
+    ? await callGroq(route.remote, messages, route.imageAfter ? undefined : opts.onToken)
+    : await callOpenRouter(route.remote, messages, route.imageAfter ? undefined : opts.onToken);
+
+  // Video routes: append a rendered reference frame using the storyboard's REFERENCE FRAME line.
+  if (route.imageAfter && reply) {
+    const refMatch = reply.match(/REFERENCE FRAME:\s*(.+)/i);
+    const framePrompt = (refMatch?.[1] || prompt).trim().slice(0, 240);
+    const full = `${reply}\n\n---\n\n${generateImageUrl(framePrompt, route.imageAfter)}`;
+    opts.onToken?.(full);
+    return full;
+  }
+  return reply;
+}
+
+// Parses an OpenAI-compatible SSE stream, calling onToken with the
+// accumulated text as chunks arrive. Falls back to a single onToken call
+// with the full text if the runtime's fetch doesn't expose a body reader
+// (React Native's native fetch, unlike react-native-web's browser fetch).
+async function readSSEStream(res: Response, onToken?: (partial: string) => void): Promise<string> {
+  const body: any = res.body;
+  if (!body || typeof body.getReader !== "function") {
+    const json = await res.json();
+    const full = json.choices?.[0]?.message?.content ?? "";
+    onToken?.(full);
+    return full;
+  }
+  const reader = body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let full = "";
+  let buffer = "";
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed.startsWith("data:")) continue;
+      const data = trimmed.slice(5).trim();
+      if (!data || data === "[DONE]") continue;
+      try {
+        const chunk = JSON.parse(data);
+        const delta = chunk.choices?.[0]?.delta?.content;
+        if (delta) { full += delta; onToken?.(full); }
+      } catch {
+        // Ignore partial/malformed chunk boundaries — the next read fills them in.
+      }
+    }
+  }
+  return full;
+}
+
+export async function callGroq(model: string, messages: any[], onToken?: (partial: string) => void) {
+  let lastErr: any = null;
+  for (const key of GROQ_KEYS) {
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 1024, stream: !!onToken }),
+      });
+      if (res.status === 401 || res.status === 429) { lastErr = new Error(`Groq ${res.status}`); continue; }
+      if (!res.ok) throw new Error(`Groq ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      if (!onToken) {
+        const json = await res.json();
+        return json.choices?.[0]?.message?.content ?? "";
+      }
+      return await readSSEStream(res, onToken);
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("Groq unavailable");
+}
+
+async function callOpenRouter(model: string, messages: any[], onToken?: (partial: string) => void) {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENROUTER_KEY}`,
+      "HTTP-Referer": "https://collider.app",
+      "X-Title": "Collider",
+    },
+    body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 1024, stream: !!onToken }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  if (!onToken) {
+    const json = await res.json();
+    return json.choices?.[0]?.message?.content ?? "";
+  }
+  return await readSSEStream(res, onToken);
+}
+
+// ── Image generation via OpenRouter's image-output models ──────────────────
+// Same key/endpoint as every other OpenRouter route in this file — the
+// difference is `modalities: ["image", "text"]`, which tells these models to
+// return a generated image instead of (or alongside) text. Response comes
+// back as a data: URI on message.images, same shape renderers already
+// expect from a plain URL string (Image components don't care which).
+async function callOpenRouterImage(model: string, prompt: string): Promise<string> {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENROUTER_KEY}`,
+      "HTTP-Referer": "https://collider.app",
+      "X-Title": "Collider",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: prompt }],
+      modalities: ["image", "text"],
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter image ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const json = await res.json();
+  const msg = json.choices?.[0]?.message;
+  const imageUrl = msg?.images?.[0]?.image_url?.url;
+  if (imageUrl) return imageUrl;
+  // Fell through without an image — surface whatever text came back (often
+  // a refusal/explanation) instead of silently returning nothing.
+  return msg?.content || "Image generation returned no image.";
+}
+
+// ── Image generation via Pollinations (no key) ─────────────────────────────
+// Returns a markdown image URL that renderers can display or copy.
+export function generateImageUrl(prompt: string, model = "flux"): string {
+  const seed = Math.floor(Math.random() * 1_000_000);
+  const encoded = encodeURIComponent(prompt.trim() || "abstract art");
+  // Plain URL only — renderers use message.content directly as an <Image> uri.
+  return `https://image.pollinations.ai/prompt/${encoded}?width=1024&height=1024&nologo=true&model=${model}&seed=${seed}`;
+}
+
+// ── Consensus arbiter ───────────────────────────────────────────────────────
+// Claude Sonnet 5 via OpenRouter synthesizes all model replies into a unified
+// consensus verdict with per-model alignment scores.
+// Deterministic local fallback if the arbiter call fails.
+export type ConsensusReply = { modelId: string; label: string; content: string };
+export type ConsensusResult = { verdict: string; scores: Record<string, number> };
+
+const consensusTokens = (s: string) => (s.toLowerCase().match(/[a-z0-9]{3,}/g) || []);
+function consensusSim(a: Set<string>, b: Set<string>) {
+  if (!a.size || !b.size) return 0;
+  let inter = 0; a.forEach((t) => { if (b.has(t)) inter++; });
+  return inter / Math.sqrt(a.size * b.size);
+}
+
+function fallbackConsensus(replies: ConsensusReply[]): ConsensusResult {
+  if (!replies.length) return { verdict: "Not enough responses yet.", scores: {} };
+  const bags = replies.map((r) => new Set(consensusTokens(r.content)));
+  const scores: Record<string, number> = {};
+  replies.forEach((r, i) => {
+    const others = bags.filter((_, j) => j !== i);
+    const maxSim = others.length ? Math.max(...others.map((b) => consensusSim(bags[i], b))) : 0;
+    scores[r.modelId] = Math.max(0, Math.min(1, maxSim * 1.8));
+  });
+  // Build a real local synthesis: surface the dominant shared idea and note divergence.
+  const sorted = [...replies].sort((a, b) => (scores[b.modelId] ?? 0) - (scores[a.modelId] ?? 0));
+  const anchor = sorted[0];
+  const DISSENT = 0.28;
+  const aligned = replies.filter((r) => (scores[r.modelId] ?? 0) >= DISSENT);
+  const dissenters = replies.filter((r) => (scores[r.modelId] ?? 0) < DISSENT);
+  let verdict = `${aligned.length} of ${replies.length} models converge on a similar position. `;
+  // Grab the opening clause of the highest-scoring reply as the shared thesis.
+  const thesis = anchor.content.split(/[.!?]/)[0]?.trim();
+  if (thesis && thesis.length > 20) verdict += `Core consensus: ${thesis}. `;
+  if (dissenters.length) {
+    const names = dissenters.map((d) => d.label).join(", ");
+    verdict += `${names} ${dissenters.length === 1 ? "diverges" : "diverge"} notably from the majority.`;
+  } else {
+    verdict += "No meaningful dissent detected.";
+  }
+  return { verdict: verdict.trim(), scores };
+}
+
+export async function scoreConsensus(replies: ConsensusReply[]): Promise<ConsensusResult> {
+  if (!replies.length) return { verdict: "Not enough responses yet.", scores: {} };
+  try {
+    const sys =
+      "You are an impartial arbiter evaluating multiple AI model replies to the same prompt. " +
+      "Read every reply fully, identify the core shared position, and note where individual models diverge in logic, emphasis, or conclusion. " +
+      "Respond with STRICT JSON only — no markdown, no code fences, no commentary — matching exactly this shape:\n" +
+      '{"verdict": "2-3 sentence synthesis", "scores": {"<modelId>": 0.0-1.0, ...}}\n' +
+      "The verdict must convey meaning and intent directly. Be concise and factual. Do NOT use redundant introductory phrases like 'All models converge on', 'The models agree that', or 'Consensus reached'. Just state the facts of the synthesis. " +
+      "Scores: 1.0 = fully aligned with consensus, 0.0 = directly contradicts it. Include a score for every modelId listed, using the exact id strings given.";
+    const body = replies
+      .map((r, i) => `Model ${i + 1} (id: ${r.modelId}, label: ${r.label}):\n${r.content.slice(0, 2000)}`)
+      .join("\n\n---\n\n");
+    const messages = [
+      { role: "system", content: sys },
+      { role: "user", content: body },
+    ];
+    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENROUTER_KEY}`,
+        "HTTP-Referer": "https://collider.app",
+        "X-Title": "Collider",
+      },
+      body: JSON.stringify({
+        model: "anthropic/claude-sonnet-5",
+        messages,
+        temperature: 0.3,
+        max_tokens: 8192,
+      }),
+    });
+    if (!res.ok) {
+      const errText = await res.text().catch(() => "");
+      console.warn(`[Consensus] OpenRouter ${res.status}: ${errText.slice(0, 200)}`);
+      throw new Error(`OpenRouter ${res.status}`);
+    }
+    const json = await res.json();
+    const raw = json.choices?.[0]?.message?.content ?? "";
+    const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    if (!parsed || typeof parsed.verdict !== "string" || typeof parsed.scores !== "object" || !parsed.scores) {
+      throw new Error("malformed arbiter response");
+    }
+    const scores: Record<string, number> = {};
+    for (const r of replies) {
+      const v = parsed.scores[r.modelId];
+      scores[r.modelId] = typeof v === "number" && isFinite(v) ? Math.max(0, Math.min(1, v)) : 0.5;
+    }
+    return { verdict: parsed.verdict.slice(0, 600), scores };
+  } catch (e) {
+    console.warn("[Consensus] Arbiter failed, using local fallback:", e);
+    return fallbackConsensus(replies);
+  }
+}
+
+// ── Speech-to-text via Groq Whisper ────────────────────────────────────────
+export async function transcribeAudio(audioUri: string, mime = "audio/m4a"): Promise<string> {
+  // React Native: build FormData with the file uri directly.
+  const form = new FormData();
+  form.append("file", { uri: audioUri, name: `voice.${mime.split("/")[1] || "m4a"}`, type: mime } as any);
+  form.append("model", "whisper-large-v3-turbo");
+  form.append("response_format", "json");
+  let lastErr: any = null;
+  for (const key of GROQ_KEYS) {
+    try {
+      const res = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${key}` },
+        body: form as any,
+      });
+      if (res.status === 401 || res.status === 429) { lastErr = new Error(`STT ${res.status}`); continue; }
+      if (!res.ok) throw new Error(`STT ${res.status}: ${(await res.text()).slice(0, 200)}`);
+      const json = await res.json();
+      return json.text || "";
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("Transcription unavailable");
+}

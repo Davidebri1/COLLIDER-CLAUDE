@@ -1,0 +1,67 @@
+{
+  "expo": {
+    "name": "Collider",
+    "slug": "collider",
+    "scheme": "collider",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#07040d"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.collider.native",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSMicrophoneUsageDescription": "Voice input for chat prompts.",
+        "NSPhotoLibraryUsageDescription": "Attach images to your prompts.",
+        "NSCameraUsageDescription": "Capture photos to send as prompts."
+      }
+    },
+    "android": {
+      "package": "app.collider.native",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#07040d"
+      },
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Attach images to your prompts.",
+          "cameraPermission": "Capture photos to send as prompts."
+        }
+      ],
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Voice input for chat prompts."
+        }
+      ],
+      "expo-notifications",
+      "expo-font"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": ""
+      }
+    }
+  }
+}
