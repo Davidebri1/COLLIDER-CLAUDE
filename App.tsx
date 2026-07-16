@@ -104,6 +104,7 @@ import { ModelCard } from "./src/components/ModelCard";
 import { CardGrid } from "./src/components/CardGrid";
 import { ModelTray } from "./src/components/ModelTray";
 import { PromptComposer } from "./src/components/PromptComposer";
+import { CollideBanner } from "./src/components/CollideBanner";
 import { ConsensusModal } from "./src/components/ConsensusDrawer";
 import { ToastProvider, useToast } from "./src/components/Toast";
 import { InlineSearch } from "./src/components/InlineSearch";
@@ -968,6 +969,14 @@ function Home({
         />
       </View>
 
+      {/* Collide — was a small icon in the composer toolbar; that put it in
+          the same row as attach/mic/globe with no visual weight, and the
+          user wants it separated out as its own docked banner instead.
+          Global view only (no card-view Collide), sits in the gap between
+          the grid and the composer so it neither overlaps the model cards
+          above nor the composer below. */}
+      <CollideBanner onPress={openConsensus} disabled={selected.length <= 1} />
+
       <PromptComposer
         value={prompt}
         setValue={setPrompt}
@@ -976,7 +985,6 @@ function Home({
         attachments={attachments}
         setAttachments={setAttachments}
         onNewConversation={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); dispatch({ type: "newConversation", category: state.activeCategory }); }}
-        onCollide={selected.length > 1 ? openConsensus : undefined}
       />
 
       <MessageActions

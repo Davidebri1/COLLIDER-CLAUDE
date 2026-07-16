@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, TextInput, Pressable, Text, ActivityIndicator, Image } from "react-native";
+import { View, TextInput, Pressable, Text, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useCollider, type Attachment } from "../state";
@@ -14,7 +14,6 @@ export function PromptComposer({
   sending,
   attachments: propsAttachments,
   setAttachments: propsSetAttachments,
-  onCollide,
   onNewConversation,
 }: {
   value: string;
@@ -23,7 +22,6 @@ export function PromptComposer({
   sending?: boolean;
   attachments?: Attachment[];
   setAttachments?: any;
-  onCollide?: () => void;
   onNewConversation?: () => void;
 }) {
   const { state, dispatch } = useCollider();
@@ -178,24 +176,6 @@ export function PromptComposer({
           </Text>
           <Ionicons name="chevron-down" size={10} color={modeColor} />
         </Pressable>
-
-        {/* Collide — moved here from a floating overlay on top of the grid
-            (bad location: covered content, disconnected from the toolbar
-            it belongs with). Same size/shape as its siblings (34px circle,
-            matching background) rather than a large glowing breathing orb —
-            that combination (big + soft radial aura + bright off-center
-            mark + pulsing) is what read as an eyeball; a small flat icon
-            matched to its neighbors doesn't have any of those cues. Static
-            white glow marks it as "the special one" without animating like
-            a living eye. */}
-        {onCollide && (
-          <Pressable onPress={onCollide} style={[styles.toolBtn, { shadowColor: "#ffffff", shadowOpacity: 0.35, shadowRadius: 8 }]}>
-            <Image
-              source={require("../../assets/ui/collide_core_final.png")}
-              style={{ width: 20, height: 20, resizeMode: "contain" }}
-            />
-          </Pressable>
-        )}
 
         {/* Send Arrow Circle Button */}
         <Pressable
