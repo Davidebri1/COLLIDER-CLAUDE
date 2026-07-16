@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { View, TextInput, Pressable, Text, ActivityIndicator } from "react-native";
+import { View, TextInput, Pressable, Text, ActivityIndicator, Image } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import { useCollider, type Attachment } from "../state";
 import { pickImage, startRecording, stopRecording } from "../services/media";
@@ -180,20 +179,21 @@ export function PromptComposer({
           <Ionicons name="chevron-down" size={10} color={modeColor} />
         </Pressable>
 
-        {/* Collide — the app's namesake feature. Gold/orange to match the
-            NovaSun floating trigger — no purple/blue anywhere per palette
-            rule (black + white + one warm accent, nothing else). */}
+        {/* Collide — moved here from a floating overlay on top of the grid
+            (bad location: covered content, disconnected from the toolbar
+            it belongs with). Same size/shape as its siblings (34px circle,
+            matching background) rather than a large glowing breathing orb —
+            that combination (big + soft radial aura + bright off-center
+            mark + pulsing) is what read as an eyeball; a small flat icon
+            matched to its neighbors doesn't have any of those cues. Static
+            white glow marks it as "the special one" without animating like
+            a living eye. */}
         {onCollide && (
-          <Pressable onPress={onCollide} style={styles.collideBtn}>
-            <LinearGradient
-              colors={["#ffb74d", "#ff8a65"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.collideBtnGradient}
-            >
-              <Ionicons name="git-compare-outline" size={12} color="#0c0c0e" />
-              <Text style={{ color: "#0c0c0e", fontSize: 9.5, fontWeight: "900", letterSpacing: 0.5 }}>COLLIDE</Text>
-            </LinearGradient>
+          <Pressable onPress={onCollide} style={[styles.toolBtn, { shadowColor: "#ffffff", shadowOpacity: 0.35, shadowRadius: 8 }]}>
+            <Image
+              source={require("../../assets/ui/collide_core_final.png")}
+              style={{ width: 20, height: 20, resizeMode: "contain" }}
+            />
           </Pressable>
         )}
 

@@ -98,7 +98,6 @@ import { styles, SCREEN_W, SCREEN_H, FREE_THEMES, PREMIUM_THEMES, WALLPAPERS, FO
 import { Glass } from "./src/components/Glass";
 import { ExpandableTrayText } from "./src/components/ExpandableTray";
 import { Markdown } from "./src/components/Markdown";
-import { NovaSun } from "./src/components/NovaSun";
 import { Page } from "./src/components/Page";
 import { Wordmark } from "./src/components/Wordmark";
 import { ModelCard } from "./src/components/ModelCard";
@@ -969,14 +968,6 @@ function Home({
         />
       </View>
 
-      {/* Floating Collide Button — a breathing "nova sun," not an icon in a
-          circle. See NovaSun.tsx for the actual glow/spark/breathe logic. */}
-      {selected.length > 1 && (
-        <View style={{ position: "absolute", bottom: 100, right: 20, zIndex: 99 }}>
-          <NovaSun onPress={openConsensus} />
-        </View>
-      )}
-
       <PromptComposer
         value={prompt}
         setValue={setPrompt}
@@ -985,8 +976,9 @@ function Home({
         attachments={attachments}
         setAttachments={setAttachments}
         onNewConversation={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); dispatch({ type: "newConversation", category: state.activeCategory }); }}
+        onCollide={selected.length > 1 ? openConsensus : undefined}
       />
-      
+
       <MessageActions
         visible={!!activeMessage}
         message={activeMessage}
@@ -2789,37 +2781,41 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           },
         ]}
       >
+        {/* Gloss black, same treatment as the Smart Gen panel — true
+            near-black base + a diagonal specular sheen, not a flat gray
+            gradient. */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#020202" }]} />
         <LinearGradient
-          colors={["#161618", "#080809"]}
+          colors={["rgba(255,255,255,0.09)", "rgba(255,255,255,0.02)", "rgba(255,255,255,0)"]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.6, y: 0.5 }}
           style={StyleSheet.absoluteFill}
+          pointerEvents="none"
         />
-        <View style={styles.header}>
-          <Wordmark />
-          <Pressable onPress={handleClose} style={{ padding: 6, width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name="close" size={18} color="#fff" />
+
+        {/* Section 1: header + account/login. Compact title, not the full
+            ornate Wordmark — that component's letterSpacing:13 needs
+            ~250-260px on its own, and this drawer is 306px wide with
+            padding already eaten twice (drawer's own paddingHorizontal:14
+            plus this row's own), which left zero-to-negative room for the
+            close button — it was rendering past the panel's right edge. */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 2 }}>COLLIDER</Text>
+          <Pressable onPress={handleClose} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }}>
+            <Ionicons name="close" size={16} color="#fff" />
           </Pressable>
         </View>
 
-        {/* Utility icons — Settings + the two features that used to be full
-            drawer rows (Files, Discover Market) but don't belong in either
-            Account/Usage or the History table. Small and demure; none of
-            these are the primary action in this pane. */}
-        <View style={{ flexDirection: "row", gap: 8, paddingHorizontal: 14, marginBottom: 10 }}>
+        <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
           <Pressable onPress={() => handleNav("settings")} style={localDrawerStyles.utilIcon}>
             <Ionicons name="settings-outline" size={16} color="rgba(255,255,255,0.5)" />
-          </Pressable>
-          <Pressable onPress={() => handleNav("files")} style={localDrawerStyles.utilIcon}>
-            <Ionicons name="document-text-outline" size={16} color="rgba(255,255,255,0.5)" />
-          </Pressable>
-          <Pressable onPress={() => handleNav("market")} style={localDrawerStyles.utilIcon}>
-            <Ionicons name="sparkles-outline" size={16} color="rgba(255,255,255,0.5)" />
           </Pressable>
         </View>
 
         {/* Account (demure) + Upgrade (the one button here that should still
             pop, per its job) on one row; usage below, small — it's a number,
             not a headline. */}
-        <View style={{ paddingHorizontal: 14, marginBottom: 10, gap: 8 }}>
+        <View style={{ marginBottom: 14, gap: 8 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
             <Pressable onPress={() => handleNav("settings")} style={{ flex: 1 }}>
               <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
@@ -2839,21 +2835,27 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           </Text>
         </View>
 
+        {/* Regular size, matching the rest of this drawer — this used to be
+            a full oversized hero row (bold text, 18px icon, its own filled
+            card, extra bottom padding) despite the composer already having
+            its own "+" new-conversation button on the message bar. Kept
+            (both are useful — this one doesn't require opening the composer
+            first) but sized like everything else here, not like a headline. */}
         <Pressable
           onPress={() => {
             dispatch({ type: "newConversation", category: state.activeCategory });
             handleClose();
           }}
-          style={[styles.drawerItem, { flexDirection: "row", alignItems: "center", gap: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)", paddingBottom: 16 }]}
+          style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 10 }}
         >
-          <Ionicons name="add-circle-outline" size={18} color="rgba(255,255,255,0.6)" />
-          <Text style={[styles.textStrong, { color: "rgba(255,255,255,0.6)" }]}>New conversation</Text>
+          <Ionicons name="add-circle-outline" size={14} color="rgba(255,255,255,0.5)" />
+          <Text style={{ color: "rgba(255,255,255,0.5)", fontSize: 11.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>New conversation</Text>
         </Pressable>
 
         {/* History — same sortable-table pattern as Reminders: tap a header
             to sort by it, tap again to flip direction. Consensus is a tab
             lip alongside Conversations, not a separate screen. */}
-        <View style={{ flexDirection: "row", marginHorizontal: 14, marginBottom: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+        <View style={{ flexDirection: "row", marginBottom: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
           {(["convos", "consensus"] as const).map((t) => (
             <Pressable
               key={t}
@@ -2867,29 +2869,31 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           ))}
         </View>
 
-        {/* Column headers + model filter merged into one row — these were
-            two separate rows for no reason, adding chrome height above the
-            actual list for no added clarity. */}
+        {/* Column headers + model filter in one row, but with real breathing
+            room this time — the filter picker was stripped down to zero
+            padding and packed at gap:4 right against LAST, which is exactly
+            what made it look like it was touching. */}
         {historyTab === "convos" && (
-          <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, marginBottom: 6, gap: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 10 }}>
             <Pressable onPress={() => handleSort("title")} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Text style={localDrawerStyles.colHeader}>TITLE</Text>
               {sortBy === "title" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#ffb74d" />}
             </Pressable>
-            <Pressable onPress={() => handleSort("created")} style={{ width: 54, flexDirection: "row", alignItems: "center", gap: 2 }}>
-              <Text style={localDrawerStyles.colHeader}>CREATED</Text>
+            <Pressable onPress={() => handleSort("created")} style={{ width: 46, flexDirection: "row", alignItems: "center", gap: 2 }}>
+              <Text style={localDrawerStyles.colHeader}>MADE</Text>
               {sortBy === "created" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#ffb74d" />}
             </Pressable>
-            <Pressable onPress={() => handleSort("last")} style={{ width: 54, flexDirection: "row", alignItems: "center", gap: 2 }}>
+            <Pressable onPress={() => handleSort("last")} style={{ width: 46, flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Text style={localDrawerStyles.colHeader}>LAST</Text>
               {sortBy === "last" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#ffb74d" />}
             </Pressable>
-            <Picker value={modelFilter} onChange={setModelFilter} options={modelOptions} textStyle={{ fontSize: 9, color: "#6b6478" }} style={{ paddingHorizontal: 0 }} />
+            <View style={{ width: 1, height: 14, backgroundColor: "rgba(255,255,255,0.1)" }} />
+            <Picker value={modelFilter} onChange={setModelFilter} options={modelOptions} textStyle={{ fontSize: 9, color: "#6b6478" }} />
           </View>
         )}
 
         <View style={{ flex: 1, position: "relative" }}>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, paddingBottom: 24 }}>
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 24 }}>
             {historyTab === "convos" ? (
               filteredConvos.length === 0 ? (
                 <Text style={[styles.muted, { marginTop: 20, textAlign: "center" }]}>No conversations yet.</Text>
@@ -3026,9 +3030,18 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
           },
         ]}
       >
+        {/* Gloss black, not flat gray — a true near-black base plus a
+            diagonal specular sheen streak. #161618/#080809 were both just
+            dark grays with nothing reflective about them, which is exactly
+            why this read as matte gray instead of the glossy-black finish
+            the palette calls for. */}
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#020202" }]} />
         <LinearGradient
-          colors={["#161618", "#080809"]}
+          colors={["rgba(255,255,255,0.09)", "rgba(255,255,255,0.02)", "rgba(255,255,255,0)"]}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.6, y: 0.5 }}
           style={StyleSheet.absoluteFill}
+          pointerEvents="none"
         />
         <View style={styles.header}>
           <Text style={styles.kicker}>{scopeModelId ? "MODEL TOOLS" : "SMART GEN"}</Text>
@@ -3079,6 +3092,32 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                   </View>
                   <Text style={[styles.bodyText, { flex: 1, fontSize: 13.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }]}>{row.label}</Text>
                   <Text style={{ color: "#6b6478", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{row.count}</Text>
+                  <Ionicons name="chevron-forward" size={14} color="#6b6478" />
+                </Pressable>
+              ))}
+
+              {/* Files + Discover Market — moved here from the left drawer
+                  (they're not "conversation history," and don't belong in
+                  Account/Usage either). Not auto-generated Smart Gen content
+                  like the four above, so a distinct icon each rather than
+                  the Smart Gen mark repeated. */}
+              <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: 2 }} />
+              {([
+                { screen: "files" as Screen, label: "Files", count: state.files.length, icon: "document-text-outline" as const },
+                { screen: "market" as Screen, label: "Discover Market", count: undefined, icon: "storefront-outline" as const },
+              ]).map((row) => (
+                <Pressable
+                  key={row.screen}
+                  onPress={() => { handleClose(); setTimeout(() => nav(row.screen), 200); }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" }}
+                >
+                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name={row.icon} size={16} color="rgba(255,255,255,0.6)" />
+                  </View>
+                  <Text style={[styles.bodyText, { flex: 1, fontSize: 13.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }]}>{row.label}</Text>
+                  {row.count !== undefined && (
+                    <Text style={{ color: "#6b6478", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{row.count}</Text>
+                  )}
                   <Ionicons name="chevron-forward" size={14} color="#6b6478" />
                 </Pressable>
               ))}
