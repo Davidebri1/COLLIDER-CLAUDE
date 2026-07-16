@@ -14,7 +14,7 @@ import { useCollider, newId } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
 import { InlineAdd } from "../components/InlineAdd";
-import { styles } from "../styles/theme";
+import { styles, withFont } from "../styles/theme";
 import { MODELS, modelById } from "../models";
 import { SearchBar, useSearch } from "../features";
 import { convertItem } from "../services/smartgen";
@@ -47,9 +47,9 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
   };
 
   const getModelColor = (modelId?: string) => {
-    if (!modelId || modelId === "global") return "#8b5cf6";
+    if (!modelId || modelId === "global") return "#e2e8f0"; // was purple — "global" isn't a real model brand, just a neutral default
     const found = modelById(modelId);
-    return found ? found.color : "#a78bfa";
+    return found ? found.color : "#e2e8f0";
   };
 
   const getModelShort = (modelId?: string) => {
@@ -126,7 +126,7 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
               onPress={handleAddMemory}
               style={localStyles.addButton}
             >
-              <Ionicons name="add" size={18} color="#a78bfa" />
+              <Ionicons name="add" size={18} color="#e2e8f0" />
             </Pressable>
           </View>
         </View>
@@ -152,7 +152,7 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
                   style={{ flexDirection: "row", alignItems: "center" }}
                 >
                   {selectMode && <SelectDot selected={isSelected} />}
-                  <Glass style={[localStyles.memoryCard, { flex: 1 }, isSelected && { borderColor: "rgba(167,139,250,0.5)" }]}>
+                  <Glass style={[localStyles.memoryCard, { flex: 1 }, isSelected && { borderColor: "rgba(255,255,255,0.5)" }]}>
                     {/* Left Accent Bar */}
                     <View style={[localStyles.cardAccent, { backgroundColor: accentColor }]} />
 
@@ -194,14 +194,14 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
                           toast("Converted to Reminder.");
                           setConvertFor(null);
                         }}>
-                          <Text style={{ fontSize: 10, color: "#a78bfa", fontWeight: "700" }}> Reminder</Text>
+                          <Text style={{ fontSize: 10, color: "#e2e8f0", fontWeight: "700" }}> Reminder</Text>
                         </Pressable>
                         <Pressable onPress={() => {
                           dispatch({ type: "artifact", ...convertItem(m, "memory", "artifact"), linkFrom: { kind: "memory", id: m.id } } as any);
                           toast("Converted to Artifact.");
                           setConvertFor(null);
                         }}>
-                          <Text style={{ fontSize: 10, color: "#a78bfa", fontWeight: "700" }}> Artifact</Text>
+                          <Text style={{ fontSize: 10, color: "#e2e8f0", fontWeight: "700" }}> Artifact</Text>
                         </Pressable>
                       </View>
                     )}
@@ -235,7 +235,10 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file.
+const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -275,10 +278,10 @@ const localStyles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 12,
-    backgroundColor: "rgba(167,139,250,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
-    shadowColor: "#a78bfa",
+    borderColor: "rgba(255,255,255,0.4)",
+    shadowColor: "#e2e8f0",
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
@@ -342,4 +345,4 @@ const localStyles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "rgba(239, 68, 68, 0.08)",
   },
-});
+}));

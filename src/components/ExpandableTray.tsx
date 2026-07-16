@@ -40,7 +40,12 @@ export function ExpandableTrayText({ text, style }: { text: string; style?: any 
   };
 
   return (
-    <Pressable onPress={toggle} style={{ width: "100%", flexShrink: 1 }}>
+    // flex: 1 (not width: "100%") — width:"100%" ignores row siblings and
+    // claims the full row regardless of context, which is exactly what was
+    // making this collide with adjacent columns (e.g. History's date
+    // columns) any time this sat in a row instead of alone. flex:1 shares
+    // remaining space properly like every other row layout in this app.
+    <Pressable onPress={toggle} style={{ flex: 1, flexShrink: 1 }}>
       <Text style={style} numberOfLines={expanded ? undefined : 1} ellipsizeMode="clip">
         {text}
       </Text>

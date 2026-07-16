@@ -6,7 +6,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider, ChatMessage } from "../state";
 import { Glass } from "./Glass";
 import { Markdown } from "./Markdown";
-import { styles } from "../styles/theme";
+import { styles, withFont } from "../styles/theme";
 import { ModelDef, canUse } from "../models";
 
 export function ModelCard({
@@ -202,7 +202,10 @@ export function ModelCard({
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file.
+const localStyles = StyleSheet.create(withFont({
   miniBubble: {
     maxWidth: "92%",
     paddingHorizontal: 8,
@@ -252,4 +255,4 @@ const localStyles = StyleSheet.create({
     flex: 1,
     lineHeight: 12,
   },
-});
+}));

@@ -121,7 +121,6 @@ type AppState = {
   generations: GenerationItem[];
   consensusRuns: ConsensusRun[];
   wallpaper: WallpaperId;
-  themeAccentHue: number;
   autoGen: boolean;
   incognito: Record<Category, boolean>;
   auth: AuthUser;
@@ -208,7 +207,6 @@ type Action =
   | { type: "removeConsensuses"; ids: string[] }
   | { type: "removeConversations"; ids: string[] }
   | { type: "wallpaper"; wallpaper: WallpaperId }
-  | { type: "themeAccent"; hue: number }
   | { type: "autoGen"; enabled: boolean }
   | { type: "incognito"; category: Category; enabled: boolean }
   | { type: "auth"; user: AuthUser }
@@ -389,7 +387,7 @@ function initialState(): AppState {
     ],
     artifacts: [],
     files: [], generations: [], consensusRuns: [],
-    wallpaper: "default", themeAccentHue: 45,
+    wallpaper: "default",
     autoGen: true, incognito,
     auth: { kind: "guest" },
     hydrated: false,
@@ -717,7 +715,6 @@ function reducer(state: AppState, action: Action): AppState {
         : [...state.musicPlayer.disabledTrackIds, action.trackId];
       return { ...state, musicPlayer: { ...state.musicPlayer, disabledTrackIds: disabled } };
     }
-    case "themeAccent": return { ...state, themeAccentHue: action.hue };
     case "autoGen": return { ...state, autoGen: action.enabled };
     case "incognito": return { ...state, incognito: { ...state.incognito, [action.category]: action.enabled } };
     case "auth": return { ...state, auth: action.user };

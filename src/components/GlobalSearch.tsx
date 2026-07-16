@@ -20,12 +20,16 @@ type Result = {
   screen: "history" | "memory" | "reminders" | "projects" | "artifacts";
 };
 
+// Kind is already distinguished by icon shape + label text, so the color
+// column here was purely decorative — and inconsistently so (memory and
+// reminder were the identical purple). Black & white palette: one neutral
+// white for all, icon/label carry the distinction.
 const KIND_META: Record<ResultKind, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  conversation: { label: "Conversation", icon: "time-outline", color: "#5dbdff" },
-  memory: { label: "Memory", icon: "extension-puzzle-outline", color: "#a78bfa" },
-  reminder: { label: "Reminder", icon: "alarm-outline", color: "#a78bfa" },
-  project: { label: "Project", icon: "briefcase-outline", color: "#4be6b1" },
-  artifact: { label: "Artifact", icon: "layers-outline", color: "#ff8a65" },
+  conversation: { label: "Conversation", icon: "time-outline", color: "#ffffff" },
+  memory: { label: "Memory", icon: "extension-puzzle-outline", color: "#ffffff" },
+  reminder: { label: "Reminder", icon: "alarm-outline", color: "#ffffff" },
+  project: { label: "Project", icon: "briefcase-outline", color: "#ffffff" },
+  artifact: { label: "Artifact", icon: "layers-outline", color: "#ffffff" },
 };
 
 export function GlobalSearch({

@@ -25,7 +25,7 @@ import * as Clipboard from "expo-clipboard";
 import { useCollider, type MarketItem, DEFAULT_MARKET_ITEMS, generateMoreMarketItems } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, SCREEN_W, SCREEN_H } from "../styles/theme";
+import { styles, SCREEN_W, SCREEN_H, withFont } from "../styles/theme";
 import { CATEGORIES, MODELS, TIER_INFO, canUse, modelById, modelsForCategory } from "../models";
 import { Picker } from "../components/Picker";
 import { useToast } from "../components/Toast";
@@ -730,8 +730,8 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 
                 <View style={{ flexDirection: "row", gap: 10 }}>
                   <Pressable onPress={handleCreateMockFile} style={localStyles.mockButton}>
-                    <Ionicons name="add" size={13} color="#a78bfa" style={{ marginRight: 2 }} />
-                    <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "800" }}>Mock File</Text>
+                    <Ionicons name="add" size={13} color="#ffffff" style={{ marginRight: 2 }} />
+                    <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "800" }}>Mock File</Text>
                   </Pressable>
                   <Pressable onPress={goBack} style={localStyles.mockButtonSecondary}>
                     <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>Workspace</Text>
@@ -743,7 +743,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginVertical: 8 }}>
                   <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", letterSpacing: 1.5 }}>TAP FILE TO PUBLISH</Text>
                   <Pressable onPress={handleCreateMockFile} style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.05)" }}>
-                    <Text style={{ color: "#a78bfa", fontSize: 10, fontWeight: "700" }}>+ Add Mock File</Text>
+                    <Text style={{ color: "#ffffff", fontSize: 10, fontWeight: "700" }}>+ Add Mock File</Text>
                   </Pressable>
                 </View>
 
@@ -789,7 +789,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
               {/* Header Title */}
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)", padding: 14 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Ionicons name="sparkles" size={14} color="#a78bfa" />
+                  <Ionicons name="sparkles" size={14} color="#ffffff" />
                   <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900", letterSpacing: 1.5 }}>MARKET PREVIEW</Text>
                 </View>
                 <Pressable onPress={() => setSelectedItem(null)} style={{ padding: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 14 }}>
@@ -822,7 +822,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                       {!isPlaying && (
                         <Pressable 
                           onPress={() => setIsPlaying(true)}
-                          style={{ position: "absolute", alignSelf: "center", top: "40%", padding: 12, backgroundColor: "rgba(168, 85, 247, 0.8)", borderRadius: 30, width: 48, height: 48, alignItems: "center", justifyContent: "center", borderColor: "#fff", borderWidth: 1 }}
+                          style={{ position: "absolute", alignSelf: "center", top: "40%", padding: 12, backgroundColor: "rgba(0, 0, 0, 0.6)", borderRadius: 30, width: 48, height: 48, alignItems: "center", justifyContent: "center", borderColor: "#fff", borderWidth: 1 }}
                         >
                           <Ionicons name="play" size={20} color="#fff" style={{ marginLeft: 3 }} />
                         </Pressable>
@@ -834,7 +834,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                           <Ionicons name={isPlaying ? "pause" : "play"} size={13} color="#fff" />
                         </Pressable>
                         <View style={{ flex: 1, height: 3, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 2, overflow: "hidden" }}>
-                          <View style={{ width: `${playProgress}%`, height: "100%", backgroundColor: "#a855f7" }} />
+                          <View style={{ width: `${playProgress}%`, height: "100%", backgroundColor: "#ffffff" }} />
                         </View>
                         <Text style={{ color: "#fff", fontSize: 8, fontFamily: "monospace" }}>0:{Math.floor(playProgress * 0.18).toString().padStart(2, "0")}</Text>
                       </View>
@@ -845,7 +845,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                       {/* Cassette Plate Shell */}
                       <View style={localStyles.cassetteShell}>
                         {/* Sticker label */}
-                        <LinearGradient colors={["#db2777", "#7c3aed"]} style={localStyles.cassetteSticker}>
+                        <LinearGradient colors={["#8a8a8a", "#e2e8f0"]} style={localStyles.cassetteSticker}>
                           <Text style={localStyles.cassetteTitle} numberOfLines={1}>COLLIDER AUDIO MIX</Text>
                         </LinearGradient>
                         
@@ -888,7 +888,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                           <Ionicons name={isPlaying ? "pause" : "play"} size={13} color="#fff" />
                         </Pressable>
                         <View style={{ flex: 1, height: 3, backgroundColor: "rgba(255,255,255,0.2)", borderRadius: 2, overflow: "hidden" }}>
-                          <View style={{ width: `${playProgress}%`, height: "100%", backgroundColor: "#db2777" }} />
+                          <View style={{ width: `${playProgress}%`, height: "100%", backgroundColor: "#ffffff" }} />
                         </View>
                         <Text style={{ color: "#fff", fontSize: 8, fontFamily: "monospace" }}>0:{Math.floor(playProgress * 1.8).toString().padStart(2, "0")}</Text>
                       </View>
@@ -918,7 +918,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   
                   {/* Category overlay label */}
                   <View style={{ position: "absolute", top: 12, left: 12, backgroundColor: "rgba(0,0,0,0.65)", paddingVertical: 3, paddingHorizontal: 8, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
-                    <Ionicons name="sparkles" size={8} color="#a78bfa" />
+                    <Ionicons name="sparkles" size={8} color="#ffffff" />
                     <Text style={{ color: "#fff", fontSize: 8, fontWeight: "900", letterSpacing: 0.5 }}>{selectedItem.kind.toUpperCase()}</Text>
                   </View>
                 </View>
@@ -961,7 +961,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
 
                   {/* Core Prompt Box */}
                   <View style={localStyles.promptCard}>
-                    <Text style={{ color: "rgba(168, 85, 247, 0.8)", fontSize: 8, fontWeight: "900", letterSpacing: 1.5, marginBottom: 4 }}>PROMPT</Text>
+                    <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: "900", letterSpacing: 1.5, marginBottom: 4 }}>PROMPT</Text>
                     <Text style={{ color: "#fff", fontSize: 12.5, lineHeight: 18, fontWeight: "500" }} selectable>{selectedItem.prompt}</Text>
                   </View>
 
@@ -990,7 +990,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                         </View>
                         <View style={localStyles.paramRow}>
                           <Text style={localStyles.paramLabel}>CFG Guidance</Text>
-                          <Text style={[localStyles.paramValue, { color: "#a78bfa" }]}>7.5</Text>
+                          <Text style={[localStyles.paramValue, { color: "#ffffff" }]}>7.5</Text>
                         </View>
                         <View style={localStyles.paramRow}>
                           <Text style={localStyles.paramLabel}>Steps</Text>
@@ -998,7 +998,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                         </View>
                         <View style={localStyles.paramRow}>
                           <Text style={localStyles.paramLabel}>Seed</Text>
-                          <Text style={[localStyles.paramValue, { color: "#a855f7" }]}>{selectedItem.id.replace(/\D/g, '') || "582910398"}</Text>
+                          <Text style={[localStyles.paramValue, { color: "#ffffff" }]}>{selectedItem.id.replace(/\D/g, '') || "582910398"}</Text>
                         </View>
                       </View>
                     )}
@@ -1045,7 +1045,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                         disabled={!newCommentText.trim()}
                         style={[localStyles.commentSubmit, !newCommentText.trim() && { opacity: 0.4 }]}
                       >
-                        <Ionicons name="send" size={10} color="#a78bfa" />
+                        <Ionicons name="send" size={10} color="#ffffff" />
                       </Pressable>
                     </View>
 
@@ -1087,9 +1087,9 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   <Ionicons name="download-outline" size={13} color="#fff" style={{ marginRight: 2 }} />
                   <Text style={localStyles.actionBtnText}>SAVE</Text>
                 </Pressable>
-                <Pressable onPress={() => handleRemix(selectedItem)} style={[localStyles.actionBtn, { backgroundColor: "rgba(168,85,247,0.15)", borderColor: "rgba(168,85,247,0.3)" }]}>
-                  <Ionicons name="refresh-outline" size={13} color="#a855f7" style={{ marginRight: 2 }} />
-                  <Text style={[localStyles.actionBtnText, { color: "#a855f7" }]}>REMIX</Text>
+                <Pressable onPress={() => handleRemix(selectedItem)} style={[localStyles.actionBtn, { backgroundColor: "rgba(255,255,255,0.15)", borderColor: "rgba(255,255,255,0.3)" }]}>
+                  <Ionicons name="refresh-outline" size={13} color="#ffffff" style={{ marginRight: 2 }} />
+                  <Text style={[localStyles.actionBtnText, { color: "#ffffff" }]}>REMIX</Text>
                 </Pressable>
                 <Pressable onPress={() => handleUse(selectedItem)} style={localStyles.actionBtnPrimary}>
                   <Text style={localStyles.actionBtnPrimaryText}>USE ASSET</Text>
@@ -1108,7 +1108,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
               
               {/* Header */}
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)", paddingBottom: 10, marginBottom: 14 }}>
-                <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "900", letterSpacing: 1.5 }}>PUBLISH CREATION</Text>
+                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", letterSpacing: 1.5 }}>PUBLISH CREATION</Text>
                 <Pressable onPress={() => setPublishFile(null)} style={{ padding: 4 }}>
                   <Ionicons name="close" size={18} color="rgba(255,255,255,0.5)" />
                 </Pressable>
@@ -1200,7 +1200,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 <Ionicons
                   name={agreedToGuidelines ? "checkbox" : "square-outline"}
                   size={16}
-                  color={agreedToGuidelines ? "#a78bfa" : "#6b6478"}
+                  color={agreedToGuidelines ? "#ffffff" : "#6b6478"}
                   style={{ marginTop: 1 }}
                 />
                 <Text style={{ color: "#8d8398", fontSize: 10.5, flex: 1, lineHeight: 14 }}>
@@ -1214,7 +1214,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 disabled={!publishPrompt.trim() || !agreedToGuidelines}
                 style={[localStyles.publishSubmit, (!publishPrompt.trim() || !agreedToGuidelines) && { opacity: 0.4 }]}
               >
-                <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "900", letterSpacing: 1.2 }}>CONFIRM & PUBLISH</Text>
+                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", letterSpacing: 1.2 }}>CONFIRM & PUBLISH</Text>
               </Pressable>
             </View>
           </View>
@@ -1253,7 +1253,10 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file.
+const localStyles = StyleSheet.create(withFont({
   // Plain black bar, not a pill/segment control — the active tab is marked
   // by a white underline, same contrast language as a Grok-style nav.
   tabContainer: {
@@ -1376,9 +1379,9 @@ const localStyles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "rgba(167, 139, 250,0.1)",
+    backgroundColor: "rgba(255,255,255,0.1)",
     borderWidth: 1,
-    borderColor: "rgba(167, 139, 250,0.25)"
+    borderColor: "rgba(255,255,255,0.25)"
   },
   mockButtonSecondary: {
     paddingHorizontal: 14,
@@ -1392,9 +1395,9 @@ const localStyles = StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 10,
     paddingVertical: 4,
-    backgroundColor: "rgba(167,139,250,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
+    borderColor: "rgba(255,255,255,0.4)",
   },
   followButtonActive: {
     backgroundColor: "rgba(255,255,255,0.08)",
@@ -1402,7 +1405,7 @@ const localStyles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.12)"
   },
   followButtonText: {
-    color: "#a78bfa",
+    color: "#ffffff",
     fontSize: 9.5,
     fontWeight: "900",
     textTransform: "uppercase"
@@ -1458,9 +1461,9 @@ const localStyles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 12,
-    backgroundColor: "rgba(167,139,250,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
+    borderColor: "rgba(255,255,255,0.4)",
     alignItems: "center",
     justifyContent: "center"
   },
@@ -1492,10 +1495,10 @@ const localStyles = StyleSheet.create({
     flex: 1.1,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "rgba(167,139,250,0.18)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.5)",
-    shadowColor: "#a78bfa",
+    borderColor: "rgba(255,255,255,0.5)",
+    shadowColor: "#ffffff",
     shadowOpacity: 0.35,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
@@ -1504,7 +1507,7 @@ const localStyles = StyleSheet.create({
     justifyContent: "center"
   },
   actionBtnPrimaryText: {
-    color: "#a78bfa",
+    color: "#ffffff",
     fontSize: 9.5,
     fontWeight: "900",
     letterSpacing: 0.5
@@ -1564,10 +1567,10 @@ const localStyles = StyleSheet.create({
     outlineWidth: 0
   },
   publishSubmit: {
-    backgroundColor: "rgba(167,139,250,0.18)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.5)",
-    shadowColor: "#a78bfa",
+    borderColor: "rgba(255,255,255,0.5)",
+    shadowColor: "#ffffff",
     shadowOpacity: 0.35,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
@@ -1679,6 +1682,6 @@ const localStyles = StyleSheet.create({
   eqBar: {
     width: 4,
     borderRadius: 2,
-    backgroundColor: "#db2777"
+    backgroundColor: "#ffffff"
   }
-});
+}));

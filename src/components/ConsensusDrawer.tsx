@@ -302,8 +302,8 @@ export function ConsensusModal({
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: fieldW, marginBottom: 4 }}>
                   <Text style={[styles.kicker, { marginBottom: 0 }]}>Deviation Map</Text>
                   {dissenters.length > 0 && (
-                    <Pressable onPress={() => setShowMapLabels((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8, backgroundColor: showMapLabels ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.05)" }}>
-                      <Text style={{ color: showMapLabels ? "#a78bfa" : "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>
+                    <Pressable onPress={() => setShowMapLabels((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8, backgroundColor: showMapLabels ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)" }}>
+                      <Text style={{ color: showMapLabels ? "#e2e8f0" : "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>
                         {showMapLabels ? "LABELS ON" : "LABELS OFF"}
                       </Text>
                     </Pressable>

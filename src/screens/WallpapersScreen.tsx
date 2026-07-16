@@ -22,8 +22,8 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
   const { state, dispatch } = useCollider();
   const { toast } = useToast();
 
-  const SELECTED_BORDER = "#a78bfa"; // Unified gold border
-  const LOCK_COLOR = "#c4b5fd";
+  const SELECTED_BORDER = "#e2e8f0"; // Silver/chrome — the app's active/selected accent, not a hue
+  const LOCK_COLOR = "#6b6478"; // Locked/disabled is a legitimate desaturated case, not a soft-purple one
   // Preset gradient colorscapes: a plain Pro/Elite tier perk (unrelated to
   // the per-item purchase model below, which is specifically for live video
   // wallpapers — a static gradient isn't the thing SPEC.md's individual
@@ -88,7 +88,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
                   <View style={{ position: "absolute", bottom: 8, left: 8, right: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                     <Text style={[styles.tileName, { fontSize: 11, fontWeight: "800", color: "#fff", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>{wall.name}</Text>
                     {active ? (
-                      <Ionicons name="checkmark-circle" size={14} color="#a78bfa" />
+                      <Ionicons name="checkmark-circle" size={14} color="#e2e8f0" />
                     ) : wall.premium && !canUsePremium ? (
                       <Ionicons name="lock-closed" size={12} color={LOCK_COLOR} />
                     ) : null}
@@ -143,7 +143,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
                     
                     <View style={{ position: "absolute", bottom: 8, left: 8, right: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                       <Text style={[styles.tileName, { fontSize: 11, fontWeight: "800", color: "#fff", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>{theme.name}</Text>
-                      {active && <Ionicons name="checkmark-circle" size={14} color="#a78bfa" />}
+                      {active && <Ionicons name="checkmark-circle" size={14} color="#e2e8f0" />}
                     </View>
                   </Glass>
                 </Pressable>
@@ -163,9 +163,9 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
             <View style={wallStyles.terminalDotRed} />
             <View style={wallStyles.terminalDotYellow} />
             <View style={wallStyles.terminalDotGreen} />
-            <Text style={[wallStyles.terminalTitle, { color: "#c4b5fd" }]}>live_wallpapers.sh // video compilation</Text>
+            <Text style={[wallStyles.terminalTitle, { color: "#e2e8f0" }]}>live_wallpapers.sh // video compilation</Text>
           </View>
-          <Text style={[wallStyles.terminalText, { color: "#c4b5fd" }]}>
+          <Text style={[wallStyles.terminalText, { color: "#e2e8f0" }]}>
             $ mv loops.mp4 assets/themes/premium/{"\n"}
             $ metro restart # compiles assets in 60fps loops
           </Text>
@@ -215,7 +215,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
                           )}
                         </View>
                         {active ? (
-                          <Ionicons name="checkmark-circle" size={14} color="#a78bfa" />
+                          <Ionicons name="checkmark-circle" size={14} color="#e2e8f0" />
                         ) : !owned ? (
                           <Ionicons name="lock-closed" size={12} color={LOCK_COLOR} />
                         ) : null}
@@ -252,7 +252,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
                               disabled={disabled}
                               style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, opacity: disabled ? 0.4 : 1 }}
                             >
-                              <Ionicons name={isThisPlaying ? "pause-circle" : "play-circle"} size={20} color="#a78bfa" />
+                              <Ionicons name={isThisPlaying ? "pause-circle" : "play-circle"} size={20} color="#e2e8f0" />
                               <Text style={wallStyles.trackTitle}>{track.title}</Text>
                             </Pressable>
                             <Pressable
@@ -360,7 +360,7 @@ const wallStyles = StyleSheet.create(withFont({
     paddingVertical: 1.5,
   },
   liveText: {
-    color: "#a78bfa",
+    color: "#e2e8f0",
     fontSize: 8,
     fontWeight: "900",
     letterSpacing: 1,
@@ -370,7 +370,7 @@ const wallStyles = StyleSheet.create(withFont({
     alignItems: "center",
     justifyContent: "center",
     gap: 6,
-    backgroundColor: "#c4b5fd",
+    backgroundColor: "#e2e8f0",
     borderRadius: 10,
     paddingVertical: 8,
     marginTop: 6,

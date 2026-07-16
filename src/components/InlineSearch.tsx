@@ -20,12 +20,14 @@ type Result = {
   screen: "history" | "memory" | "reminders" | "projects" | "artifacts";
 };
 
+// See GlobalSearch.tsx — same reasoning: icon + label already distinguish
+// kind, so color here was decorative only. Black & white palette.
 const KIND_META: Record<ResultKind, { label: string; icon: keyof typeof Ionicons.glyphMap; color: string }> = {
-  conversation: { label: "Conversation", icon: "time-outline", color: "#5dbdff" },
-  memory: { label: "Memory", icon: "extension-puzzle-outline", color: "#a78bfa" },
-  reminder: { label: "Reminder", icon: "alarm-outline", color: "#a78bfa" },
-  project: { label: "Project", icon: "briefcase-outline", color: "#4be6b1" },
-  artifact: { label: "Artifact", icon: "layers-outline", color: "#ff8a65" },
+  conversation: { label: "Conversation", icon: "time-outline", color: "#ffffff" },
+  memory: { label: "Memory", icon: "extension-puzzle-outline", color: "#ffffff" },
+  reminder: { label: "Reminder", icon: "alarm-outline", color: "#ffffff" },
+  project: { label: "Project", icon: "briefcase-outline", color: "#ffffff" },
+  artifact: { label: "Artifact", icon: "layers-outline", color: "#ffffff" },
 };
 
 export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["screen"]) => void }) {
@@ -107,10 +109,10 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
             onPress={() => setModelPickerOpen(true)}
             style={{
               width: 34, height: 34, alignItems: "center", justifyContent: "center",
-              backgroundColor: modelFilter !== "all" ? "rgba(167,139,250,0.18)" : "transparent",
+              backgroundColor: modelFilter !== "all" ? "rgba(255,255,255,0.18)" : "transparent",
             }}
           >
-            <Ionicons name="filter-outline" size={14} color={modelFilter !== "all" ? "#a78bfa" : "rgba(255,255,255,0.5)"} />
+            <Ionicons name="filter-outline" size={14} color={modelFilter !== "all" ? "#ffffff" : "rgba(255,255,255,0.5)"} />
           </Pressable>
         </View>
         <Picker

@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCollider, newId, type Artifact } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles } from "../styles/theme";
+import { styles, withFont } from "../styles/theme";
 import { useSearch } from "../features";
 import { useToast } from "../components/Toast";
 import { SelectionBar, SelectModeToggle, SelectDot } from "../components/SelectionBar";
@@ -23,7 +23,7 @@ const KIND_OPTIONS: Artifact["kind"][] = ["timeline", "statement", "document", "
 function kindColor(kind: Artifact["kind"]) {
   if (kind === "timeline") return "#5dbdff";
   if (kind === "statement") return "#ffb74d";
-  if (kind === "document") return "#a78bfa";
+  if (kind === "document") return "#e2e8f0";
   return "#6b6478";
 }
 
@@ -118,7 +118,7 @@ export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
               onPress={handleAddArtifact}
               style={localStyles.addButton}
             >
-              <Ionicons name="add" size={18} color="#a78bfa" />
+              <Ionicons name="add" size={18} color="#e2e8f0" />
             </Pressable>
           </View>
           <View style={{ flexDirection: "row", gap: 6 }}>
@@ -170,7 +170,7 @@ export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
                   style={{ flexDirection: "row", alignItems: "center" }}
                 >
                   {selectMode && <SelectDot selected={isSelected} />}
-                  <Glass style={[localStyles.card, { flex: 1 }, isSelected && { borderColor: "rgba(167,139,250,0.5)" }]}>
+                  <Glass style={[localStyles.card, { flex: 1 }, isSelected && { borderColor: "rgba(255,255,255,0.5)" }]}>
                     <View style={[localStyles.cardAccent, { backgroundColor: accentColor }]} />
                     <View style={localStyles.cardContent}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -222,7 +222,10 @@ export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file.
+const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -262,10 +265,10 @@ const localStyles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 12,
-    backgroundColor: "rgba(167,139,250,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
-    shadowColor: "#a78bfa",
+    borderColor: "rgba(255,255,255,0.4)",
+    shadowColor: "#e2e8f0",
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
@@ -334,4 +337,4 @@ const localStyles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "rgba(239, 68, 68, 0.08)",
   },
-});
+}));

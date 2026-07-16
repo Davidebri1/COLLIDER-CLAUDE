@@ -378,27 +378,52 @@ function Shell() {
 
   const prevMemoriesCount = useRef(state.memories.length);
   const prevRemindersCount = useRef(state.reminders.length);
+  // These two toast effects fire whenever the array length grows. Before
+  // hydration, state.memories/reminders is always [] (length 0), so the very
+  // first time AsyncStorage finishes loading and dispatches "hydrate" —
+  // replacing [] with everything the user has ever saved — this looked
+  // indistinguishable from "N new items just got captured," and the toast
+  // fired for restored data on every single page refresh. Gate on
+  // state.hydrated (same flag the persistence effects below already use) and
+  // treat the first post-hydration run as a silent baseline sync, not a
+  // capture event — only genuine growth *after* that counts as new.
+  const memoriesSyncedAfterHydration = useRef(false);
+  const remindersSyncedAfterHydration = useRef(false);
   const scheduledRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
+    if (!state.hydrated) return;
+    if (!memoriesSyncedAfterHydration.current) {
+      prevMemoriesCount.current = state.memories.length;
+      memoriesSyncedAfterHydration.current = true;
+      return;
+    }
     if (state.memories.length > prevMemoriesCount.current) {
       setToastText(" Smart Gen: Extracted persistent memory!");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const t = setTimeout(() => setToastText(null), 3000);
+      prevMemoriesCount.current = state.memories.length;
       return () => clearTimeout(t);
     }
     prevMemoriesCount.current = state.memories.length;
-  }, [state.memories]);
+  }, [state.hydrated, state.memories]);
 
   useEffect(() => {
+    if (!state.hydrated) return;
+    if (!remindersSyncedAfterHydration.current) {
+      prevRemindersCount.current = state.reminders.length;
+      remindersSyncedAfterHydration.current = true;
+      return;
+    }
     if (state.reminders.length > prevRemindersCount.current) {
       setToastText(" Smart Gen: Captured new reminder task!");
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
       const t = setTimeout(() => setToastText(null), 3000);
+      prevRemindersCount.current = state.reminders.length;
       return () => clearTimeout(t);
     }
     prevRemindersCount.current = state.reminders.length;
-  }, [state.reminders]);
+  }, [state.hydrated, state.reminders]);
 
   useEffect(() => {
     for (const r of state.reminders) {
@@ -600,8 +625,11 @@ function CollideButton({ onPress }: { onPress: () => void }) {
   return (
     <Animated.View style={{ transform: [{ scale: pulse }], marginHorizontal: 14, marginBottom: 8 }}>
       <Pressable onPress={onPress} style={styles.collideTrackBtn}>
+        {/* Glossy white-to-light-gray sweep, not the old warm-orange
+            gradient — black & white, high contrast, depth via gloss
+            instead of color. */}
         <LinearGradient
-          colors={["#ffb74d", "#ff8a65"]}
+          colors={["#ffffff", "#d8d8dc"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
           style={StyleSheet.absoluteFill}
@@ -647,7 +675,7 @@ const localDrawerStyles = StyleSheet.create({
   upgradeBtn: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
-    backgroundColor: "rgba(255,183,77,0.12)", borderWidth: 1, borderColor: "rgba(255,183,77,0.35)",
+    backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 1, borderColor: "rgba(255,255,255,0.35)",
   },
   colHeader: { color: "#6b6478", fontSize: 9, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900) },
 });
@@ -1004,12 +1032,14 @@ function Home({
 }
 
 //  Category meta (icon + accent color per category id)
+// Was a per-category rainbow — icon already distinguishes category, so color
+// was decorative only. Flattened to one neutral (black & white direction).
 const CATEGORY_META: Record<string, { icon: any; color: string }> = {
-  general: { icon: "chatbubble-outline", color: "#5dbdff" },
-  image: { icon: "image-outline", color: "#a78bfa" },
-  video: { icon: "videocam-outline", color: "#a855f7" },
-  music: { icon: "musical-notes-outline", color: "#db2777" },
-  coding: { icon: "code-slash-outline", color: "#4be6b1" },
+  general: { icon: "chatbubble-outline", color: "#ffffff" },
+  image: { icon: "image-outline", color: "#ffffff" },
+  video: { icon: "videocam-outline", color: "#ffffff" },
+  music: { icon: "musical-notes-outline", color: "#ffffff" },
+  coding: { icon: "code-slash-outline", color: "#ffffff" },
 };
 
 //  Category dropdown trigger — small, paired with Models above the grid.
@@ -1172,12 +1202,12 @@ function RowSelectorModal({
                 }}
               >
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-                  <Ionicons name="grid-outline" size={16} color={active ? "#a78bfa" : "#9a949f"} />
-                  <Text style={{ color: active ? "#a78bfa" : "#fff", fontSize: 14, fontWeight: active ? "800" : "500", fontFamily: fontFamilyForWeight(active ? 800 : 500) }}>
+                  <Ionicons name="grid-outline" size={16} color={active ? "#ffffff" : "#9a949f"} />
+                  <Text style={{ color: active ? "#ffffff" : "#fff", fontSize: 14, fontWeight: active ? "800" : "500", fontFamily: fontFamilyForWeight(active ? 800 : 500) }}>
                     {val} row{val > 1 ? "s" : ""}
                   </Text>
                 </View>
-                {active && <Ionicons name="checkmark" size={17} color="#a78bfa" />}
+                {active && <Ionicons name="checkmark" size={17} color="#ffffff" />}
               </Pressable>
             );
           })}
@@ -1254,8 +1284,8 @@ function ModelSelectorDrawer({
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           {!usable ? (
-            <View style={{ backgroundColor: "rgba(167, 139, 250,0.1)", borderWidth: 1, borderColor: "rgba(167, 139, 250,0.3)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-              <Text style={{ color: "#a78bfa", fontSize: 9, fontWeight: "900", letterSpacing: 1 }}>LOCK</Text>
+            <View style={{ backgroundColor: "rgba(255,255,255,0.1)", borderWidth: 1, borderColor: "rgba(255,255,255,0.3)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+              <Text style={{ color: "#ffffff", fontSize: 9, fontWeight: "900", letterSpacing: 1 }}>LOCK</Text>
             </View>
           ) : (
             isSelected && (
@@ -1626,8 +1656,8 @@ export function ReminderEditModal({
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>PROGRESS</Text>
             <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
               {(["todo", "inprogress", "done"] as const).map((pr) => (
-                <Pressable key={pr} onPress={() => setProgress(pr)} style={[styles.prioBtn, progress === pr && { backgroundColor: "rgba(167,139,250,0.18)", borderColor: "rgba(167,139,250,0.5)" }]}>
-                  <Text style={{ fontSize: 11, fontWeight: "900", color: progress === pr ? "#a78bfa" : "#fff" }}>{pr.toUpperCase()}</Text>
+                <Pressable key={pr} onPress={() => setProgress(pr)} style={[styles.prioBtn, progress === pr && { backgroundColor: "rgba(255,255,255,0.18)", borderColor: "rgba(255,255,255,0.5)" }]}>
+                  <Text style={{ fontSize: 11, fontWeight: "900", color: progress === pr ? "#ffffff" : "#fff" }}>{pr.toUpperCase()}</Text>
                 </Pressable>
               ))}
             </View>
@@ -1699,7 +1729,7 @@ export function MemoryEditModal({
     });
   };
 
-  const accent = "#8b5cf6";
+  const accent = "#ffffff";
 
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -1809,7 +1839,7 @@ export function ProjectEditModal({
     setNewTaskPriority("none");
   };
 
-  const accent = "#4be6b1";
+  const accent = "#ffffff";
 
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
@@ -1902,7 +1932,7 @@ function kindColor(kind: Artifact["kind"]): string {
   switch (kind) {
     case "timeline": return "#5dbdff";
     case "statement": return "#ffb74d";
-    case "document": return "#a78bfa";
+    case "document": return "#ffffff";
     default: return "#6b6478";
   }
 }
@@ -2267,19 +2297,40 @@ function CardScreen({
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, gap: 6, paddingVertical: 8 }} style={{ flex: 1 }}>
           {(["chat", "memory", "projects", "files", "reminders"] as const).map((t) => {
             const active = activeTab === t;
+            const label = t === "chat" ? "Conversation History" : t.charAt(0).toUpperCase() + t.slice(1);
             return (
               <Pressable
                 key={t}
                 onPress={() => setActiveTab(t)}
-                style={[styles.subTab, active && { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.22)" }]}
+                style={[
+                  styles.subTab,
+                  active ? {
+                    backgroundColor: "#ffffff",
+                    borderColor: "#ffffff",
+                    shadowColor: "#ffffff",
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: 0.5,
+                    shadowRadius: 8,
+                    elevation: 6,
+                  } : {
+                    backgroundColor: "#08080c",
+                    borderColor: "rgba(255,255,255,0.08)",
+                  }
+                ]}
               >
                 <Text
                   style={[
                     styles.subTabText,
-                    active && { color: "#fff", fontWeight: "900" },
+                    active ? {
+                      color: "#000000",
+                      fontWeight: "900",
+                    } : {
+                      color: "rgba(255,255,255,0.45)",
+                      fontWeight: "700",
+                    },
                   ]}
                 >
-                  {t.toUpperCase()}
+                  {label.toUpperCase()}
                 </Text>
               </Pressable>
             );
@@ -2337,15 +2388,15 @@ function CardScreen({
                                 onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {}); Share.share({ message: message.content }).catch(() => {}); }}
                                 style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
                               >
-                                <Ionicons name="share-social-outline" size={12} color="#a78bfa" />
-                                <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "900" }}>Share</Text>
+                                <Ionicons name="share-social-outline" size={12} color="#ffffff" />
+                                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900" }}>Share</Text>
                               </Pressable>
                               <Pressable 
                                 onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); toast("Saved to gallery!"); }}
                                 style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
                               >
-                                <Ionicons name="download-outline" size={12} color="#a78bfa" />
-                                <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "900" }}>Save</Text>
+                                <Ionicons name="download-outline" size={12} color="#ffffff" />
+                                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900" }}>Save</Text>
                               </Pressable>
                             </View>
                           </View>
@@ -2353,7 +2404,7 @@ function CardScreen({
                         </View>
                       ) : message.role === "assistant" && model.category.includes("music") && message.content ? (
                         <View style={[styles.audioPlayerCard, { backgroundColor: "#1e172e" }]}>
-                          <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "900", marginBottom: 4 }}> SUNO AUDIO GENERATOR</Text>
+                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", marginBottom: 4 }}> SUNO AUDIO GENERATOR</Text>
                           <AudioPlayerControls />
                           <View style={{ marginTop: 8 }}>
                             <Markdown content={message.content} color="#fff" fontSize={12} />
@@ -2361,7 +2412,7 @@ function CardScreen({
                         </View>
                       ) : message.role === "assistant" && model.category.includes("video") && message.content ? (
                         <View style={[styles.videoPlayerCard, { backgroundColor: "#1e172e" }]}>
-                          <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "900", marginBottom: 4 }}> SORA STORYBOARD PLAYER</Text>
+                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", marginBottom: 4 }}> SORA STORYBOARD PLAYER</Text>
                           <VideoPlayerSimulated prompt={message.content} />
                           <View style={{ marginTop: 8 }}>
                             <Markdown content={message.content} color="#fff" fontSize={12} />
@@ -2816,8 +2867,11 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           ))}
         </View>
 
+        {/* Column headers + model filter merged into one row — these were
+            two separate rows for no reason, adding chrome height above the
+            actual list for no added clarity. */}
         {historyTab === "convos" && (
-          <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, marginBottom: 4, gap: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, marginBottom: 6, gap: 4 }}>
             <Pressable onPress={() => handleSort("title")} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Text style={localDrawerStyles.colHeader}>TITLE</Text>
               {sortBy === "title" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#ffb74d" />}
@@ -2830,14 +2884,7 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
               <Text style={localDrawerStyles.colHeader}>LAST</Text>
               {sortBy === "last" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#ffb74d" />}
             </Pressable>
-          </View>
-        )}
-        {historyTab === "convos" && (
-          <View style={{ paddingHorizontal: 14, marginBottom: 8 }}>
-            <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4, alignSelf: "flex-start" }}>
-              <Ionicons name="filter-outline" size={10} color="#6b6478" />
-              <Picker value={modelFilter} onChange={setModelFilter} options={modelOptions} textStyle={{ fontSize: 10, color: "#6b6478" }} />
-            </View>
+            <Picker value={modelFilter} onChange={setModelFilter} options={modelOptions} textStyle={{ fontSize: 9, color: "#6b6478" }} style={{ paddingHorizontal: 0 }} />
           </View>
         )}
 
@@ -3093,7 +3140,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                       <ImageBackground source={{ uri: g.url }} style={{ width: 44, height: 44, borderRadius: 6, overflow: "hidden" }} resizeMode="cover">
                         {starred[g.id] && (
                           <View style={{ position: "absolute", top: 2, right: 2, backgroundColor: "rgba(0,0,0,0.6)", borderRadius: 8, padding: 2 }}>
-                            <Ionicons name="star" size={10} color="#a78bfa" />
+                            <Ionicons name="star" size={10} color="#ffffff" />
                           </View>
                         )}
                       </ImageBackground>
@@ -3108,7 +3155,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                     <Text style={[styles.muted, { fontSize: 9 }]}>{new Date(g.ts).toLocaleDateString()}</Text>
                   </View>
                   <Pressable onPress={() => toggleStar(g.id)} style={{ padding: 4 }}>
-                    <Ionicons name={starred[g.id] ? "star" : "star-outline"} size={16} color={starred[g.id] ? "#a78bfa" : "rgba(255,255,255,0.3)"} />
+                    <Ionicons name={starred[g.id] ? "star" : "star-outline"} size={16} color={starred[g.id] ? "#ffffff" : "rgba(255,255,255,0.3)"} />
                   </Pressable>
                 </View>
 
@@ -3116,7 +3163,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                   <Pressable onPress={() => setPreviewUrl(g.url)}><Text style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>View</Text></Pressable>
                   {onRemix && <Pressable onPress={() => handleRemix(g.url)}><Text style={{ fontSize: 10, color: "rgba(255,255,255,0.6)" }}>Remix</Text></Pressable>}
                   {onInsertSource && <Pressable onPress={() => handleInsertSource(g.url)}><Text style={{ fontSize: 10, color: "#5dbdff" }}>+ Source</Text></Pressable>}
-                  {onInsertContext && <Pressable onPress={() => onInsertContext(g.url)}><Text style={{ fontSize: 10, color: "#a78bfa" }}>+ Context</Text></Pressable>}
+                  {onInsertContext && <Pressable onPress={() => onInsertContext(g.url)}><Text style={{ fontSize: 10, color: "#ffffff" }}>+ Context</Text></Pressable>}
                   <Pressable onPress={() => {
                     dispatch({
                       type: "publishToMarket",

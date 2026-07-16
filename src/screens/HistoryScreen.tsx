@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles } from "../styles/theme";
+import { styles, withFont } from "../styles/theme";
 import { CATEGORIES, modelById } from "../models";
 import { SearchBar, useSearch, ConsensusRunCard } from "../features";
 import { SelectionBar, SelectModeToggle, SelectDot } from "../components/SelectionBar";
@@ -58,14 +58,10 @@ export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => voi
   };
   const activeList = tab === "convos" ? convSearch.filtered : consSearch.filtered;
 
-  const getCategoryColor = (cat: string) => {
-    if (cat === "general") return "#5dbdff";
-    if (cat === "image") return "#a78bfa";
-    if (cat === "video") return "#a855f7";
-    if (cat === "music") return "#db2777";
-    if (cat === "coding") return "#4be6b1";
-    return "#c4b5fd";
-  };
+  // Was a per-category rainbow (blue/lavender/violet/pink/mint) — same call as
+  // GlobalSearch/InlineSearch's KIND_META: category is already named in the
+  // label, so the color was decorative only. Flattened to one neutral.
+  const getCategoryColor = (_cat: string) => "#e2e8f0";
 
   const getCategoryLabel = (cat: string) => {
     const found = CATEGORIES.find(c => c.id === cat);
@@ -172,7 +168,7 @@ export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => voi
                       style={{ flexDirection: "row", alignItems: "center" }}
                     >
                       {selectMode && <SelectDot selected={isSelected} />}
-                      <Glass isCard style={[localStyles.convoCard, { flex: 1 }, isSelected && { borderColor: "rgba(167,139,250,0.5)" }]}>
+                      <Glass isCard style={[localStyles.convoCard, { flex: 1 }, isSelected && { borderColor: "rgba(255,255,255,0.5)" }]}>
                         {/* Left border highlight */}
                         <View style={[localStyles.cardAccent, { backgroundColor: borderAccent }]} />
                         
@@ -272,7 +268,10 @@ export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => voi
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file.
+const localStyles = StyleSheet.create(withFont({
   tabContainer: {
     flexDirection: "row",
     paddingHorizontal: 12,
@@ -355,4 +354,4 @@ const localStyles = StyleSheet.create({
     color: "#6b6478",
     fontSize: 9.5,
   },
-});
+}));

@@ -129,7 +129,7 @@ const ROUTES: Record<string, Route> = {
   "free/nemotron-super":         { provider: "openrouter", remote: "nvidia/nemotron-3-super-120b-a12b:free" },
   "free/mistral-small":          { provider: "openrouter", remote: "mistralai/mistral-small-3.2-24b-instruct" },
   "free/command-r":              { provider: "openrouter", remote: "cohere/command-r-08-2024" },
-  "free/minimax-m2":             { provider: "openrouter", remote: "minimax/minimax-m2" },
+  "free/minimax-m3":             { provider: "openrouter", remote: "minimax/minimax-m3" },
   "free/llama-4-scout":          { provider: "groq",       remote: "meta-llama/llama-4-scout-17b-16e-instruct" },
   "free/qwen3-30b":              { provider: "openrouter", remote: "qwen/qwen3-30b-a3b-instruct-2507" },
 

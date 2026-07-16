@@ -34,7 +34,7 @@ export const MODELS: ModelDef[] = [
   { id: "free/nemotron-super",      label: "Nemotron Super 120B",short: "NemS", desc: "NVIDIA's strong open MoE. 1M ctx.",              tier: "free", category: ["general"],           weight: 1, color: "#8ee878" },
   { id: "free/mistral-small",       label: "Mistral Small 3.2",  short: "MiSm", desc: "Mistral's current small model. Great value.",    tier: "free", category: ["general"],           weight: 1, color: "#ffb066" },
   { id: "free/command-r",           label: "Command R",          short: "CmdR", desc: "Cohere's generalist model.",                     tier: "free", category: ["general"],           weight: 1, color: "#f2c14e" },
-  { id: "free/minimax-m2",          label: "MiniMax M2",         short: "MM2",  desc: "MiniMax's current flagship.",                    tier: "free", category: ["general"],           weight: 1, color: "#ff9e6b" },
+  { id: "free/minimax-m3",          label: "MiniMax M3",         short: "MM3",  desc: "MiniMax's current flagship. 1M ctx.",            tier: "free", category: ["general"],           weight: 1, color: "#ff9e6b" },
   { id: "free/llama-4-scout",       label: "Llama 4 Scout",      short: "L4Sc", desc: "Meta's fast MoE. Great for everyday tasks.",     tier: "free", category: ["general"],           weight: 1, color: "#4be6b1" },
   { id: "free/qwen3-30b",           label: "Qwen3 30B",          short: "Qw3",  desc: "Alibaba's current mid-size model.",              tier: "free", category: ["general"],           weight: 1, color: "#e8c15a" },
 
@@ -65,12 +65,10 @@ export const MODELS: ModelDef[] = [
   { id: "elite/qwen3-coder-plus",   label: "Qwen3 Coder Plus",   short: "Q3CP", desc: "Qwen3's pro code tier. 1M ctx.",                 tier: "elite", category: ["coding"],           weight: 7, color: "#e8c15a" },
   { id: "elite/kimi-k2-7-code",     label: "Kimi K2.7 Code",     short: "K2.7C",desc: "Moonshot's dedicated coding model.",             tier: "elite", category: ["coding"],           weight: 7, color: "#4be6b1" },
 
-  // ── Image · Free (1) — Pollinations, genuinely keyless/free (no account
-  // of ours is being billed for this one) — a real taste of image gen for
-  // free-tier users instead of the category being a locked wall entirely ──
-  { id: "img/flux-free",              label: "FLUX (free)",             short: "FluxF",desc: "Free, fast image generator.",                tier: "free", category: ["image"],             weight: 1, color: "#8ee878" },
-
-  // ── Image · Pro (2) — real OpenRouter image models, not Pollinations ─────
+  // ── Image · Pro (3) — SPEC.md: no free tier access to media gen. Pollinations
+  // (flux-free) stays Pollinations-backed (genuinely keyless/free to us) but
+  // moves to Pro, matching the tier rule instead of overriding it ──────────
+  { id: "img/flux-free",              label: "FLUX",                    short: "Flux", desc: "Fast, free-to-generate image model.",       tier: "pro",  category: ["image"],             weight: 1, color: "#8ee878" },
   { id: "img/gemini-3-1-flash-image", label: "Gemini 3.1 Flash Image", short: "G3.1I", desc: "Google's fast image generator.",            tier: "pro",  category: ["image"],             weight: 2, color: "#7fd8c4" },
   { id: "img/gpt-5-image-mini",       label: "GPT-5 Image Mini",       short: "5Img-",desc: "OpenAI's compact image model.",              tier: "pro",  category: ["image"],             weight: 3, color: "#d9d3c7" },
 

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Pressable, View } from "react-native";
+import { Animated, Pressable, View, Image } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 
 // The Collide button — a breathing violet ring with real animated sparks.
@@ -40,8 +40,12 @@ function Spark({ size, angle, delay }: { size: number; angle: number; delay: num
   // continues further out from there, past the edge into the darker aura
   // where a bright sliver actually shows up against the background.
   const radius = size / 2;
-  const travel = t.interpolate({ inputRange: [0, 1], outputRange: [0, size * 0.38] });
-  const length = size * 0.19;
+  // Longer, thinner, square-ended (not fully rounded) — at the old length
+  // (~13px) and full end-rounding, the streak had no visible direction and
+  // read as a soft dot/sparkle instead of a line. This is long/thin/sharp
+  // enough that the direction actually registers at a glance.
+  const travel = t.interpolate({ inputRange: [0, 1], outputRange: [0, size * 0.5] });
+  const length = size * 0.34;
   const rad = (angle * Math.PI) / 180;
   const originX = size / 2 + Math.cos(rad) * radius;
   const originY = size / 2 + Math.sin(rad) * radius;
@@ -51,9 +55,9 @@ function Spark({ size, angle, delay }: { size: number; angle: number; delay: num
       style={{
         position: "absolute",
         left: originX - length / 2,
-        top: originY - 1,
+        top: originY - 0.75,
         width: length,
-        height: 2,
+        height: 1.5,
         opacity,
         transform: [
           { rotate: `${angle}deg` },
@@ -62,10 +66,10 @@ function Spark({ size, angle, delay }: { size: number; angle: number; delay: num
       }}
     >
       <LinearGradient
-        colors={["#f3e8ff", "rgba(192,132,252,0)"]}
+        colors={["#ffffff", "#e5e5e5", "rgba(255,255,255,0)"]}
         start={{ x: 0, y: 0.5 }}
         end={{ x: 1, y: 0.5 }}
-        style={{ width: "100%", height: "100%", borderRadius: 1 }}
+        style={{ width: "100%", height: "100%" }}
       />
     </Animated.View>
   );
@@ -105,7 +109,7 @@ export function NovaSun({ size = 68, onPress }: { size?: number; onPress: () => 
             style={{
               position: "absolute", width: s, height: s, borderRadius: s / 2,
               left: -s / 2 + size / 2, top: -s / 2 + size / 2,
-              backgroundColor: "#a855f7", opacity: auraOpacities[i],
+              backgroundColor: "#ffffff", opacity: auraOpacities[i],
             }}
           />
         ))}
@@ -122,7 +126,7 @@ export function NovaSun({ size = 68, onPress }: { size?: number; onPress: () => 
       <View style={{ width: size, height: size, borderRadius: size / 2, overflow: "hidden" }}>
         <Animated.View style={{ position: "absolute", width: "100%", height: "100%", opacity: coolOpacity }}>
           <LinearGradient
-            colors={["#a855f7", "#581c87"]}
+            colors={["#8a8a8a", "#1a1a1a"]}
             start={{ x: 0.3, y: 0.2 }}
             end={{ x: 1, y: 1 }}
             style={{ width: "100%", height: "100%" }}
@@ -130,33 +134,23 @@ export function NovaSun({ size = 68, onPress }: { size?: number; onPress: () => 
         </Animated.View>
         <Animated.View style={{ position: "absolute", width: "100%", height: "100%", opacity: hotOpacity }}>
           <LinearGradient
-            colors={["#f3e8ff", "#c084fc"]}
+            colors={["#ffffff", "#e5e5e5"]}
             start={{ x: 0.3, y: 0.2 }}
             end={{ x: 1, y: 1 }}
             style={{ width: "100%", height: "100%" }}
           />
         </Animated.View>
 
-        {/* Collide mark: a tight 3-line convergence asterisk at the core's
-            center — the point the sparks erupt from, not a decorative icon
-            stamped on top. Same visual language as the sparks (thin bright
-            slivers), just static and small instead of animated and flying
-            outward, so it reads as one coherent identity rather than two
-            unrelated elements. Deliberately not a stock icon glyph or two
-            same-size overlapping circles (the previous version read as a
-            face, not a mark). */}
-        <View pointerEvents="none" style={{ position: "absolute", width: size, height: size, alignItems: "center", justifyContent: "center" }}>
-          {[0, 60, 120].map((deg) => (
-            <View
-              key={deg}
-              style={{
-                position: "absolute", width: size * 0.22, height: 1.5, borderRadius: 1,
-                backgroundColor: "rgba(255,255,255,0.9)",
-                transform: [{ rotate: `${deg}deg` }],
-              }}
-            />
-          ))}
-        </View>
+        {/* Collide mark: a generated impact-burst image (two beams striking
+            and erupting into light), not a hand-coded glyph — the earlier
+            3-line asterisk was a placeholder shape, not a considered design.
+            Chroma-keyed to real transparency (see collide_core_final.png's
+            generation note) and composited small at the core's center. */}
+        <Image
+          source={require("../../assets/ui/collide_core_final.png")}
+          pointerEvents="none"
+          style={{ position: "absolute", width: size * 0.62, height: size * 0.62, left: size * 0.19, top: size * 0.19, resizeMode: "contain" }}
+        />
       </View>
     </Pressable>
   );

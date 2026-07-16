@@ -30,7 +30,7 @@ function InlineText({ text, baseStyle }: { text: string; baseStyle: TextStyle })
             <Text key={i} style={{
               fontFamily: "monospace",
               backgroundColor: "rgba(255,255,255,0.10)",
-              color: "#d4b4fe",
+              color: "#e2e8f0",
               fontSize: (baseStyle.fontSize as number || 14) - 1,
               borderRadius: 3,
             }}>
@@ -47,7 +47,7 @@ function InlineText({ text, baseStyle }: { text: string; baseStyle: TextStyle })
         const link = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
         if (link) {
           return (
-            <Text key={i} style={{ color: "#a78bfa", textDecorationLine: "underline" }}>
+            <Text key={i} style={{ color: "#e2e8f0", textDecorationLine: "underline" }}>
               {link[1]}
             </Text>
           );
@@ -201,7 +201,7 @@ const s = StyleSheet.create({
     marginVertical: 5,
   },
   codeLang: {
-    color: "#a78bfa",
+    color: "#ffffff",
     fontSize: 10,
     fontWeight: "700",
     letterSpacing: 1,
@@ -210,7 +210,7 @@ const s = StyleSheet.create({
     fontFamily: "monospace",
   },
   codeText: {
-    color: "#e2d9f3",
+    color: "#f2f0f5",
     fontFamily: "monospace",
     fontSize: 13,
     lineHeight: 19,
@@ -223,7 +223,7 @@ const s = StyleSheet.create({
   },
   blockquote: {
     borderLeftWidth: 3,
-    borderLeftColor: "#a78bfa",
+    borderLeftColor: "rgba(255,255,255,0.4)",
     paddingLeft: 12,
     marginVertical: 4,
   },

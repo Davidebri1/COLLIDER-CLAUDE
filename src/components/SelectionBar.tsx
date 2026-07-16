@@ -1,6 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { withFont } from "../styles/theme";
 
 // Shared bulk-select toolbar for list screens (Memory, Reminders, Projects,
 // Artifacts, Files, History). Screens own their own selection Set — this is
@@ -42,7 +43,7 @@ export function SelectModeToggle({ active, onPress }: { active: boolean; onPress
       <Ionicons
         name={active ? "close-circle-outline" : "checkmark-circle-outline"}
         size={13}
-        color={active ? "#a78bfa" : "rgba(255,255,255,0.55)"}
+        color={active ? "#e2e8f0" : "rgba(255,255,255,0.55)"}
       />
       <Text style={[localStyles.toggleLabel, active && localStyles.toggleLabelActive]}>
         {active ? "Cancel" : "Select"}
@@ -60,7 +61,11 @@ export function SelectDot({ selected }: { selected: boolean }) {
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file. Also de-purpled per the black &
+// white / high-contrast palette direction.
+const localStyles = StyleSheet.create(withFont({
   bar: {
     flexDirection: "row",
     alignItems: "center",
@@ -81,7 +86,7 @@ const localStyles = StyleSheet.create({
   },
   count: { color: "#fff", fontSize: 12, fontWeight: "700", flex: 1 },
   textBtn: { paddingHorizontal: 6 },
-  textBtnLabel: { color: "#a78bfa", fontSize: 11.5, fontWeight: "700" },
+  textBtnLabel: { color: "#ffffff", fontSize: 11.5, fontWeight: "700" },
   deleteBtn: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
@@ -94,10 +99,10 @@ const localStyles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
   },
   toggleActive: {
-    backgroundColor: "rgba(167,139,250,0.15)", borderColor: "rgba(167,139,250,0.35)",
+    backgroundColor: "rgba(255,255,255,0.16)", borderColor: "rgba(255,255,255,0.45)",
   },
   toggleLabel: { color: "rgba(255,255,255,0.7)", fontSize: 11.5, fontWeight: "700", letterSpacing: 0.3 },
-  toggleLabelActive: { color: "#a78bfa" },
+  toggleLabelActive: { color: "#ffffff" },
   dot: {
     width: 20, height: 20, borderRadius: 10,
     borderWidth: 1.5, borderColor: "rgba(255,255,255,0.25)",
@@ -105,6 +110,6 @@ const localStyles = StyleSheet.create({
     marginRight: 8,
   },
   dotSelected: {
-    backgroundColor: "#a78bfa", borderColor: "#a78bfa",
+    backgroundColor: "#ffffff", borderColor: "#ffffff",
   },
-});
+}));

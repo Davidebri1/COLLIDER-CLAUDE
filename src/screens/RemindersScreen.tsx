@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider, newId, type Reminder } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles } from "../styles/theme";
+import { styles, withFont } from "../styles/theme";
 import { SearchBar, useSearch } from "../features";
 import { convertItem } from "../services/smartgen";
 import { useToast } from "../components/Toast";
@@ -395,7 +395,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
               onPress={handleAddReminder}
               style={localStyles.addButton}
             >
-              <Ionicons name="add" size={18} color="#a78bfa" />
+              <Ionicons name="add" size={18} color="#ffffff" />
             </Pressable>
           </View>
         </View>
@@ -408,19 +408,19 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
             <View style={{ width: 26 }} />
             <Pressable onPress={() => handleSort("title")} style={[localStyles.headerCell, { flex: 1 }]}>
               <Text style={localStyles.headerCellText}>TITLE</Text>
-              {sortBy === "title" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={10} color="#a78bfa" />}
+              {sortBy === "title" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={10} color="#ffffff" />}
             </Pressable>
             <Pressable onPress={() => handleSort("due")} style={[localStyles.headerCell, { width: 64 }]}>
               <Text style={localStyles.headerCellText}>DUE</Text>
-              {sortBy === "due" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={10} color="#a78bfa" />}
+              {sortBy === "due" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={10} color="#ffffff" />}
             </Pressable>
             <Pressable onPress={() => handleSort("priority")} style={[localStyles.headerCell, { width: 50 }]}>
               <Text style={localStyles.headerCellText}>PRI</Text>
-              {sortBy === "priority" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={10} color="#a78bfa" />}
+              {sortBy === "priority" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={10} color="#ffffff" />}
             </Pressable>
             <Pressable onPress={() => handleSort("status")} style={[localStyles.headerCell, { width: 60 }]}>
               <Text style={localStyles.headerCellText}>STATUS</Text>
-              {sortBy === "status" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={10} color="#a78bfa" />}
+              {sortBy === "status" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={10} color="#ffffff" />}
             </Pressable>
           </View>
         )}
@@ -440,7 +440,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
               return (
               <Glass
                 key={r.id}
-                style={[localStyles.reminderCard, isSelected && { borderColor: "rgba(167,139,250,0.5)" }]}
+                style={[localStyles.reminderCard, isSelected && { borderColor: "rgba(255,255,255,0.5)" }]}
               >
                 {selectMode && (
                   <Pressable onPress={() => toggleSelected(r.id)} style={{ paddingRight: 4 }}>
@@ -453,7 +453,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                   <Ionicons
                     name={r.done ? "checkmark-circle" : "ellipse-outline"}
                     size={18}
-                    color={r.done ? "#a78bfa" : "rgba(255,255,255,0.4)"}
+                    color={r.done ? "#ffffff" : "rgba(255,255,255,0.4)"}
                   />
                 </Pressable>
 
@@ -515,15 +515,15 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                       <Pressable
                         onPress={() => !r.googleTaskId && handleSendReminderToTasks(r)}
                         disabled={taskingReminderId === r.id || !!r.googleTaskId}
-                        style={[localStyles.actionButton, { backgroundColor: r.googleTaskId ? "rgba(74,222,128,0.1)" : "rgba(167, 139, 250,0.08)" }]}
+                        style={[localStyles.actionButton, { backgroundColor: r.googleTaskId ? "rgba(74,222,128,0.1)" : "rgba(255,255,255,0.08)" }]}
                       >
                         {taskingReminderId === r.id ? (
-                          <ActivityIndicator size="small" color="#a78bfa" />
+                          <ActivityIndicator size="small" color="#ffffff" />
                         ) : (
                           <Ionicons
                             name={r.googleTaskId ? "checkmark-done-outline" : "list-outline"}
                             size={13}
-                            color={r.googleTaskId ? "#4ade80" : "#a78bfa"}
+                            color={r.googleTaskId ? "#4ade80" : "#ffffff"}
                           />
                         )}
                       </Pressable>
@@ -538,7 +538,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                       onPress={() => setEditingItem(r)}
                       style={localStyles.actionButton}
                     >
-                      <Ionicons name="create-outline" size={13} color="#a78bfa" />
+                      <Ionicons name="create-outline" size={13} color="#ffffff" />
                     </Pressable>
                     <Pressable
                       onPress={() => handleDeleteReminder(r.id)}
@@ -554,14 +554,14 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                         toast("Converted to Memory.");
                         setConvertFor(null);
                       }}>
-                        <Text style={{ fontSize: 10, color: "#8b5cf6", fontWeight: "700" }}> Memory</Text>
+                        <Text style={{ fontSize: 10, color: "#ffffff", fontWeight: "700" }}> Memory</Text>
                       </Pressable>
                       <Pressable onPress={() => {
                         dispatch({ type: "artifact", ...convertItem(r, "reminder", "artifact"), linkFrom: { kind: "reminder", id: r.id } } as any);
                         toast("Converted to Artifact.");
                         setConvertFor(null);
                       }}>
-                        <Text style={{ fontSize: 10, color: "#a78bfa", fontWeight: "700" }}> Artifact</Text>
+                        <Text style={{ fontSize: 10, color: "#ffffff", fontWeight: "700" }}> Artifact</Text>
                       </Pressable>
                     </View>
                   )}
@@ -595,7 +595,12 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
   );
 }
 
-const localStyles = StyleSheet.create({
+// withFont wraps every style with an explicit fontFamily matching its
+// fontWeight (see styles/theme.ts). Without it, fontWeight 700+ on Text
+// falls back to the OS's synthetic/faux-bold instead of the real static
+// Manrope Bold/ExtraBold file — which is exactly what produced the
+// inconsistent, oddly-thick "faux bold" text on this screen.
+const localStyles = StyleSheet.create(withFont({
   googleCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -669,7 +674,7 @@ const localStyles = StyleSheet.create({
     marginTop: 8,
   },
   calendarTitle: {
-    color: "#a78bfa",
+    color: "#ffffff",
     fontSize: 10,
     fontWeight: "900",
     letterSpacing: 2,
@@ -712,7 +717,7 @@ const localStyles = StyleSheet.create({
     borderColor: "#ffb74d",
   },
   dayCellSelected: {
-    backgroundColor: "#a78bfa",
+    backgroundColor: "#ffffff",
   },
   dayCellText: {
     fontSize: 11,
@@ -725,7 +730,7 @@ const localStyles = StyleSheet.create({
     width: 3.5,
     height: 3.5,
     borderRadius: 1.75,
-    backgroundColor: "#a78bfa",
+    backgroundColor: "#ffffff",
   },
   searchContainer: {
     flexDirection: "row",
@@ -765,10 +770,10 @@ const localStyles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 10,
-    backgroundColor: "rgba(167,139,250,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
-    shadowColor: "#a78bfa",
+    borderColor: "rgba(255,255,255,0.4)",
+    shadowColor: "#ffffff",
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
@@ -842,4 +847,4 @@ const localStyles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "rgba(255,255,255,0.04)",
   },
-});
+}));

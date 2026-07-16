@@ -15,7 +15,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles } from "../styles/theme";
+import { styles, withFont } from "../styles/theme";
 import { MODELS } from "../models";
 import { SearchBar, useSearch } from "../features";
 import { SelectionBar, SelectModeToggle } from "../components/SelectionBar";
@@ -143,7 +143,7 @@ export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openO
         {/* Quick Add file button */}
         <View style={{ paddingHorizontal: 12, marginBottom: 12 }}>
           <Pressable onPress={handleAddFile} style={localStyles.primaryButton}>
-            <Ionicons name="add" size={16} color="#a78bfa" style={{ marginRight: 4 }} />
+            <Ionicons name="add" size={16} color="#e2e8f0" style={{ marginRight: 4 }} />
             <Text style={localStyles.primaryButtonText}>Add Generated Note File</Text>
           </Pressable>
         </View>
@@ -169,7 +169,7 @@ export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openO
                     onLongPress={() => { if (!selectMode) setSelectMode(true); toggleSelected(file.id); }}
                     style={{ width: "47%", marginBottom: 12 }}
                   >
-                    <Glass style={[styles.fileTile, { padding: 0, overflow: "hidden", height: 125, borderRadius: 16, borderColor: isSelected ? "rgba(167,139,250,0.6)" : "rgba(255,255,255,0.08)" }]}>
+                    <Glass style={[styles.fileTile, { padding: 0, overflow: "hidden", height: 125, borderRadius: 16, borderColor: isSelected ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.08)" }]}>
                       {isImage ? (
                         <ImageBackground source={{ uri: file.url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                       ) : (
@@ -179,7 +179,7 @@ export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openO
                       )}
                       {selectMode && (
                         <View style={localStyles.selectCorner}>
-                          <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={20} color={isSelected ? "#a78bfa" : "#fff"} />
+                          <Ionicons name={isSelected ? "checkmark-circle" : "ellipse-outline"} size={20} color={isSelected ? "#e2e8f0" : "#fff"} />
                         </View>
                       )}
 
@@ -222,7 +222,10 @@ export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openO
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file.
+const localStyles = StyleSheet.create(withFont({
   tabContainer: {
     flexDirection: "row",
     paddingHorizontal: 12,
@@ -276,10 +279,10 @@ const localStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(167,139,250,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
-    shadowColor: "#a78bfa",
+    borderColor: "rgba(255,255,255,0.4)",
+    shadowColor: "#e2e8f0",
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
@@ -288,7 +291,7 @@ const localStyles = StyleSheet.create({
     borderRadius: 14,
   },
   primaryButtonText: {
-    color: "#a78bfa",
+    color: "#e2e8f0",
     fontSize: 11.5,
     fontWeight: "900",
     letterSpacing: 0.5,
@@ -333,8 +336,8 @@ const localStyles = StyleSheet.create({
     fontWeight: "800",
   },
   fileModel: {
-    color: "#a78bfa",
+    color: "#ffffff",
     fontSize: 8.5,
     fontWeight: "700",
   },
-});
+}));

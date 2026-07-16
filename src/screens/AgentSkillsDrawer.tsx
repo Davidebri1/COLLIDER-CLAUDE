@@ -16,7 +16,7 @@ import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
-import { styles, SCREEN_W } from "../styles/theme";
+import { styles, SCREEN_W, withFont } from "../styles/theme";
 import { MODELS, modelById } from "../models";
 import { useToast } from "../components/Toast";
 
@@ -73,7 +73,7 @@ export function AgentSkillsDrawer({
 
   const getModelColor = (modelId?: string) => {
     const found = modelById(modelId || "");
-    return found ? found.color : "#c4b5fd";
+    return found ? found.color : "#e2e8f0";
   };
 
   return (
@@ -87,7 +87,7 @@ export function AgentSkillsDrawer({
           {/* Header Title */}
           <View style={localStyles.drawerHeader}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-              <Ionicons name="settings" size={16} color="#a78bfa" />
+              <Ionicons name="settings" size={16} color="#e2e8f0" />
               <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", letterSpacing: 1.5 }}>CONSOLE CONTROL</Text>
             </View>
             <Pressable onPress={onClose} style={localStyles.closeBtn}>
@@ -152,7 +152,7 @@ export function AgentSkillsDrawer({
                           <View style={{ flex: 1, marginRight: 10, gap: 2 }}>
                             <Text style={[
                               localStyles.skillName,
-                              active && { color: "#c4b5fd" }
+                              active && { color: "#e2e8f0" }
                             ]}>
                               {sk.name}
                             </Text>
@@ -161,7 +161,7 @@ export function AgentSkillsDrawer({
                           <Ionicons
                             name={active ? "checkbox" : "square-outline"}
                             size={18}
-                            color={active ? "#c4b5fd" : "#6b6478"}
+                            color={active ? "#e2e8f0" : "#6b6478"}
                           />
                         </Pressable>
                       );
@@ -306,7 +306,7 @@ export function AgentSkillsDrawer({
               <View style={localStyles.lockedOverlay}>
                 <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={localStyles.lockedContent}>
-                  <Ionicons name="lock-closed" size={32} color="#a78bfa" style={{ marginBottom: 12 }} />
+                  <Ionicons name="lock-closed" size={32} color="#e2e8f0" style={{ marginBottom: 12 }} />
                   <Text style={localStyles.lockHeader}>PRO ACCOUNT REQUIRED</Text>
                   <Text style={localStyles.lockDesc}>
                     Custom role creation is unlocked for Pro or Elite subscription tiers.
@@ -325,7 +325,7 @@ export function AgentSkillsDrawer({
               <View style={localStyles.lockedOverlay}>
                 <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={localStyles.lockedContent}>
-                  <Ionicons name="lock-closed" size={32} color="#a78bfa" style={{ marginBottom: 12 }} />
+                  <Ionicons name="lock-closed" size={32} color="#e2e8f0" style={{ marginBottom: 12 }} />
                   <Text style={localStyles.lockHeader}>PRO ACCOUNT REQUIRED</Text>
                   <Text style={localStyles.lockDesc}>
                     Custom global instruction overrides are unlocked for Pro or Elite subscription tiers.
@@ -365,7 +365,10 @@ export function AgentSkillsDrawer({
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file.
+const localStyles = StyleSheet.create(withFont({
   drawerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -424,7 +427,7 @@ const localStyles = StyleSheet.create({
     marginBottom: 6,
   },
   infoBoxTitle: {
-    color: "#a78bfa",
+    color: "#e2e8f0",
     fontSize: 8.5,
     fontWeight: "900",
     letterSpacing: 1.5,
@@ -530,7 +533,7 @@ const localStyles = StyleSheet.create({
     lineHeight: 18,
   },
   submitBtn: {
-    backgroundColor: "#c4b5fd",
+    backgroundColor: "#e2e8f0",
     height: 38,
     borderRadius: 10,
     alignItems: "center",
@@ -538,7 +541,7 @@ const localStyles = StyleSheet.create({
     marginTop: 4,
   },
   boardHeader: {
-    color: "#a78bfa",
+    color: "#e2e8f0",
     fontSize: 8.5,
     fontWeight: "900",
     letterSpacing: 1.5,
@@ -572,7 +575,7 @@ const localStyles = StyleSheet.create({
     padding: 24,
   },
   lockHeader: {
-    color: "#a78bfa",
+    color: "#e2e8f0",
     fontSize: 13,
     fontWeight: "900",
     letterSpacing: 2,
@@ -588,7 +591,7 @@ const localStyles = StyleSheet.create({
     maxWidth: 240,
   },
   lockUpgradeBtn: {
-    backgroundColor: "#c4b5fd",
+    backgroundColor: "#e2e8f0",
     paddingHorizontal: 22,
     paddingVertical: 10,
     borderRadius: 12,
@@ -599,4 +602,4 @@ const localStyles = StyleSheet.create({
     fontSize: 11,
     letterSpacing: 1,
   },
-});
+}));

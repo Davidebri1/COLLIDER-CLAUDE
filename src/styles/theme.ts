@@ -93,11 +93,13 @@ export const styles = StyleSheet.create(withFont({
     borderRadius: 1,
   },
   wordmarkText: {
-    color: "#f0ecf8",
+    color: "#ffffff",
     fontSize: 17,
     fontWeight: "900",
     letterSpacing: 13,
-    textShadowColor: "rgba(220,210,255,0.3)",
+    // Black/white, gloss high-contrast palette: no color tint on the glow,
+    // just a bright white specular halo.
+    textShadowColor: "rgba(255,255,255,0.4)",
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 12,
   },
@@ -206,10 +208,12 @@ export const styles = StyleSheet.create(withFont({
   toolBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 7 },
   toolIcon: { color: "#6b6478", fontSize: 16 },
   // The app's namesake feature — gradient-filled and glowing, not just
-  // another muted icon in the utility row next to mic/attach/globe.
+  // another muted icon in the utility row next to mic/attach/globe. Black
+  // and white palette: the "glow" is a bright white gloss highlight, not a
+  // colored one.
   collideBtn: {
     height: 34, borderRadius: 17, overflow: "hidden",
-    shadowColor: "#ffb74d", shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 6,
+    shadowColor: "#ffffff", shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 6,
   },
   collideBtnGradient: {
     height: "100%", paddingHorizontal: 12,
@@ -226,14 +230,17 @@ export const styles = StyleSheet.create(withFont({
   disabled: { opacity: 0.38 },
   sendText: { color: "#0c0c0e", fontWeight: "900", fontSize: 14 },
 
-  // Collide track button styles
+  // Collide track button styles — glossy white pill instead of the old
+  // warm-orange gradient/glow, per the black & white / high-contrast
+  // palette: a bright white glow reads as premium gloss against the dark
+  // chrome without introducing a color.
   collideTrackBtn: {
     height: 44,
     borderRadius: 22,
     overflow: "hidden",
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#ff8a65",
+    shadowColor: "#ffffff",
     shadowOpacity: 0.55,
     shadowRadius: 10,
     shadowOffset: { width: 0, height: 0 },
@@ -286,21 +293,21 @@ export const styles = StyleSheet.create(withFont({
   summaryContainer: {
     padding: 12,
     borderRadius: 16,
-    backgroundColor: "rgba(20,12,32,0.65)",
-    borderWidth: 0, // centered box with invisible borders
-    shadowColor: "#3b82f6", // soft glowing blue text with deep shadows
-    shadowOpacity: 0.35,
+    backgroundColor: "rgba(20,20,22,0.65)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.14)", // high-contrast edge instead of a color glow
+    shadowColor: "#ffffff", // gloss, not a colored glow
+    shadowOpacity: 0.25,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 6 },
     elevation: 8,
     alignItems: "center",
   },
   summaryCenterText: {
-    color: "#93c5fd",
+    color: "#ffffff",
     fontSize: 12,
     lineHeight: 18,
     textAlign: "center",
-    textShadowColor: "rgba(59, 130, 246, 0.5)",
+    textShadowColor: "rgba(255,255,255,0.35)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },
@@ -399,22 +406,26 @@ export const styles = StyleSheet.create(withFont({
   inlineAdd: { minHeight: 52, borderRadius: 20, padding: 8, flexDirection: "row", alignItems: "center", gap: 8 },
   compact: { marginTop: 8, minHeight: 42, borderRadius: 14 },
   inlineInput: { flex: 1, color: "#fff", fontSize: 14, paddingHorizontal: 8 },
-  addBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#a78bfa", shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
+  // White, not purple — solid opaque fill needs a foreground color with
+  // real contrast, and every usage of addBtn already draws its "+" in
+  // black, so white is the correct high-contrast counterpart, not a leftover
+  // accident.
+  addBtn: { width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", backgroundColor: "#ffffff", shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4 },
   primaryBtn: {
     borderRadius: 16, padding: 12, alignItems: "center", marginTop: 8,
-    backgroundColor: "rgba(167,139,250,0.18)",
-    borderWidth: 1, borderColor: "rgba(167,139,250,0.5)",
-    shadowColor: "#a78bfa", shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 5,
+    backgroundColor: "rgba(255,255,255,0.14)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.4)",
+    shadowColor: "#ffffff", shadowOpacity: 0.3, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 5,
   },
-  primaryText: { color: "#a78bfa", fontWeight: "800" },
+  primaryText: { color: "#ffffff", fontWeight: "800" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   segment: { flexDirection: "row", gap: 8, marginBottom: 10 },
   segmentBtn: { borderRadius: 15, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "rgba(255,255,255,0.05)" },
   segmentActive: {
-    backgroundColor: "rgba(167,139,250,0.18)",
-    borderWidth: 1, borderColor: "rgba(167,139,250,0.35)",
+    backgroundColor: "rgba(255,255,255,0.16)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.45)",
   },
-  miniBtn: { marginTop: 8, alignSelf: "flex-start", borderRadius: 12, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: "#a78bfa" },
+  miniBtn: { marginTop: 8, alignSelf: "flex-start", borderRadius: 12, paddingVertical: 6, paddingHorizontal: 10, backgroundColor: "#ffffff" },
   fileTile: { width: "47%", aspectRatio: 1, borderRadius: 20, alignItems: "center", justifyContent: "center", padding: 12 },
   fileIcon: { color: "#fff", fontSize: 34, marginBottom: 8 },
   marketTile: { width: "100%", height: "100%", aspectRatio: 0.72, borderRadius: 20, justifyContent: "space-between" },
@@ -438,15 +449,15 @@ export const styles = StyleSheet.create(withFont({
     paddingVertical: 10,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "rgba(167, 139, 250, 0.4)",
-    shadowColor: "#a78bfa",
-    shadowOpacity: 0.4,
+    borderColor: "rgba(255, 255, 255, 0.35)",
+    shadowColor: "#ffffff",
+    shadowOpacity: 0.3,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
     elevation: 6,
   },
   toastText: {
-    color: "#fff7d7",
+    color: "#ffffff",
     fontSize: 12,
     fontWeight: "700",
   },
@@ -508,13 +519,13 @@ export const styles = StyleSheet.create(withFont({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: "#a78bfa",
+    backgroundColor: "#e2e8f0",
   },
   playPauseBtn: {
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: "#a78bfa",
+    backgroundColor: "#e2e8f0",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -771,5 +782,5 @@ export const WALLPAPERS: {
   { id: "inferno",  name: "Inferno",        colors: ["#f46b32", "#31135e", "#07040d"], premium: true },
   { id: "quartz",   name: "Quartz",         colors: ["#65d5cf", "#ab54d8", "#07040d"], premium: true },
   { id: "magnolia", name: "Magnolia",       colors: ["#e8ae98", "#c4488c", "#07040d"] },
-  { id: "voyager",  name: "Voyager",        colors: ["#a78bfa", "#16184f", "#07040d"], premium: true },
+  { id: "voyager",  name: "Voyager",        colors: ["#e2e8f0", "#16184f", "#07040d"], premium: true },
 ];

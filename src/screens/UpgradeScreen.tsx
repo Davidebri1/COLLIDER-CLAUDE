@@ -49,8 +49,8 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
   };
 
   const getTierGradient = (tier: Tier): [string, string] => {
-    if (tier === "elite") return ["#d39e00", "#a78bfa"];
-    if (tier === "pro") return ["#6d28d9", "#c4b5fd"];
+    if (tier === "elite") return ["#d39e00", "#e2e8f0"];
+    if (tier === "pro") return ["#dc2626", "#e2e8f0"];
     return ["#3b3846", "#8d8398"]; // free
   };
 
@@ -182,9 +182,9 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
         })}
 
         {/* Enterprise Tier & Contact Form */}
-        <Glass isCard style={[localStyles.planCard, { borderColor: "#c084fc40", marginTop: 4 }]}>
+        <Glass isCard style={[localStyles.planCard, { borderColor: "rgba(255,255,255,0.25)", marginTop: 4 }]}>
           <LinearGradient
-            colors={["#c084fc26", "#c084fc00"]}
+            colors={["rgba(255,255,255,0.15)", "rgba(255,255,255,0)"]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill}
@@ -192,21 +192,21 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
           />
           <View style={localStyles.planHeader}>
             <View>
-              <Text style={[localStyles.planTitle, { color: "#c084fc" }]}>ENTERPRISE</Text>
+              <Text style={[localStyles.planTitle, { color: "#ffffff" }]}>ENTERPRISE</Text>
               <Text style={localStyles.planPrice}>Custom Contract</Text>
             </View>
-            <View style={[localStyles.activeBadge, { backgroundColor: "rgba(192,132,252,0.15)", borderWidth: 1, borderColor: "rgba(192,132,252,0.4)" }]}>
-              <Text style={[localStyles.activeBadgeText, { color: "#c084fc" }]}>B2B TEAMS</Text>
+            <View style={[localStyles.activeBadge, { backgroundColor: "rgba(255,255,255,0.15)", borderWidth: 1, borderColor: "rgba(255,255,255,0.4)" }]}>
+              <Text style={[localStyles.activeBadgeText, { color: "#ffffff" }]}>B2B TEAMS</Text>
             </View>
           </View>
 
           <View style={{ gap: 8, marginVertical: 6 }}>
             <View style={localStyles.featureRow}>
-              <Ionicons name="shield-checkmark" size={13} color="#c084fc" />
+              <Ionicons name="shield-checkmark" size={13} color="#ffffff" />
               <Text style={localStyles.featureText}>Unlimited API access, dedicated model hosting, SLA guarantees.</Text>
             </View>
             <View style={localStyles.featureRow}>
-              <Ionicons name="shield-checkmark" size={13} color="#c084fc" />
+              <Ionicons name="shield-checkmark" size={13} color="#ffffff" />
               <Text style={localStyles.featureText}>Dedicated support manager and custom data privacy compliance.</Text>
             </View>
           </View>
@@ -237,7 +237,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
             
             <Pressable onPress={handleEnterpriseSubmit} disabled={submitting} style={localStyles.submitBtn}>
               <LinearGradient
-                colors={["#c084fc", "#8b5cf6"]}
+                colors={["#ffffff", "#d8d8dc"]}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 1, y: 0 }}
                 style={localStyles.gradientBtnBg}

@@ -14,7 +14,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider, newId } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, SCREEN_W } from "../styles/theme";
+import { styles, SCREEN_W, withFont } from "../styles/theme";
 import { MODELS } from "../models";
 import { SearchBar, useSearch } from "../features";
 import { SelectionBar, SelectModeToggle, SelectDot } from "../components/SelectionBar";
@@ -156,7 +156,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                   }}
                   style={localStyles.addButton}
                 >
-                  <Ionicons name="add" size={18} color="#a78bfa" />
+                  <Ionicons name="add" size={18} color="#e2e8f0" />
                 </Pressable>
               </View>
             </View>
@@ -173,7 +173,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                   const projectModel = p.modelId ? (MODELS.find(x => x.id === p.modelId)?.short || p.modelId) : "Global Context";
                   const isSelected = selectedIds.has(p.id);
                   return (
-                    <Glass key={p.id} style={[localStyles.projectCard, isSelected && { borderColor: "rgba(167,139,250,0.5)" }]}>
+                    <Glass key={p.id} style={[localStyles.projectCard, isSelected && { borderColor: "rgba(255,255,255,0.5)" }]}>
                       {/* Project Header */}
                       <View style={localStyles.projectHeader}>
                         {selectMode && (
@@ -194,7 +194,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                             onPress={() => setEditingProject(p)}
                             style={localStyles.headerActionBtn}
                           >
-                            <Ionicons name="settings-outline" size={12} color="#a78bfa" />
+                            <Ionicons name="settings-outline" size={12} color="#e2e8f0" />
                           </Pressable>
                           <Pressable 
                             onPress={() => {
@@ -219,7 +219,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                               <Ionicons 
                                 name={t.done ? "checkbox" : "square-outline"} 
                                 size={15} 
-                                color={t.done ? "#a78bfa" : "rgba(255,255,255,0.4)"} 
+                                color={t.done ? "#e2e8f0" : "rgba(255,255,255,0.4)"} 
                               />
                             </Pressable>
                             
@@ -267,7 +267,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                           disabled={!(task[p.id] || "").trim()}
                           style={[localStyles.taskAddButton, !(task[p.id] || "").trim() && { opacity: 0.4 }]}
                         >
-                          <Ionicons name="checkmark" size={13} color="#a78bfa" />
+                          <Ionicons name="checkmark" size={13} color="#e2e8f0" />
                         </Pressable>
                       </View>
                     </Glass>
@@ -318,7 +318,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                 doneTasks.map((t) => (
                   <Glass key={t.id} style={[localStyles.boardCard, { opacity: 0.6 }]}>
                     <Pressable onPress={() => handleToggleTask(t.projectId, t.id)} style={{ paddingRight: 8 }}>
-                      <Ionicons name="checkbox" size={15} color="#a78bfa" />
+                      <Ionicons name="checkbox" size={15} color="#e2e8f0" />
                     </Pressable>
                     <Pressable onPress={() => setEditingTask({ projectId: t.projectId, task: t })} style={{ flex: 1, gap: 3 }}>
                       <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 12.5, fontWeight: "600", textDecorationLine: "line-through" }}>{t.title}</Text>
@@ -381,7 +381,10 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
   );
 }
 
-const localStyles = StyleSheet.create({
+// See RemindersScreen.tsx for why withFont is required here: without it,
+// fontWeight 700+ resolves to synthetic faux-bold instead of the real
+// static Manrope Bold/ExtraBold file.
+const localStyles = StyleSheet.create(withFont({
   tabContainer: {
     flexDirection: "row",
     paddingHorizontal: 12,
@@ -452,10 +455,10 @@ const localStyles = StyleSheet.create({
     width: 26,
     height: 26,
     borderRadius: 10,
-    backgroundColor: "rgba(167,139,250,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
-    shadowColor: "#a78bfa",
+    borderColor: "rgba(255,255,255,0.4)",
+    shadowColor: "#e2e8f0",
     shadowOpacity: 0.3,
     shadowRadius: 6,
     shadowOffset: { width: 0, height: 0 },
@@ -495,7 +498,7 @@ const localStyles = StyleSheet.create({
     width: 4,
     height: 4,
     borderRadius: 2,
-    backgroundColor: "#c4b5fd",
+    backgroundColor: "#e2e8f0",
   },
   modelText: {
     color: "#6b6478",
@@ -552,14 +555,14 @@ const localStyles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 6,
-    backgroundColor: "rgba(167,139,250,0.15)",
+    backgroundColor: "rgba(255,255,255,0.15)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.4)",
+    borderColor: "rgba(255,255,255,0.4)",
     alignItems: "center",
     justifyContent: "center",
   },
   boardHeader: {
-    color: "#a78bfa",
+    color: "#e2e8f0",
     fontSize: 9.5,
     fontWeight: "900",
     letterSpacing: 1.5,
@@ -575,4 +578,4 @@ const localStyles = StyleSheet.create({
     padding: 10,
     alignItems: "center",
   },
-});
+}));

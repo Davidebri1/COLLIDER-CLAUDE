@@ -39,7 +39,7 @@ export function CornerVolumeControl() {
               <Pressable
                 key={v}
                 onPress={() => dispatch({ type: "setPlayerVolume", volume: v })}
-                style={{ width: 6, height: 18, borderRadius: 3, backgroundColor: !muted && volume >= v ? "#a78bfa" : "rgba(255,255,255,0.15)" }}
+                style={{ width: 6, height: 18, borderRadius: 3, backgroundColor: !muted && volume >= v ? "#ffffff" : "rgba(255,255,255,0.15)" }}
               />
             ))}
           </>

@@ -79,21 +79,21 @@ export function Picker({
                       style={{
                         paddingHorizontal: 20, paddingVertical: 14,
                         flexDirection: "row", justifyContent: "space-between", alignItems: "center",
-                        backgroundColor: selected ? "rgba(167, 139, 250,0.08)" : "transparent",
+                        backgroundColor: selected ? "rgba(255,255,255,0.08)" : "transparent",
                         borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)",
                       }}
                     >
                       <Text
                         style={{
-                          color: selected ? "#a78bfa" : "rgba(255,255,255,0.85)",
+                          color: selected ? "#ffffff" : "rgba(255,255,255,0.85)",
                           fontSize: 14, fontWeight: selected ? "800" : "500",
-                          textShadowColor: selected ? "rgba(167, 139, 250,0.4)" : "transparent",
+                          textShadowColor: selected ? "rgba(255,255,255,0.4)" : "transparent",
                           textShadowRadius: selected ? 8 : 0,
                         }}
                       >
                         {o.label}
                       </Text>
-                      {selected && <Ionicons name="checkmark-circle" size={17} color="#a78bfa" />}
+                      {selected && <Ionicons name="checkmark-circle" size={17} color="#ffffff" />}
                     </Pressable>
                   );
                 })}

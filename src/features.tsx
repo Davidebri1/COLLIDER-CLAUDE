@@ -97,7 +97,16 @@ export function MessageActions({
 // ── Settings screen ────────────────────────────────────────────────────────
 export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: () => void; openAuth: () => void; openWallpapers: () => void }) {
   const { state, dispatch } = useCollider();
-  const accentHues = [12, 45, 140, 190, 260, 320];
+
+  // Fixed silver/chrome selected-state — not a user-customizable hue. A
+  // rainbow swatch picker here was letting the whole app's "active" tint be
+  // set to any arbitrary saturated color, which is exactly the kind of
+  // ad-hoc per-screen color decision the app's palette rules exist to
+  // prevent. "Sleek black, sleek white gloss" means the neutral/metallic
+  // tones do this job, not another hue to defend or swap out later.
+  const activeTint = "rgba(226,232,240,0.16)";
+  const activeBorder = "rgba(226,232,240,0.55)";
+  const activeText = "#e2e8f0";
 
   const DENSITIES: Array<{ value: "compact" | "comfortable" | "spacious"; label: string }> = [
     { value: "compact", label: "Compact" },
@@ -162,7 +171,7 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                 Zero daily & monthly counters · refill credits to tier pool
               </Text>
             </View>
-            <Text style={{ color: "#a46cff", fontSize: 13, fontWeight: "700" }}>RESET</Text>
+            <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "700" }}>RESET</Text>
           </Pressable>
         </SettingsSection>
 
@@ -184,9 +193,9 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                 <Pressable
                   key={m.value}
                   onPress={() => dispatch({ type: "setGlobalDefaultChatMode", value: m.value })}
-                  style={[styles.segChip, state.globalDefaultChatMode === m.value && styles.segChipActive]}
+                  style={[styles.segChip, state.globalDefaultChatMode === m.value && { backgroundColor: activeTint, borderColor: activeBorder }]}
                 >
-                  <Text style={[styles.segChipText, state.globalDefaultChatMode === m.value && styles.segChipTextActive]}>{m.label}</Text>
+                  <Text style={[styles.segChipText, state.globalDefaultChatMode === m.value && { color: activeText, fontWeight: "800" as const }]}>{m.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -205,9 +214,9 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                 <Pressable
                   key={d.value}
                   onPress={() => dispatch({ type: "setMessageDensity", value: d.value })}
-                  style={[styles.segChip, state.messageDensity === d.value && styles.segChipActive]}
+                  style={[styles.segChip, state.messageDensity === d.value && { backgroundColor: activeTint, borderColor: activeBorder }]}
                 >
-                  <Text style={[styles.segChipText, state.messageDensity === d.value && styles.segChipTextActive]}>{d.label}</Text>
+                  <Text style={[styles.segChipText, state.messageDensity === d.value && { color: activeText, fontWeight: "800" as const }]}>{d.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -222,9 +231,9 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                 <Pressable
                   key={f.value}
                   onPress={() => dispatch({ type: "setFontSize", value: f.value })}
-                  style={[styles.segChip, state.fontSize === f.value && styles.segChipActive]}
+                  style={[styles.segChip, state.fontSize === f.value && { backgroundColor: activeTint, borderColor: activeBorder }]}
                 >
-                  <Text style={[styles.segChipText, state.fontSize === f.value && styles.segChipTextActive]}>{f.label}</Text>
+                  <Text style={[styles.segChipText, state.fontSize === f.value && { color: activeText, fontWeight: "800" as const }]}>{f.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -239,19 +248,6 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
 
         {/* ── Appearance ── */}
         <SettingsSection title="Appearance">
-          <View style={styles.accentRow}>
-            {accentHues.map((hue) => (
-              <Pressable
-                key={hue}
-                onPress={() => dispatch({ type: "themeAccent", hue })}
-                style={[
-                  styles.swatch,
-                  { backgroundColor: `hsl(${hue}, 90%, 62%)` },
-                  state.themeAccentHue === hue && styles.swatchActive,
-                ]}
-              />
-            ))}
-          </View>
           <SettingsRow label="Wallpaper & themes" hint="Free and premium backgrounds" onPress={openWallpapers} />
         </SettingsSection>
 
@@ -268,9 +264,9 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                   <Pressable
                     key={lang}
                     onPress={() => dispatch({ type: "setLanguage", value: lang })}
-                    style={[styles.segChip, state.language === lang && styles.segChipActive]}
+                    style={[styles.segChip, state.language === lang && { backgroundColor: activeTint, borderColor: activeBorder }]}
                   >
-                    <Text style={[styles.segChipText, state.language === lang && styles.segChipTextActive]}>{lang}</Text>
+                    <Text style={[styles.segChipText, state.language === lang && { color: activeText, fontWeight: "800" as const }]}>{lang}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -364,7 +360,7 @@ function SettingsToggleRow({ label, hint, value, onValueChange }: { label: strin
         <Text style={styles.settingsLabel}>{label}</Text>
         {hint ? <Text style={styles.settingsHint}>{hint}</Text> : null}
       </View>
-      <Switch value={value} onValueChange={onValueChange} trackColor={{ true: "#a78bfa", false: "#3b334a" }} thumbColor="#fff" />
+      <Switch value={value} onValueChange={onValueChange} trackColor={{ true: "#e2e8f0", false: "#3b334a" }} thumbColor="#fff" />
     </View>
   );
 }
@@ -441,7 +437,7 @@ export function AuthScreen({ goBack }: { goBack: () => void }) {
 // ── Consensus history viewer ───────────────────────────────────────────────
 export function ConsensusRunCard({ run, onOpen, onDelete }: { run: ConsensusRun; onOpen: () => void; onDelete: () => void }) {
   const pct = Math.round((run.ratioN / Math.max(run.ratioM, 1)) * 100);
-  const color = pct >= 66 ? "#4be6b1" : pct >= 40 ? "#a78bfa" : "#ff6b6b";
+  const color = pct >= 66 ? "#4be6b1" : pct >= 40 ? "#e2e8f0" : "#ff6b6b";
   return (
     <Pressable onPress={onOpen}>
       <View style={styles.consensusItem}>
@@ -481,7 +477,7 @@ const styles = StyleSheet.create(withFont({
   sheetPreview: { color: "#f4edf9", fontSize: 13, lineHeight: 18 },
   sheetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 6 },
   sheetBtn: { width: "22%", aspectRatio: 1, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#241b38", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", gap: 4 },
-  sheetIcon: { color: "#a78bfa", fontSize: 20 },
+  sheetIcon: { color: "#e2e8f0", fontSize: 20 },
   sheetLabel: { color: "#f4edf9", fontSize: 11, fontWeight: "600" },
 
   section: { gap: 8 },
@@ -494,17 +490,22 @@ const styles = StyleSheet.create(withFont({
 
   accentRow: { flexDirection: "row", gap: 10, padding: 16, flexWrap: "wrap" },
   swatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: "transparent" },
-  swatchActive: { borderColor: "#fff7d7", shadowColor: "#fff7d7", shadowOpacity: 0.7, shadowRadius: 6, elevation: 3 },
+  // Selection ring only — a flat border, not a blurred shadow halo. This is
+  // the one "which hue is picked" indicator that intentionally does NOT
+  // derive from the picked hue itself (a ring drawn in the same color as
+  // the swatch it's ringing would be invisible), so it stays a neutral
+  // cream instead of tinting to whatever's selected.
+  swatchActive: { borderColor: "#fff7d7" },
 
   authIntro: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 19, paddingHorizontal: 4 },
   authCard: { padding: 18, borderRadius: 20, gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.02)" },
   authInput: { color: "#fff", fontSize: 14, backgroundColor: "rgba(255,255,255,0.03)", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   authError: { color: "#ef4444", fontSize: 11.5, fontWeight: "600", marginTop: -4 },
   authPrimary: {
-    backgroundColor: "rgba(167,139,250,0.18)",
+    backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
-    borderColor: "rgba(167,139,250,0.5)",
-    shadowColor: "#a78bfa",
+    borderColor: "rgba(255,255,255,0.5)",
+    shadowColor: "#e2e8f0",
     shadowOpacity: 0.35,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 0 },
@@ -513,7 +514,7 @@ const styles = StyleSheet.create(withFont({
     borderRadius: 14,
     alignItems: "center",
   },
-  authPrimaryText: { color: "#a78bfa", fontWeight: "800" },
+  authPrimaryText: { color: "#e2e8f0", fontWeight: "800" },
   divider: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginVertical: 4 },
   dividerText: { color: "#8d8398", fontSize: 11, letterSpacing: 2 },
   authProvider: { padding: 13, borderRadius: 14, alignItems: "center", backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
@@ -536,20 +537,9 @@ const styles = StyleSheet.create(withFont({
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
-  segChipActive: {
-    backgroundColor: "rgba(167,139,250,0.18)",
-    borderColor: "rgba(167,139,250,0.5)",
-  },
   segChipText: {
     color: "#a79bb5",
     fontSize: 11,
     fontWeight: "600",
-  },
-  segChipTextActive: {
-    color: "#a78bfa",
-    fontWeight: "800",
-    textShadowColor: "#a78bfa",
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 6,
   },
 }));
