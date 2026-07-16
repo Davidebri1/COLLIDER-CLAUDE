@@ -682,11 +682,18 @@ export const styles = StyleSheet.create(withFont({
 
 
 
+export type MusicTrack = { id: string; title: string; url: string };
+
 export interface DynamicTheme {
   id: string;
   name: string;
   source: any;
   premium?: boolean;
+  // Individual purchase price (spec: $2.99–$7.99 per live wallpaper, not
+  // tier-bundled) and its ≥5 bundled tracks. Only meaningful when
+  // premium — free/preset themes leave these undefined.
+  price?: string;
+  tracks?: MusicTrack[];
 }
 
 export let FREE_THEMES: DynamicTheme[] = [];
@@ -702,6 +709,14 @@ try {
   // Empty directory or context unsupported
 }
 
+// Default price/track-count for any real .mp4 dropped into assets/themes/premium
+// — filenames aren't going to encode a price or a curated tracklist, so a real
+// wallpaper needs its price/tracks set by hand once it exists. This just keeps
+// the shape correct (a premium theme without explicit metadata still has a
+// price and an empty tracklist, not undefined) so the UI doesn't need to
+// special-case "real asset with no metadata yet."
+const DEFAULT_PREMIUM_PRICE = "$4.99";
+
 export let PREMIUM_THEMES: DynamicTheme[] = [];
 try {
   const context = (require as any).context("../../assets/themes/premium", false, /\.(mp4|m4v|mov)$/);
@@ -710,10 +725,34 @@ try {
     name: key.replace(/^\.\//, "").replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
     source: context(key),
     premium: true,
+    price: DEFAULT_PREMIUM_PRICE,
+    tracks: [],
   }));
 } catch (e) {
   // Empty directory or context unsupported
 }
+
+// No real live-wallpaper video assets exist yet (confirmed in SPEC.md's own
+// audit) — this one mock entry exists so the purchase → owned → player
+// pipeline is actually testable end-to-end right now, using well-known
+// public sample media (Google's standard sample video, SoundHelix's
+// standard freely-licensed test tracks — the same files used in countless
+// video/audio-player demos). Delete this once a real priced wallpaper
+// exists; it is clearly not production content.
+PREMIUM_THEMES.push({
+  id: "premium_mock_aurora",
+  name: "Aurora Drift (sample)",
+  source: { uri: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
+  premium: true,
+  price: "$4.99",
+  tracks: [
+    { id: "aurora_t1", title: "Drift I", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+    { id: "aurora_t2", title: "Drift II", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+    { id: "aurora_t3", title: "Drift III", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
+    { id: "aurora_t4", title: "Drift IV", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
+    { id: "aurora_t5", title: "Drift V", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+  ],
+});
 
 const bg = require("../../assets/bg-default.jpg");
 

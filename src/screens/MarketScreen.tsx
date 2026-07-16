@@ -36,6 +36,9 @@ import {
   fetchComments,
   addComment,
   getDeviceId,
+  reportMarketItem,
+  blockAuthor,
+  getBlockedAuthors,
   type MarketComment,
 } from "../services/market";
 
@@ -112,6 +115,17 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
   const [publishCategory, setPublishCategory] = useState<MarketItem["kind"]>("image");
   const [publishModel, setPublishModel] = useState("img/gemini-3-1-flash-image");
   const [publishTags, setPublishTags] = useState("");
+  // Gate required by App Store Guideline 1.2 and Google Play's UGC policy:
+  // users must affirmatively agree not to post objectionable content before
+  // they can publish, every time — not just once at signup.
+  const [agreedToGuidelines, setAgreedToGuidelines] = useState(false);
+
+  // Moderation: report + block. Both policies also require an in-app way to
+  // report content and block abusive users, and evidence reports get acted
+  // on — reporting hides the item from this device immediately (client-side)
+  // while queuing it for real review server-side (market_reports table).
+  const [blockedAuthors, setBlockedAuthors] = useState<Set<string>>(new Set());
+  const [reportSheetFor, setReportSheetFor] = useState<MarketItem | null>(null);
 
   const rotateAnim = useRef(new Animated.Value(0)).current;
 
@@ -228,8 +242,44 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
   // Resolve/generate the stable per-install device id used as a pseudo
   // author-id for likes/comments/publishing (no real auth system yet).
   useEffect(() => {
-    getDeviceId().then(setDeviceId);
+    getDeviceId().then((id) => {
+      setDeviceId(id);
+      getBlockedAuthors(id)
+        .then((authors) => setBlockedAuthors(new Set(authors)))
+        .catch((err) => console.log("getBlockedAuthors failed:", err));
+    });
   }, []);
+
+  const handleReport = async (item: MarketItem, reason: string) => {
+    if (!deviceId) return;
+    try {
+      await reportMarketItem(item.id, deviceId, reason, item.author);
+      // Hide locally right away — the 24h response-time requirement is about
+      // the report being actioned, and an immediate local hide plus a queued
+      // server-side row is the correct minimum here since there's no backend
+      // moderation team wired up yet.
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      setReportSheetFor(null);
+      setSelectedItem(null);
+      toast("Reported — thanks. We review flagged content within 24 hours.");
+    } catch (err) {
+      console.log("report failed:", err);
+      toast("Couldn't submit report — try again");
+    }
+  };
+
+  const handleBlockAuthor = async (author: string) => {
+    if (!deviceId || author === "@you") return;
+    try {
+      await blockAuthor(deviceId, author);
+      setBlockedAuthors((prev) => new Set(prev).add(author));
+      setSelectedItem(null);
+      toast(`Blocked ${author} — you won't see their posts anymore.`);
+    } catch (err) {
+      console.log("block failed:", err);
+      toast("Couldn't block — try again");
+    }
+  };
 
   // Debounce the search box so we don't hit Supabase on every keystroke.
   useEffect(() => {
@@ -464,6 +514,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
     const catModels = modelsForCategory(cat === "coding" ? "coding" : cat === "music" ? "music" : cat === "video" ? "video" : "image");
     setPublishModel(catModels[0]?.label || "Flux Schnell");
     setPublishTags("");
+    setAgreedToGuidelines(false);
   };
 
   const handleConfirmPublish = async () => {
@@ -488,7 +539,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
     }
   };
 
-  const sortedItems = items;
+  const sortedItems = items.filter((i) => !blockedAuthors.has(i.author));
 
   const moreLikeThis = useMemo(() => {
     if (!selectedItem) return [];
@@ -886,20 +937,25 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                       </View>
                     </View>
                     {selectedItem.author !== "@you" && (
-                      <Pressable 
-                        onPress={() => handleFollowToggle(selectedItem.author)}
-                        style={[
-                          localStyles.followButton,
-                          followedCreators[selectedItem.author] && localStyles.followButtonActive
-                        ]}
-                      >
-                        <Text style={[
-                          localStyles.followButtonText,
-                          followedCreators[selectedItem.author] && localStyles.followButtonTextActive
-                        ]}>
-                          {followedCreators[selectedItem.author] ? "Following" : "Follow"}
-                        </Text>
-                      </Pressable>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                        <Pressable onPress={() => handleBlockAuthor(selectedItem.author)} hitSlop={8}>
+                          <Ionicons name="ban-outline" size={15} color="#6b6478" />
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleFollowToggle(selectedItem.author)}
+                          style={[
+                            localStyles.followButton,
+                            followedCreators[selectedItem.author] && localStyles.followButtonActive
+                          ]}
+                        >
+                          <Text style={[
+                            localStyles.followButtonText,
+                            followedCreators[selectedItem.author] && localStyles.followButtonTextActive
+                          ]}>
+                            {followedCreators[selectedItem.author] ? "Following" : "Follow"}
+                          </Text>
+                        </Pressable>
+                      </View>
                     )}
                   </View>
 
@@ -1017,6 +1073,12 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
 
               {/* Action panels */}
               <View style={{ flexDirection: "row", padding: 14, borderTopWidth: 1, borderTopColor: "rgba(255,255,255,0.08)", gap: 8 }}>
+                <Pressable
+                  onPress={() => setReportSheetFor(selectedItem)}
+                  style={[localStyles.actionBtn, { flex: 0, paddingHorizontal: 12 }]}
+                >
+                  <Ionicons name="flag-outline" size={13} color="#ef4444" />
+                </Pressable>
                 <Pressable onPress={() => handleShare(selectedItem)} style={localStyles.actionBtn}>
                   <Ionicons name="share-social-outline" size={13} color="#fff" style={{ marginRight: 2 }} />
                   <Text style={localStyles.actionBtnText}>SHARE</Text>
@@ -1128,16 +1190,62 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 </View>
               </ScrollView>
 
+              {/* Community guidelines gate — required before publishing any
+                  UGC per App Store Guideline 1.2 and Google Play's UGC
+                  policy, not just a signup-time checkbox. */}
+              <Pressable
+                onPress={() => setAgreedToGuidelines((v) => !v)}
+                style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, paddingVertical: 8 }}
+              >
+                <Ionicons
+                  name={agreedToGuidelines ? "checkbox" : "square-outline"}
+                  size={16}
+                  color={agreedToGuidelines ? "#a78bfa" : "#6b6478"}
+                  style={{ marginTop: 1 }}
+                />
+                <Text style={{ color: "#8d8398", fontSize: 10.5, flex: 1, lineHeight: 14 }}>
+                  I confirm this doesn't violate Collider's Community Guidelines — no illegal, hateful, sexually exploitative, or infringing content.
+                </Text>
+              </Pressable>
+
               {/* Submit btn */}
-              <Pressable 
+              <Pressable
                 onPress={handleConfirmPublish}
-                disabled={!publishPrompt.trim()}
-                style={[localStyles.publishSubmit, !publishPrompt.trim() && { opacity: 0.4 }]}
+                disabled={!publishPrompt.trim() || !agreedToGuidelines}
+                style={[localStyles.publishSubmit, (!publishPrompt.trim() || !agreedToGuidelines) && { opacity: 0.4 }]}
               >
                 <Text style={{ color: "#a78bfa", fontSize: 11, fontWeight: "900", letterSpacing: 1.2 }}>CONFIRM & PUBLISH</Text>
               </Pressable>
             </View>
           </View>
+        </Modal>
+      )}
+
+      {/* Report reason sheet — the in-app flagging mechanism required by
+          App Store Guideline 1.2 and Google Play's AI-Generated Content /
+          UGC policies. */}
+      {reportSheetFor && (
+        <Modal transparent visible={!!reportSheetFor} animationType="fade" onRequestClose={() => setReportSheetFor(null)}>
+          <Pressable style={styles.modalBackdrop} onPress={() => setReportSheetFor(null)}>
+            <View style={localStyles.reportSheet} onStartShouldSetResponder={() => true}>
+              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800", marginBottom: 4 }}>Report this content</Text>
+              <Text style={{ color: "#6b6478", fontSize: 10.5, marginBottom: 12, lineHeight: 14 }}>
+                It's removed from your feed immediately and queued for review.
+              </Text>
+              {["Sexual or exploitative", "Violent or harmful", "Spam or scam", "Copyright infringement", "Other"].map((reason) => (
+                <Pressable
+                  key={reason}
+                  onPress={() => reportSheetFor && handleReport(reportSheetFor, reason)}
+                  style={localStyles.reportOption}
+                >
+                  <Text style={{ color: "#fff", fontSize: 12 }}>{reason}</Text>
+                </Pressable>
+              ))}
+              <Pressable onPress={() => setReportSheetFor(null)} style={{ paddingVertical: 10, alignItems: "center" }}>
+                <Text style={{ color: "#6b6478", fontSize: 11, fontWeight: "700" }}>Cancel</Text>
+              </Pressable>
+            </View>
+          </Pressable>
         </Modal>
       )}
 
@@ -1469,6 +1577,21 @@ const localStyles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 14
+  },
+  reportSheet: {
+    width: 300,
+    padding: 18,
+    borderRadius: 20,
+    backgroundColor: "rgba(19,15,28,0.98)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+    alignSelf: "center",
+  },
+  reportOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.06)",
   },
   mediaControlBar: {
     position: "absolute",

@@ -200,3 +200,52 @@ export async function addComment(itemId: string, deviceId: string, authorLabel: 
   if (error) throw error;
   return data as MarketComment;
 }
+
+// ── Moderation: report + block ──────────────────────────────────────────────
+// Required before Market's user-generated content can pass App Store
+// Guideline 1.2 or Google Play's UGC / AI-Generated Content policies — both
+// now require an in-app report/flag mechanism and a way to block abusive
+// users. See supabase/migrations/20260715000000_market_moderation.sql for
+// the market_reports / user_blocks tables this reads and writes.
+
+export async function reportMarketItem(
+  itemId: string,
+  deviceId: string,
+  reason: string,
+  reportedAuthor?: string,
+): Promise<void> {
+  const { error } = await supabase.from("market_reports").insert({
+    item_id: itemId,
+    reporter_device_id: deviceId,
+    reported_author: reportedAuthor || null,
+    reason,
+  });
+  if (error) throw error;
+}
+
+export async function blockAuthor(deviceId: string, author: string): Promise<void> {
+  const { error } = await supabase
+    .from("user_blocks")
+    .insert({ blocker_device_id: deviceId, blocked_author: author });
+  // A unique-violation here just means it was already blocked — treat that
+  // as success rather than surfacing an error, same pattern as toggleLike.
+  if (error && (error as any).code !== "23505") throw error;
+}
+
+export async function unblockAuthor(deviceId: string, author: string): Promise<void> {
+  const { error } = await supabase
+    .from("user_blocks")
+    .delete()
+    .eq("blocker_device_id", deviceId)
+    .eq("blocked_author", author);
+  if (error) throw error;
+}
+
+export async function getBlockedAuthors(deviceId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("user_blocks")
+    .select("blocked_author")
+    .eq("blocker_device_id", deviceId);
+  if (error) throw error;
+  return (data || []).map((r: any) => r.blocked_author as string);
+}

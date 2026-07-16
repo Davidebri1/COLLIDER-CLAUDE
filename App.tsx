@@ -108,6 +108,7 @@ import { PromptComposer } from "./src/components/PromptComposer";
 import { ConsensusModal } from "./src/components/ConsensusDrawer";
 import { ToastProvider, useToast } from "./src/components/Toast";
 import { InlineSearch } from "./src/components/InlineSearch";
+import { CornerVolumeControl } from "./src/components/CornerVolumeControl";
 import { Picker } from "./src/components/Picker";
 
 // Screens
@@ -429,6 +430,7 @@ function Shell() {
   return (
     <View style={styles.bg} onTouchStart={() => DeviceEventEmitter.emit("global_tap")}>
       <ThemeBackground wallpaperId={state.wallpaper} />
+      <CornerVolumeControl />
       <SafeAreaView style={styles.safe} edges={["bottom"]}>
         <KeyboardAvoidingView
           style={styles.flex}
@@ -944,19 +946,6 @@ function Home({
       {selected.length > 1 && (
         <View style={{ position: "absolute", bottom: 100, right: 20, zIndex: 99 }}>
           <NovaSun onPress={openConsensus} />
-        </View>
-      )}
-
-      {/* TEMPORARY — all 3 Collide button candidates side by side for a live
-          in-app decision. Remove this row once one is picked. */}
-      {selected.length > 1 && (
-        <View style={{ position: "absolute", bottom: 170, right: 20, zIndex: 99, flexDirection: "row", gap: 10, alignItems: "flex-end" }}>
-          {(["gold", "purple", "purple2", "v3"] as const).map((c) => (
-            <View key={c} style={{ alignItems: "center", gap: 4 }}>
-              <NovaSun size={44} candidate={c} onPress={() => {}} />
-              <Text style={{ color: "#6b6478", fontSize: 8, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>{c.toUpperCase()}</Text>
-            </View>
-          ))}
         </View>
       )}
 

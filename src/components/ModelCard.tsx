@@ -177,7 +177,7 @@ export function ModelCard({
                       fontSize={11}
                     />
                   ) : (
-                    <Text style={[styles.bodyText, { fontSize: 11, lineHeight: 15, fontWeight: "700" }]}>
+                    <Text style={[styles.bodyText, { fontSize: 11, lineHeight: 15 }]}>
                       {(m.content || "").replace(/\n{2,}/g, "\n")}
                     </Text>
                   )}

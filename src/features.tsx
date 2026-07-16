@@ -321,7 +321,18 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
         <SettingsSection title="About">
           <SettingsRow label="Collider" hint="v1.0.0 — native iOS & Android" />
           <SettingsRow label="Send feedback" hint="hello@collider.app" onPress={() => Share.share({ message: "Collider feedback: " })} />
-          <SettingsRow label="Terms & Privacy Policy" hint="View terms of service" onPress={() => {}} />
+          <SettingsRow
+            label="Terms & Privacy Policy"
+            hint="View terms of service"
+            onPress={async () => {
+              const WebBrowser = await import("expo-web-browser");
+              // TODO: point at the real, live legal pages before submitting to
+              // either store — both App Store Connect and Play Console require
+              // a reachable Privacy Policy URL, and this was previously a dead
+              // onPress that did nothing at all.
+              await WebBrowser.openBrowserAsync("https://collider.app/legal").catch(() => {});
+            }}
+          />
         </SettingsSection>
     </Page>
   );

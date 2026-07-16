@@ -143,6 +143,19 @@ type AppState = {
   customInstructions: string;
   activeSkills: string[];
   marketItems: MarketItem[];
+  // Wallpapers & Music (SPEC.md) — live video wallpapers are individually
+  // purchased, each bundled with curated tracks. ownedWallpaperIds gates
+  // both the wallpaper itself and its bundled tracks in the player.
+  ownedWallpaperIds: string[];
+  musicPlayer: {
+    trackId: string | null;
+    isPlaying: boolean;
+    volume: number; // 0..1
+    muted: boolean;
+    // Per-track on/off within the owned playlist — spec: "each track can be
+    // toggled on or off in the playlist," independent of play/pause.
+    disabledTrackIds: string[];
+  };
 };
 
 type Action =
@@ -220,7 +233,14 @@ type Action =
   | { type: "toggleSkill"; skillId: string }
   | { type: "publishToMarket"; item: Omit<MarketItem, "id" | "likes" | "likedByUser"> }
   | { type: "toggleMarketLike"; id: string }
-  | { type: "loadMoreMarket"; count: number };
+  | { type: "loadMoreMarket"; count: number }
+  | { type: "purchaseWallpaper"; wallpaperId: string }
+  | { type: "playTrack"; trackId: string }
+  | { type: "pausePlayer" }
+  | { type: "resumePlayer" }
+  | { type: "setPlayerVolume"; volume: number }
+  | { type: "togglePlayerMute" }
+  | { type: "toggleTrackEnabled"; trackId: string };
 
 const ids = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
 // Lets a caller create-then-immediately-open-for-editing: generate the id
@@ -390,6 +410,8 @@ function initialState(): AppState {
     customInstructions: "",
     activeSkills: [],
     marketItems: [...DEFAULT_MARKET_ITEMS, ...generateMoreMarketItems(82, DEFAULT_MARKET_ITEMS.length)],
+    ownedWallpaperIds: [],
+    musicPlayer: { trackId: null, isPlaying: false, volume: 0.6, muted: false, disabledTrackIds: [] },
   };
 }
 
@@ -677,6 +699,24 @@ function reducer(state: AppState, action: Action): AppState {
     case "removeConsensuses": { const ids2 = new Set(action.ids); return { ...state, consensusRuns: state.consensusRuns.filter((r) => !ids2.has(r.id)) }; }
     case "removeConversations": { const ids2 = new Set(action.ids); return { ...state, conversations: state.conversations.filter((c) => !ids2.has(c.id)) }; }
     case "wallpaper": return { ...state, wallpaper: action.wallpaper };
+    // Mocked purchase — adds to owned list locally, no real billing wired
+    // in. See WallpapersScreen.tsx for the note on why (real IAP needs
+    // explicit sign-off before it touches actual money).
+    case "purchaseWallpaper":
+      return state.ownedWallpaperIds.includes(action.wallpaperId)
+        ? state
+        : { ...state, ownedWallpaperIds: [...state.ownedWallpaperIds, action.wallpaperId] };
+    case "playTrack": return { ...state, musicPlayer: { ...state.musicPlayer, trackId: action.trackId, isPlaying: true } };
+    case "pausePlayer": return { ...state, musicPlayer: { ...state.musicPlayer, isPlaying: false } };
+    case "resumePlayer": return { ...state, musicPlayer: { ...state.musicPlayer, isPlaying: !!state.musicPlayer.trackId } };
+    case "setPlayerVolume": return { ...state, musicPlayer: { ...state.musicPlayer, volume: Math.max(0, Math.min(1, action.volume)), muted: false } };
+    case "togglePlayerMute": return { ...state, musicPlayer: { ...state.musicPlayer, muted: !state.musicPlayer.muted } };
+    case "toggleTrackEnabled": {
+      const disabled = state.musicPlayer.disabledTrackIds.includes(action.trackId)
+        ? state.musicPlayer.disabledTrackIds.filter((id) => id !== action.trackId)
+        : [...state.musicPlayer.disabledTrackIds, action.trackId];
+      return { ...state, musicPlayer: { ...state.musicPlayer, disabledTrackIds: disabled } };
+    }
     case "themeAccent": return { ...state, themeAccentHue: action.hue };
     case "autoGen": return { ...state, autoGen: action.enabled };
     case "incognito": return { ...state, incognito: { ...state.incognito, [action.category]: action.enabled } };
