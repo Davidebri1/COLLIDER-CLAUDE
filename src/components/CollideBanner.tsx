@@ -1,6 +1,6 @@
 import React from "react";
 import { View, Pressable, Text, Image, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { GlossSurface } from "./GlossSurface";
 
 // A wide flat banner sized to match the composer directly below it, sitting
 // in the gap between the grid and the composer — not overlapping either.
@@ -16,20 +16,12 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           own top edge, carrying the collide mark so the banner reads as
           "docked onto" something rather than just another bar. */}
       <View style={styles.post}>
+        <GlossSurface borderRadius={9} />
         <Image source={require("../../assets/ui/collide_core_final.png")} style={{ width: 14, height: 14, resizeMode: "contain" }} />
       </View>
 
       <Pressable onPress={disabled ? undefined : onPress} disabled={disabled} style={[styles.banner, disabled && { opacity: 0.4 }]}>
-        <View style={StyleSheet.absoluteFill}>
-          <View style={[StyleSheet.absoluteFill, { backgroundColor: "#020202", borderRadius: 16 }]} />
-          <LinearGradient
-            colors={["rgba(255,255,255,0.09)", "rgba(255,255,255,0.02)", "rgba(255,255,255,0)"]}
-            start={{ x: 0.1, y: 0 }}
-            end={{ x: 0.7, y: 1 }}
-            style={[StyleSheet.absoluteFill, { borderRadius: 16 }]}
-            pointerEvents="none"
-          />
-        </View>
+        <GlossSurface borderRadius={16} />
         <Text style={styles.title}>COLLIDE</Text>
         <Text style={styles.sub}>{disabled ? "Select 2+ models to compare" : "Tap or drag up for consensus"}</Text>
       </Pressable>
@@ -42,6 +34,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 18,
     borderRadius: 9,
+    overflow: "hidden",
     backgroundColor: "#020202",
     borderWidth: 1.5,
     borderColor: "rgba(255,255,255,0.18)",

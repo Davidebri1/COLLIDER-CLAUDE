@@ -105,6 +105,7 @@ import { CardGrid } from "./src/components/CardGrid";
 import { ModelTray } from "./src/components/ModelTray";
 import { PromptComposer } from "./src/components/PromptComposer";
 import { CollideBanner } from "./src/components/CollideBanner";
+import { GlossSurface } from "./src/components/GlossSurface";
 import { ConsensusModal } from "./src/components/ConsensusDrawer";
 import { ToastProvider, useToast } from "./src/components/Toast";
 import { InlineSearch } from "./src/components/InlineSearch";
@@ -2792,14 +2793,7 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
         {/* Gloss black, same treatment as the Smart Gen panel — true
             near-black base + a diagonal specular sheen, not a flat gray
             gradient. */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#020202" }]} />
-        <LinearGradient
-          colors={["rgba(255,255,255,0.09)", "rgba(255,255,255,0.02)", "rgba(255,255,255,0)"]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.6, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
+        <GlossSurface />
 
         {/* Section 1: header + account/login. Compact title, not the full
             ornate Wordmark — that component's letterSpacing:13 needs
@@ -3043,14 +3037,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
             dark grays with nothing reflective about them, which is exactly
             why this read as matte gray instead of the glossy-black finish
             the palette calls for. */}
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: "#020202" }]} />
-        <LinearGradient
-          colors={["rgba(255,255,255,0.09)", "rgba(255,255,255,0.02)", "rgba(255,255,255,0)"]}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 0.6, y: 0.5 }}
-          style={StyleSheet.absoluteFill}
-          pointerEvents="none"
-        />
+        <GlossSurface />
         <View style={styles.header}>
           <Text style={styles.kicker}>{scopeModelId ? "MODEL TOOLS" : "SMART GEN"}</Text>
           <Pressable onPress={handleClose} style={{ padding: 6 }}>
