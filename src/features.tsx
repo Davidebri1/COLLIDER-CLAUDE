@@ -462,13 +462,13 @@ export function ConsensusRunCard({ run, onOpen, onDelete }: { run: ConsensusRun;
 const styles = StyleSheet.create(withFont({
   flex: { flex: 1 },
   header: { height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#1e172e", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
-  iconText: { color: "#f9f5ff", fontSize: 20, fontWeight: "600" },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)" },
+  iconText: { color: "#fff", fontSize: 20, fontWeight: "600" },
   pageTitle: { color: "#fff", fontSize: 17, fontWeight: "800", letterSpacing: 1 },
   page: { padding: 14, gap: 14, paddingBottom: 120 },
 
-  searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: "#1e172e", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", height: 40 },
-  searchIcon: { color: "#a79bb5", fontSize: 15 },
+  searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: "#161619", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)", height: 40 },
+  searchIcon: { color: "#8a8496", fontSize: 15 },
   searchInput: { flex: 1, color: "#fff", fontSize: 14 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },

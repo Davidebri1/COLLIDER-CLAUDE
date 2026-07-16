@@ -36,6 +36,7 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
   const [typeFilter, setTypeFilter] = useState<"all" | ResultKind>("all");
   const [modelFilter, setModelFilter] = useState<string>("all");
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [typePickerOpen, setTypePickerOpen] = useState(false);
 
   const allResults = useMemo<Result[]>(() => {
     const out: Result[] = [];
@@ -61,7 +62,15 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
     });
   }, [allResults, q, typeFilter, modelFilter]);
 
-  const modelOptions = [{ label: "Models", value: "all" }, ...MODELS.map((m) => ({ label: m.label, value: m.id }))];
+  const modelOptions = [{ label: "All", value: "all" }, ...MODELS.map((m) => ({ label: m.label, value: m.id }))];
+  const typeOptions: { label: string; value: "all" | ResultKind }[] = [
+    { label: "All", value: "all" },
+    { label: "Conversation History", value: "conversation" },
+    { label: "Memories", value: "memory" },
+    { label: "Reminders", value: "reminder" },
+    { label: "Projects", value: "project" },
+    { label: "Artifacts", value: "artifact" },
+  ];
   // Only pop the tray when there's something to actually show — a filter
   // change with zero matches used to render a big "No results found" box,
   // which read as an error state for what's meant to be a lightweight,
@@ -70,14 +79,24 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
 
   return (
     <View style={{ paddingHorizontal: 14, marginBottom: 6, position: "relative", zIndex: 40 }}>
+      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 9.5, fontWeight: "800", letterSpacing: 1.5, marginBottom: 6 }}>
+        SEARCH CONVERSATIONS, MEMORIES & MORE
+      </Text>
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", height: 34, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", paddingHorizontal: 10 }}>
-          <Ionicons name="search" size={13} color="rgba(255,255,255,0.4)" style={{ marginRight: 6 }} />
+        <View
+          style={{
+            flex: 1, flexDirection: "row", alignItems: "center", height: 38, borderRadius: 12,
+            backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)",
+            paddingHorizontal: 10,
+            shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4,
+          }}
+        >
+          <Ionicons name="search" size={13} color="rgba(255,255,255,0.5)" style={{ marginRight: 6 }} />
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Search everything…"
-            placeholderTextColor="rgba(255,255,255,0.3)"
+            placeholderTextColor="rgba(255,255,255,0.35)"
             style={{ flex: 1, color: "#fff", fontSize: 12 }}
           />
           {q.length > 0 && (
@@ -86,45 +105,56 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
             </Pressable>
           )}
         </View>
-        {/* Both filters for the search results, grouped as one unit right
-            next to the bar they filter — not scattered across the row. */}
-        <View style={{ flexDirection: "row", alignItems: "center", height: 34, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
-          <View style={{ width: 82 }}>
-            <Picker
-              value={typeFilter}
-              onChange={(v) => setTypeFilter(v as any)}
-              options={[
-                { label: "All", value: "all" },
-                { label: "Conversation History", value: "conversation" },
-                { label: "Memories", value: "memory" },
-                { label: "Reminders", value: "reminder" },
-                { label: "Projects", value: "project" },
-                { label: "Artifacts", value: "artifact" },
-              ]}
-              textStyle={{ fontSize: 10.5, color: "#fff" }}
-            />
-          </View>
-          <View style={{ width: 1, height: 18, backgroundColor: "rgba(255,255,255,0.12)" }} />
-          <Pressable
-            onPress={() => setModelPickerOpen(true)}
-            style={{
-              width: 34, height: 34, alignItems: "center", justifyContent: "center",
-              backgroundColor: modelFilter !== "all" ? "rgba(255,255,255,0.18)" : "transparent",
-            }}
-          >
-            <Ionicons name="filter-outline" size={14} color={modelFilter !== "all" ? "#ffffff" : "rgba(255,255,255,0.5)"} />
-          </Pressable>
-        </View>
-        <Picker
-          hideTrigger
-          controlledOpen={modelPickerOpen}
-          onRequestClose={() => setModelPickerOpen(false)}
-          value={modelFilter}
-          onChange={(v) => { setModelFilter(v as string); setModelPickerOpen(false); }}
-          options={modelOptions}
-          textStyle={{ fontSize: 11, color: "#fff" }}
-        />
       </View>
+
+      {/* Two standard labeled filter fields, "Type" and "Model" — same
+          established name/value pattern as any search UI, not a bare
+          filter-funnel icon someone has to tap to discover what it does. */}
+      <View style={{ flexDirection: "row", gap: 6, marginTop: 6 }}>
+        <Pressable
+          onPress={() => setTypePickerOpen(true)}
+          style={{
+            flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 32, borderRadius: 10,
+            backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.14)", paddingHorizontal: 10,
+          }}
+        >
+          <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 11 }} numberOfLines={1}>
+            <Text style={{ color: "rgba(255,255,255,0.4)" }}>Type: </Text>
+            {typeOptions.find((o) => o.value === typeFilter)?.label}
+          </Text>
+          <Ionicons name="chevron-down" size={11} color="#6b6478" />
+        </Pressable>
+        <Pressable
+          onPress={() => setModelPickerOpen(true)}
+          style={{
+            flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between", height: 32, borderRadius: 10,
+            backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.14)", paddingHorizontal: 10,
+          }}
+        >
+          <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 11 }} numberOfLines={1}>
+            <Text style={{ color: "rgba(255,255,255,0.4)" }}>Model: </Text>
+            {modelOptions.find((o) => o.value === modelFilter)?.label}
+          </Text>
+          <Ionicons name="chevron-down" size={11} color="#6b6478" />
+        </Pressable>
+      </View>
+
+      <Picker
+        hideTrigger
+        controlledOpen={typePickerOpen}
+        onRequestClose={() => setTypePickerOpen(false)}
+        value={typeFilter}
+        onChange={(v) => { setTypeFilter(v as any); setTypePickerOpen(false); }}
+        options={typeOptions}
+      />
+      <Picker
+        hideTrigger
+        controlledOpen={modelPickerOpen}
+        onRequestClose={() => setModelPickerOpen(false)}
+        value={modelFilter}
+        onChange={(v) => { setModelFilter(v as string); setModelPickerOpen(false); }}
+        options={modelOptions}
+      />
 
       {open && (
         <View style={{ marginTop: 6, maxHeight: 320, borderRadius: 14, backgroundColor: "#0d0a14", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", overflow: "hidden" }}>

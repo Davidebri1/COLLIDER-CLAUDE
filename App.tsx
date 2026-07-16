@@ -2795,47 +2795,43 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
             gradient. */}
         <GlossSurface />
 
-        {/* Section 1: header + account/login. Compact title, not the full
-            ornate Wordmark — that component's letterSpacing:13 needs
-            ~250-260px on its own, and this drawer is 306px wide with
-            padding already eaten twice (drawer's own paddingHorizontal:14
-            plus this row's own), which left zero-to-negative room for the
-            close button — it was rendering past the panel's right edge. */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 2 }}>COLLIDER</Text>
-          <Pressable onPress={handleClose} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }}>
+        {/* Pane 1: Account. Everything about who's logged in and their tier
+            lives in ONE row — identity, usage, upgrade, settings, close —
+            no separate title (the app already has a header; this drawer
+            doesn't need to repeat "COLLIDER") and no unrelated actions
+            (New Conversation belongs with History below, not here). The
+            pane has its own bordered/tinted box so it reads as a distinct
+            panel, not just floating rows. */}
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, padding: 10, marginBottom: 16, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.035)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
+          <Pressable onPress={() => handleNav("settings")} style={{ flex: 1 }}>
+            <Text style={{ color: "#fff", fontSize: 12.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }} numberOfLines={1}>
+              {state.auth.kind === "guest" ? "Guest Mode" : `${(state.auth as any).email || state.auth.kind}`}
+            </Text>
+            <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 9.5, fontFamily: FONT_FAMILY, marginTop: 1 }} numberOfLines={1}>
+              {TIER_INFO[state.tier].label} ·{" "}
+              {state.tier === "free"
+                ? `${state.dailyMessagesSent}/${FREE_DAILY_LIMIT} msgs today`
+                : `${state.credits.toLocaleString()} credits`}
+            </Text>
+          </Pressable>
+          <Pressable onPress={() => handleNav("upgrade")} style={localDrawerStyles.upgradeBtn}>
+            <Ionicons name="rocket-outline" size={12} color="#ffb74d" />
+            <Text style={{ color: "#ffb74d", fontSize: 10.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Upgrade</Text>
+          </Pressable>
+          <Pressable onPress={() => handleNav("settings")} style={localDrawerStyles.utilIcon}>
+            <Ionicons name="settings-outline" size={16} color="rgba(255,255,255,0.5)" />
+          </Pressable>
+          <Pressable onPress={handleClose} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="close" size={16} color="#fff" />
           </Pressable>
         </View>
 
-        <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
-          <Pressable onPress={() => handleNav("settings")} style={localDrawerStyles.utilIcon}>
-            <Ionicons name="settings-outline" size={16} color="rgba(255,255,255,0.5)" />
-          </Pressable>
-        </View>
-
-        {/* Account (demure) + Upgrade (the one button here that should still
-            pop, per its job) on one row; usage below, small — it's a number,
-            not a headline. */}
-        <View style={{ marginBottom: 14, gap: 8 }}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-            <Pressable onPress={() => handleNav("settings")} style={{ flex: 1 }}>
-              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 12, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
-                {state.auth.kind === "guest" ? "Guest Mode" : `${(state.auth as any).email || state.auth.kind}`}
-              </Text>
-            </Pressable>
-            <Pressable onPress={() => handleNav("upgrade")} style={localDrawerStyles.upgradeBtn}>
-              <Ionicons name="rocket-outline" size={12} color="#ffb74d" />
-              <Text style={{ color: "#ffb74d", fontSize: 10.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Upgrade</Text>
-            </Pressable>
-          </View>
-          <Text style={{ color: "rgba(255,255,255,0.35)", fontSize: 10.5, fontFamily: FONT_FAMILY }}>
-            {TIER_INFO[state.tier].label} ·{" "}
-            {state.tier === "free"
-              ? `${state.dailyMessagesSent}/${FREE_DAILY_LIMIT} msgs today`
-              : `${state.credits.toLocaleString()} credits`}
-          </Text>
-        </View>
+        {/* Pane 2: History. Visually separate pane — its own label, its own
+            bordered box below — instead of the account row and the
+            conversation list just running together with no boundary. */}
+        <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 9.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.5, marginBottom: 8 }}>
+          HISTORY
+        </Text>
 
         {/* Regular size, matching the rest of this drawer — this used to be
             a full oversized hero row (bold text, 18px icon, its own filled

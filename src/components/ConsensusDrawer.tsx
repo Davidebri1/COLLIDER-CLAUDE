@@ -223,11 +223,16 @@ export function ConsensusModal({
   return (
     <>
     <Modal visible={isOpen} transparent animationType="slide" onRequestClose={onClose}>
-      <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.8)" }}>
+      {/* RN Web's Modal doesn't always portal as a true full-viewport
+          overlay — it can render inline in normal document flow, leaving
+          the app header/search bar visible above it. StyleSheet.absoluteFill
+          plus an explicit "fixed" position (ignored on native, load-bearing
+          on web) forces real full-screen coverage regardless. */}
+      <View style={[StyleSheet.absoluteFill, { position: "fixed" as any, backgroundColor: "rgba(0,0,0,0.8)" }]}>
         {/* True full-screen per spec — was a 90%-height bottom sheet, which
             still read as a drawer/modal rather than the dedicated full-page
             view this feature is supposed to be. */}
-        <LinearGradient colors={["#19191c", "#0a0a0c"]} style={[styles.editSheet, { width: SCREEN_W, height: "100%", paddingTop: insets.top, padding: 0, borderRadius: 0 }]} onStartShouldSetResponder={() => true}>
+        <LinearGradient colors={["#19191c", "#0a0a0c"]} style={[StyleSheet.absoluteFillObject, { paddingTop: insets.top, borderRadius: 0 }]} onStartShouldSetResponder={() => true}>
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.5 }}>CONSENSUS</Text>
             <Pressable onPress={() => { saveConsensusRun(); onClose(); }} style={{ padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>

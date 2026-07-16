@@ -1,23 +1,25 @@
 import React from "react";
-import { View, Pressable, Text, Image, StyleSheet } from "react-native";
+import { View, Pressable, Text, StyleSheet } from "react-native";
 import { GlossSurface } from "./GlossSurface";
 
-// A wide flat banner sized to match the composer directly below it, sitting
-// in the gap between the grid and the composer — not overlapping either.
-// Tapping it, or dragging it upward, opens the full-screen Consensus
-// drawer via `onPress` (RN's Pressable still fires onPress on release even
-// after a vertical drag, since nothing else here claims the touch
-// responder — no separate PanResponder needed for the two gestures to do
-// the same thing). Global view only; card view has no Collide entry point.
+// A wide flat banner sized to match the composer directly below it, docked
+// flush against its top edge — no gap, reads as one continuous surface with
+// the composer rather than a separate floating bar. Tapping it, or dragging
+// it upward, opens the full-screen Consensus drawer via `onPress` (RN's
+// Pressable still fires onPress on release even after a vertical drag,
+// since nothing else here claims the touch responder — no separate
+// PanResponder needed for the two gestures to do the same thing). Global
+// view only; card view has no Collide entry point.
 export function CollideBanner({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
   return (
-    <View style={{ marginHorizontal: 14, marginTop: 2, marginBottom: 8, alignItems: "center" }}>
+    <View style={{ marginHorizontal: 14, marginTop: 2, alignItems: "center" }}>
       {/* The protruding post — a small tab sticking up above the banner's
-          own top edge, carrying the collide mark so the banner reads as
-          "docked onto" something rather than just another bar. */}
+          own top edge, so the banner reads as "docked onto" something
+          rather than just another bar. Plain gloss, no icon on it — the
+          collide mark asset read as a webcam lens, which undercut the
+          concept rather than supporting it. */}
       <View style={styles.post}>
         <GlossSurface borderRadius={9} />
-        <Image source={require("../../assets/ui/collide_core_final.png")} style={{ width: 14, height: 14, resizeMode: "contain" }} />
       </View>
 
       <Pressable onPress={disabled ? undefined : onPress} disabled={disabled} style={[styles.banner, disabled && { opacity: 0.4 }]}>
@@ -51,10 +53,12 @@ const styles = StyleSheet.create({
   banner: {
     width: "100%",
     height: 40,
-    borderRadius: 16,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1.5,
+    borderBottomWidth: 0,
     borderColor: "rgba(255,255,255,0.18)",
     overflow: "hidden",
     shadowColor: "#000",
