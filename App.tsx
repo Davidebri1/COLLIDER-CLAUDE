@@ -298,7 +298,7 @@ function ThemeBackground({ wallpaperId }: { wallpaperId: string }) {
   if (customPremium) {
     return (
       <View style={StyleSheet.absoluteFill}>
-        <LinearGradient colors={["#0a0813", "#120d24"]} style={StyleSheet.absoluteFill} />
+        <LinearGradient colors={["#0a0a0a", "#000000"]} style={StyleSheet.absoluteFill} />
         <Video
           source={customPremium.source}
           rate={1.0}
@@ -1100,11 +1100,11 @@ function CategorySelectorModal({ visible, onClose }: { visible: boolean; onClose
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <LinearGradient
-          colors={["#19191c", "#0a0a0c"]}
-          style={[styles.editSheet, { width: Math.min(SCREEN_W - 64, 340), alignSelf: "center", marginTop: 0, maxHeight: "70%", padding: 0 }]}
+        <View
+          style={[styles.editSheet, { width: Math.min(SCREEN_W - 64, 340), alignSelf: "center", marginTop: 0, maxHeight: "70%", padding: 0, overflow: "hidden" }]}
           onStartShouldSetResponder={() => true}
         >
+          <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", textAlign: "center" }}>Select Category</Text>
             <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>
@@ -1155,7 +1155,7 @@ function CategorySelectorModal({ visible, onClose }: { visible: boolean; onClose
               );
             })}
           </ScrollView>
-        </LinearGradient>
+        </View>
       </Pressable>
     </Modal>
   );
@@ -1173,11 +1173,11 @@ function RowSelectorModal({
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <LinearGradient
-          colors={["#19191c", "#0a0a0c"]}
-          style={[styles.editSheet, { width: Math.min(SCREEN_W - 96, 320), alignSelf: "center", marginTop: 0, padding: 0 }]}
+        <View
+          style={[styles.editSheet, { width: Math.min(SCREEN_W - 96, 320), alignSelf: "center", marginTop: 0, padding: 0, overflow: "hidden" }]}
           onStartShouldSetResponder={() => true}
         >
+          <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Grid Rows</Text>
             <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>
@@ -1212,7 +1212,7 @@ function RowSelectorModal({
               </Pressable>
             );
           })}
-        </LinearGradient>
+        </View>
       </Pressable>
     </Modal>
   );
@@ -1306,7 +1306,8 @@ function ModelSelectorDrawer({
   return (
     <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <LinearGradient colors={["#19191c", "#0a0a0c"]} style={[styles.editSheet, { width: Math.min(SCREEN_W - 64, 340), alignSelf: "center", marginTop: 0, maxHeight: "70%", padding: 0 }]} onStartShouldSetResponder={() => true}>
+        <View style={[styles.editSheet, { width: Math.min(SCREEN_W - 64, 340), alignSelf: "center", marginTop: 0, maxHeight: "70%", padding: 0, overflow: "hidden" }]} onStartShouldSetResponder={() => true}>
+          <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", textAlign: "center" }}>Select Models ({cat.toUpperCase()})</Text>
             <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>
@@ -1333,7 +1334,7 @@ function ModelSelectorDrawer({
               </View>
             )}
           </ScrollView>
-        </LinearGradient>
+        </View>
       </Pressable>
     </Modal>
   );

@@ -6,6 +6,7 @@ import * as Haptics from "expo-haptics";
 
 import { useCollider, ConsensusRun, ChatMessage } from "../state";
 import { Glass } from "./Glass";
+import { GlossSurface } from "./GlossSurface";
 import { SearchBar, useSearch } from "../features";
 import { styles, SCREEN_W, SCREEN_H, fontFamilyForWeight } from "../styles/theme";
 import { modelById, ModelDef } from "../models";
@@ -232,7 +233,8 @@ export function ConsensusModal({
         {/* True full-screen per spec — was a 90%-height bottom sheet, which
             still read as a drawer/modal rather than the dedicated full-page
             view this feature is supposed to be. */}
-        <LinearGradient colors={["#19191c", "#0a0a0c"]} style={[StyleSheet.absoluteFillObject, { paddingTop: insets.top, borderRadius: 0 }]} onStartShouldSetResponder={() => true}>
+        <View style={[StyleSheet.absoluteFillObject, { paddingTop: insets.top, borderRadius: 0 }]} onStartShouldSetResponder={() => true}>
+          <GlossSurface />
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.5 }}>CONSENSUS</Text>
             <Pressable onPress={() => { saveConsensusRun(); onClose(); }} style={{ padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>
@@ -240,10 +242,7 @@ export function ConsensusModal({
             </Pressable>
           </View>
           
-          <LinearGradient
-            colors={["#151518", "#08080a"]}
-            style={{ flex: 1 }}
-          >
+          <View style={{ flex: 1 }}>
             {/* Drawer Tabs */}
             <View style={{ flexDirection: "row", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)", padding: 6, gap: 4 }}>
           {(["current", "history", "settings"] as const).map((tab) => (
@@ -455,15 +454,16 @@ export function ConsensusModal({
             </View>
           )}
         </View>
-      </LinearGradient>
-    </LinearGradient>
+      </View>
+    </View>
       </View>
     </Modal>
 
       {/* Historical Consensus Detail Popup Modal */}
       <Modal visible={!!selectedRun} transparent animationType="fade" onRequestClose={() => setSelectedRun(null)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setSelectedRun(null)}>
-          <LinearGradient colors={["#19191c", "#0a0a0c"]} style={[styles.editSheet, { width: SCREEN_W - 32, maxHeight: "80%" }]} onStartShouldSetResponder={() => true}>
+          <View style={[styles.editSheet, { width: SCREEN_W - 32, maxHeight: "80%", overflow: "hidden" }]} onStartShouldSetResponder={() => true}>
+            <GlossSurface borderRadius={22} />
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)", paddingBottom: 10, marginBottom: 12 }}>
               <Text style={{ color: "#fff", fontSize: 15, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>Historical Consensus Detail</Text>
               <Pressable onPress={() => setSelectedRun(null)} style={{ padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>
@@ -480,7 +480,7 @@ export function ConsensusModal({
 
                   <View>
                     <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>CONSENSUS VERDICT ({selectedRun.ratioN}/{selectedRun.ratioM} aligned)</Text>
-                    <View style={{ backgroundColor: "rgba(124,77,255,0.08)", borderRadius: 10, padding: 12, marginTop: 6, borderWidth: 1, borderColor: "rgba(124,77,255,0.15)" }}>
+                    <View style={{ backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 10, padding: 12, marginTop: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" }}>
                       <Text style={{ color: "#e8e6eb", fontSize: 12, lineHeight: 18 }}>{selectedRun.verdict}</Text>
                     </View>
                   </View>
@@ -503,7 +503,7 @@ export function ConsensusModal({
                 </View>
               )}
             </ScrollView>
-          </LinearGradient>
+          </View>
         </Pressable>
       </Modal>
     </>
