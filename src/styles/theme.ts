@@ -558,7 +558,7 @@ export const styles = StyleSheet.create(withFont({
     width: 300,
     padding: 20,
     borderRadius: 22,
-    backgroundColor: "rgba(13,10,20,0.97)",
+    backgroundColor: "rgba(4,4,4,0.97)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
     alignSelf: "center",

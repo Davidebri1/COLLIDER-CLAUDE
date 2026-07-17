@@ -7,6 +7,7 @@ import React, { createContext, useCallback, useContext, useRef, useState } from 
 import { Modal, Pressable, Text, View } from "react-native";
 import { BlurView } from "expo-blur";
 import { styles } from "../styles/theme";
+import { GlossSurface } from "./GlossSurface";
 
 type ToastItem = { id: number; message: string };
 type ConfirmState = {
@@ -78,9 +79,10 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         <Modal transparent visible animationType="fade" onRequestClose={() => handleConfirmResult(false)}>
           <Pressable style={styles.modalBackdrop} onPress={() => handleConfirmResult(false)}>
             <View
-              style={[styles.editSheet, { width: 300, marginTop: 0, padding: 20 }]}
+              style={[styles.editSheet, { width: 300, marginTop: 0, padding: 20, overflow: "hidden" }]}
               onStartShouldSetResponder={() => true}
             >
+              <GlossSurface borderRadius={22} />
               <Text style={{ color: "#fff", fontSize: 15, fontWeight: "700", marginBottom: 18, lineHeight: 21 }}>
                 {confirmState.message}
               </Text>

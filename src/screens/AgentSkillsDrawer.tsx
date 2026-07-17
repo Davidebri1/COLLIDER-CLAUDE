@@ -11,11 +11,11 @@ import {
   LayoutAnimation
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { BlurView } from "expo-blur";
 import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
+import { GlossSurface } from "../components/GlossSurface";
 import { styles, SCREEN_W, withFont } from "../styles/theme";
 import { MODELS, modelById } from "../models";
 import { useToast } from "../components/Toast";
@@ -79,11 +79,11 @@ export function AgentSkillsDrawer({
   return (
     <Modal transparent visible={visible} animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
-        <LinearGradient 
-          colors={["#130e20", "#08060d"]} 
-          style={[styles.editSheet, { width: SCREEN_W - 20, marginTop: 44, maxHeight: "88%", padding: 0, borderRadius: 24 }]} 
+        <View
+          style={[styles.editSheet, { width: SCREEN_W - 20, marginTop: 44, maxHeight: "88%", padding: 0, borderRadius: 24, overflow: "hidden" }]}
           onStartShouldSetResponder={() => true}
         >
+          <GlossSurface borderRadius={24} />
           {/* Header Title */}
           <View style={localStyles.drawerHeader}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -359,7 +359,7 @@ export function AgentSkillsDrawer({
               </View>
             )}
           </View>
-        </LinearGradient>
+        </View>
       </Pressable>
     </Modal>
   );

@@ -23,6 +23,7 @@ import { Video, ResizeMode, Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 import { useCollider, type MarketItem, DEFAULT_MARKET_ITEMS, generateMoreMarketItems } from "../state";
+import { GlossSurface } from "../components/GlossSurface";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
 import { styles, SCREEN_W, SCREEN_H, withFont } from "../styles/theme";
@@ -784,8 +785,8 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
       {selectedItem && (
         <Modal transparent visible={!!selectedItem} animationType="fade" onRequestClose={() => setSelectedItem(null)}>
           <Pressable style={styles.modalBackdrop} onPress={() => setSelectedItem(null)}>
-            <View style={[styles.editSheet, { width: SCREEN_W - 24, maxHeight: "92%", padding: 0, borderRadius: 24 }]} onStartShouldSetResponder={() => true}>
-              
+            <View style={[styles.editSheet, { width: SCREEN_W - 24, maxHeight: "92%", padding: 0, borderRadius: 24, overflow: "hidden" }]} onStartShouldSetResponder={() => true}>
+              <GlossSurface borderRadius={24} />
               {/* Header Title */}
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)", padding: 14 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
