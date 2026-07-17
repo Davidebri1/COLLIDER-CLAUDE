@@ -2,7 +2,7 @@
 // Kept separate to avoid touching the main App shell.
 import { Fragment, useMemo, useState, type ReactNode } from "react";
 import {
-  Modal, Pressable, ScrollView, Share, StyleSheet, Switch, Text, TextInput, View,
+  Modal, Pressable, ScrollView, Share, StyleSheet, Text, TextInput, View,
   type StyleProp, type ViewStyle,
 } from "react-native";
 import { BlurView } from "expo-blur";
@@ -11,6 +11,7 @@ import { useCollider, FREE_DAILY_LIMIT, type ChatMessage, type ConsensusRun } fr
 import { modelById, MODELS, type Category } from "./models";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Page } from "./components/Page";
+import { Toggle } from "./components/Toggle";
 import { withFont } from "./styles/theme";
 
 // ── Search bar ─────────────────────────────────────────────────────────────
@@ -360,7 +361,7 @@ function SettingsToggleRow({ label, hint, value, onValueChange }: { label: strin
         <Text style={styles.settingsLabel}>{label}</Text>
         {hint ? <Text style={styles.settingsHint}>{hint}</Text> : null}
       </View>
-      <Switch value={value} onValueChange={onValueChange} trackColor={{ true: "#e2e8f0", false: "#3b334a" }} thumbColor="#fff" />
+      <Toggle value={value} onValueChange={onValueChange} />
     </View>
   );
 }
@@ -482,7 +483,7 @@ const styles = StyleSheet.create(withFont({
 
   section: { gap: 8 },
   sectionKicker: { color: "#6b6478", fontSize: 9.5, fontWeight: "900", letterSpacing: 2, textTransform: "uppercase", paddingHorizontal: 4 },
-  sectionBody: { borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", overflow: "hidden", backgroundColor: "rgba(255,255,255,0.02)" },
+  sectionBody: { borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", overflow: "hidden", backgroundColor: "rgba(255,255,255,0.05)" },
   settingsRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
   settingsLabel: { color: "#fff", fontSize: 14, fontWeight: "600" },
   settingsHint: { color: "#858091", fontSize: 11, marginTop: 2 },
