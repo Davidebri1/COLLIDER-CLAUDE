@@ -562,11 +562,12 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
           own inset back so only the grid touches the screen edges. */}
       <View style={{ flex: 1, backgroundColor: "#06040a", marginHorizontal: -14 }}>
 
-        {/* Black contrast bar: tabs with a white underline on the active one,
-            search icon docked to the side. No pill fills, no separate search
-            row — this is the whole nav, one line. */}
+        {/* Same pill/chip tab convention as every other segmented control in
+            the app (History's Conversations/Consensus switcher, CardScreen's
+            sub-tab tray, Files' nav tabs) — this was previously an underline
+            style found nowhere else in the app. */}
         <View style={localStyles.tabContainer}>
-          <View style={{ flexDirection: "row", flex: 1 }}>
+          <View style={{ flexDirection: "row", flex: 1, gap: 4, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
             {(["discover", "published", "my-assets"] as const).map((t) => (
               <Pressable
                 key={t}
@@ -574,12 +575,11 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
                   setTab(t);
                 }}
-                style={localStyles.navTab}
+                style={[localStyles.navTab, tab === t && localStyles.navTabActive]}
               >
                 <Text style={[localStyles.navTabText, tab === t && localStyles.navTabTextActive]}>
                   {t === "my-assets" ? "MY ASSETS" : t.toUpperCase()}
                 </Text>
-                {tab === t && <View style={localStyles.navTabUnderline} />}
               </Pressable>
             ))}
           </View>
@@ -1267,19 +1267,14 @@ const localStyles = StyleSheet.create(withFont({
     backgroundColor: "#000",
   },
   navTab: {
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 9,
     alignItems: "center",
     justifyContent: "center",
-    position: "relative",
   },
-  navTabUnderline: {
-    position: "absolute",
-    bottom: 0,
-    left: 10,
-    right: 10,
-    height: 2,
-    backgroundColor: "#fff",
+  navTabActive: {
+    backgroundColor: "rgba(255,255,255,0.08)",
   },
   navTabText: {
     fontSize: 11,
