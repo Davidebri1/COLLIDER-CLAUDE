@@ -3245,7 +3245,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                       }
                     });
                     toast("Published successfully to Discover Market!");
-                  }}><Text style={{ fontSize: 10, color: "#10b981" }}>Publish</Text></Pressable>
+                  }}><Text style={{ fontSize: 10, color: "#e2e8f0" }}>Publish</Text></Pressable>
                   <Pressable onPress={() => dispatch({ type: "removeGeneration", id: g.id })}><Text style={{ fontSize: 10, color: "#ef4444" }}>Delete</Text></Pressable>
                 </View>
               </Glass>

@@ -294,8 +294,8 @@ export function AgentSkillsDrawer({
                     style={localStyles.formTextareaBig}
                   />
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                    <Ionicons name="checkmark-circle-outline" size={12} color="#10b981" />
-                    <Text style={{ color: "#10b981", fontSize: 10.5, fontWeight: "600" }}>Directives auto-save in real-time</Text>
+                    <Ionicons name="checkmark-circle-outline" size={12} color="#e2e8f0" />
+                    <Text style={{ color: "#e2e8f0", fontSize: 10.5, fontWeight: "600" }}>Directives auto-save in real-time</Text>
                   </View>
                 </View>
               )}
