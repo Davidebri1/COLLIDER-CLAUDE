@@ -1968,17 +1968,27 @@ export function ArtifactEditModal({
   const [title, setTitle] = useState(item?.title || "");
   const [content, setContent] = useState(item?.content || "");
   const [kind, setKind] = useState<Artifact["kind"]>(item?.kind || "custom");
+  // Research-mode chat content is saved with real markdown structure (the
+  // Markdown component already renders it in chat), but this editor only
+  // ever showed it as a raw TextInput — headers, bullets, bold all stayed
+  // literal asterisks and hashes instead of rendering, which is most of
+  // what a competitor's "artifact" view actually offers.
+  const [previewMode, setPreviewMode] = useState(false);
 
   useEffect(() => {
     if (item) {
       setTitle(item.title || "");
       setContent(item.content || "");
       setKind(item.kind || "custom");
+      setPreviewMode(false);
     }
   }, [item]);
 
   if (!item) return null;
   const handleSave = () => onSave({ ...item, title: title.trim(), content: content.trim(), kind });
+  const handleExport = () => {
+    Share.share({ message: content, title: title || "Artifact" }).catch(() => {});
+  };
   const accent = kindColor(kind);
 
   return (
@@ -2007,15 +2017,38 @@ export function ArtifactEditModal({
               })}
             </View>
 
-            <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>CONTENT</Text>
-            <TextInput
-              style={[styles.editInput, { minHeight: 140, textAlignVertical: "top" }]}
-              value={content}
-              onChangeText={setContent}
-              multiline
-              placeholder="Artifact content..."
-              placeholderTextColor="#8f849c"
-            />
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+              <Text style={styles.kicker}>CONTENT</Text>
+              <View style={{ flexDirection: "row", backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 8, padding: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
+                {(["edit", "preview"] as const).map((m) => (
+                  <Pressable
+                    key={m}
+                    onPress={() => setPreviewMode(m === "preview")}
+                    style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: (m === "preview") === previewMode ? "rgba(255,255,255,0.12)" : "transparent" }}
+                  >
+                    <Text style={{ fontSize: 10, fontWeight: "800", color: (m === "preview") === previewMode ? "#fff" : "#6b6478" }}>{m.toUpperCase()}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+            {previewMode ? (
+              <View style={{ minHeight: 140, padding: 10, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", marginTop: 4 }}>
+                {content.trim() ? (
+                  <Markdown content={content} color="#fff" fontSize={13} />
+                ) : (
+                  <Text style={{ color: "#6b6478", fontSize: 12, fontStyle: "italic" }}>Nothing to preview yet.</Text>
+                )}
+              </View>
+            ) : (
+              <TextInput
+                style={[styles.editInput, { minHeight: 140, textAlignVertical: "top" }]}
+                value={content}
+                onChangeText={setContent}
+                multiline
+                placeholder="Artifact content..."
+                placeholderTextColor="#8f849c"
+              />
+            )}
 
             {(item as any).modelId && (
               <>
@@ -2030,6 +2063,7 @@ export function ArtifactEditModal({
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
               <Pressable onPress={handleSave} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: `${accent}22`, borderColor: `${accent}80`, shadowColor: accent }]}><Text style={[styles.primaryText, { color: accent }]}>Save</Text></Pressable>
+              <Pressable onPress={handleExport} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.25)", shadowColor: "#fff" }]}><Text style={[styles.primaryText, { color: "#e2e8f0" }]}>Export</Text></Pressable>
               <Pressable onPress={() => onDelete(item.id)} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.5)", shadowColor: "#ef4444" }]}><Text style={[styles.primaryText, { color: "#ef4444" }]}>Delete</Text></Pressable>
             </View>
           </ScrollView>
