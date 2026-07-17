@@ -38,6 +38,7 @@ export function ModelCard({
   // reply should let you read from its start, not dump you at its end. Same
   // pattern as the full CardScreen detail view's chat log.
   const lastMessageYRef = useRef<number | null>(null);
+  const [showDesc, setShowDesc] = useState(false);
 
   const handleCardPress = () => {
     if (usable) open();
@@ -99,6 +100,31 @@ export function ModelCard({
             <Ionicons name="close" size={10} color="rgba(255,255,255,0.45)" />
           </Pressable>
         </View>
+
+        {/* Off by default (Settings > Display > Show model descriptions) —
+            it cost real space on every card for text read once, if ever
+            (measured: 25% of card height at 3-row density before any
+            actual model output was visible). Still available for anyone
+            who wants it back, opt-in via that setting, not a permanent tax. */}
+        {state.showModelDescriptions && !!model.desc && (
+          <Pressable
+            onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setShowDesc((v) => !v); }}
+            style={localStyles.descRow}
+          >
+            <Text
+              style={[styles.cardDesc, localStyles.descText]}
+              numberOfLines={showDesc ? undefined : 1}
+            >
+              {model.desc}
+            </Text>
+            <Ionicons
+              name={showDesc ? "chevron-up" : "chevron-down"}
+              size={9}
+              color="rgba(255,255,255,0.3)"
+              style={{ marginLeft: 4, marginTop: 1 }}
+            />
+          </Pressable>
+        )}
 
         {/* Scrollable full-thread body — same conversation as card detail view */}
         <ScrollView
@@ -208,5 +234,16 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center",
     marginLeft: 4,
     flexShrink: 0,
+  },
+  descRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingHorizontal: 2,
+    marginTop: 2,
+    marginBottom: 2,
+  },
+  descText: {
+    flex: 1,
+    lineHeight: 12,
   },
 }));

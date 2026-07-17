@@ -398,7 +398,11 @@ function initialState(): AppState {
     autoScroll: true,
     language: "English",
     fontSize: "medium",
-    showModelDescriptions: true,
+    // Off by default — measured at 3-row density, title+description ate
+    // 25% of a card's height before any actual model output was visible.
+    // Still user-togglable (Settings > Display > Show model descriptions)
+    // for anyone who wants it back, just not the default anymore.
+    showModelDescriptions: false,
     smartGenNotifications: true,
     globalDefaultChatMode: "default",
     autoWipeOnConsensus: false,
