@@ -2511,7 +2511,7 @@ function CardScreen({
             <Text style={styles.muted}>No memories captured for this model yet.</Text>
           ) : (
             state.memories.filter((m) => m.modelId === model.id).map((m) => (
-              <View key={m.id} style={[styles.dissentCard, { backgroundColor: "#171026", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
+              <View key={m.id} style={[styles.dissentCard, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
                 <Text style={styles.bodyText}>{m.content}</Text>
                 <Pressable style={{ marginTop: 8 }} onPress={() => dispatch({ type: "removeMemory", id: m.id })}>
                   <Text style={{ color: "#ef4444", fontSize: 11 }}>Delete memory</Text>
@@ -2519,7 +2519,7 @@ function CardScreen({
               </View>
             ))
           )}
-          <View style={[styles.inlineAdd, { backgroundColor: "#171026", marginTop: 14 }]}>
+          <View style={[styles.inlineAdd, { backgroundColor: "#161619", marginTop: 14 }]}>
             <TextInput
               style={styles.inlineInput}
               value={newMemory}
@@ -2546,7 +2546,7 @@ function CardScreen({
         <ScrollView contentContainerStyle={{ padding: 14, gap: 10 }}>
           <Text style={styles.kicker}>Projects & Model Tasks</Text>
           {state.projects.map((proj) => (
-            <View key={proj.id} style={[styles.dissentCard, { backgroundColor: "#171026", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
+            <View key={proj.id} style={[styles.dissentCard, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
               <Text style={[styles.textStrong, { color: model.color }]}>{proj.name}</Text>
               {proj.tasks.map((task) => (
                 <Pressable
@@ -2594,7 +2594,7 @@ function CardScreen({
           ) : (
             <View style={styles.grid}>
               {state.files.filter((f) => f.name.includes(model.id) || f.name.includes(model.label.replace(/\s+/g, ""))).map((f) => (
-                <View key={f.id} style={[styles.fileTile, { backgroundColor: "#171026", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
+                <View key={f.id} style={[styles.fileTile, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
                   <Text style={styles.fileIcon}></Text>
                   <ExpandableTrayText style={[styles.bodyText, { fontSize: 10 }]} text={f.name} />
                 </View>
@@ -2626,7 +2626,7 @@ function CardScreen({
                 key={r.id}
                 onPress={() => setEditingCardReminder(r)}
                 onLongPress={() => dispatch({ type: "toggleReminder", id: r.id })}
-                style={[styles.rowItem, { backgroundColor: "#171026", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}
+                style={[styles.rowItem, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}
               >
                 <Text style={{ fontSize: 16, color: model.color }}>{r.done ? "✓" : "○"}</Text>
                 <View style={{ flex: 1 }}>
@@ -2643,7 +2643,7 @@ function CardScreen({
               key) to tag the owning model, which meant every reminder
               created from this tab shared one fingerprint and all but the
               first got silently dropped as a "duplicate". */}
-          <View style={[styles.inlineAdd, { backgroundColor: "#171026", marginTop: 14 }]}>
+          <View style={[styles.inlineAdd, { backgroundColor: "#161619", marginTop: 14 }]}>
             <TextInput
               style={styles.inlineInput}
               value={newReminder}
