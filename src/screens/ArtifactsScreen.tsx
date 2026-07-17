@@ -186,9 +186,17 @@ export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
                       </Text>
                       <View style={localStyles.cardFooter}>
                         <Text style={localStyles.dateText}>{new Date(a.ts).toLocaleDateString()}</Text>
-                        <Pressable hitSlop={8} onPress={() => handleDeleteArtifact(a.id)} style={localStyles.deleteButton}>
-                          <Ionicons name="trash-outline" size={13} color="#ef4444" />
-                        </Pressable>
+                        <View style={{ flexDirection: "row", gap: 6 }}>
+                          {/* Explicit edit affordance — tapping the card
+                              body already opened the edit modal, but
+                              nothing on the card signaled that. */}
+                          <Pressable hitSlop={8} onPress={() => setEditingArtifact(a)} style={[localStyles.deleteButton, { backgroundColor: "rgba(226,232,240,0.08)" }]}>
+                            <Ionicons name="create-outline" size={13} color="#e2e8f0" />
+                          </Pressable>
+                          <Pressable hitSlop={8} onPress={() => handleDeleteArtifact(a.id)} style={localStyles.deleteButton}>
+                            <Ionicons name="trash-outline" size={13} color="#ef4444" />
+                          </Pressable>
+                        </View>
                       </View>
                     </View>
                   </Glass>

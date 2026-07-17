@@ -421,6 +421,22 @@ export function ConsensusModal({
           {activeTab === "settings" && (
             <View style={{ gap: 16 }}>
               <View style={{ borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)", paddingBottom: 8 }}>
+                <Text style={{ color: "#fff", fontWeight: "700", fontFamily: fontFamilyForWeight(700), fontSize: 14, marginBottom: 4 }}>Consensus Summary Auto-Generated</Text>
+                <Text style={{ color: "#6b6478", fontSize: 11, marginBottom: 12 }}>
+                  Fill the Collide bar with a live synthesis as soon as 2+ models reply — no need to open this drawer to see whether they agree.
+                </Text>
+                <Pressable
+                  onPress={() => dispatch({ type: "setAutoConsensusSummary", value: !state.autoConsensusSummary })}
+                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10 }}
+                >
+                  <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>Auto-fill Collide bar</Text>
+                  <Text style={{ color: state.autoConsensusSummary ? "rgba(255,255,255,0.6)" : "#6b6478", fontSize: 18, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
+                    {state.autoConsensusSummary ? "✓" : "○"}
+                  </Text>
+                </Pressable>
+              </View>
+
+              <View style={{ borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)", paddingBottom: 8 }}>
                 <Text style={{ color: "#fff", fontWeight: "700", fontFamily: fontFamilyForWeight(700), fontSize: 14, marginBottom: 4 }}>Auto-Wipe Conversations</Text>
                 <Text style={{ color: "#6b6478", fontSize: 11, marginBottom: 12 }}>
                   Automatically archive active grid conversations when a new consensus is generated.

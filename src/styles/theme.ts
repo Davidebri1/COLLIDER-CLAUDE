@@ -204,19 +204,23 @@ export const styles = StyleSheet.create(withFont({
   bodyText: { color: "#ffffff", fontSize: 13, lineHeight: 19, textShadowColor: "rgba(0,0,0,0.85)", textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 5 },
   placeholder: { color: "#ffffff", fontStyle: "italic", fontSize: 13, textShadowColor: "#000000", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
 
+  // Sized down from the original (padding 10, radius 22, 34-38px buttons) —
+  // competitor composers (ChatGPT, Claude) run a single-line input around
+  // 20-24px tall with small icon buttons, not a tall padded card. This was
+  // eating a disproportionate share of a mobile viewport's vertical space.
   composer: {
-    marginHorizontal: 14, marginBottom: 8, borderRadius: 22, padding: 10,
+    marginHorizontal: 14, marginBottom: 6, borderRadius: 16, padding: 8,
     backgroundColor: "rgba(18,18,20,0.72)",
     borderWidth: 1.5, borderColor: "rgba(255,255,255,0.18)",
     shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 8,
   },
-  input: { color: "#fff", minHeight: 38, maxHeight: 110, fontSize: 15 },
-  toolRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 6 },
-  toolBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 7 },
-  toolIcon: { color: "#6b6478", fontSize: 16 },
+  input: { color: "#fff", minHeight: 26, maxHeight: 80, fontSize: 14 },
+  toolRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingTop: 4 },
+  toolBtn: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 7 },
+  toolIcon: { color: "#6b6478", fontSize: 14 },
   send: {
     marginLeft: "auto",
-    width: 38, height: 38, borderRadius: 19,
+    width: 30, height: 30, borderRadius: 15,
     alignItems: "center", justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.14)",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",

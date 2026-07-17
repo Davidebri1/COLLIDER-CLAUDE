@@ -123,13 +123,13 @@ export function PromptComposer({
             what the composer is about to send into. */}
         {onNewConversation && (
           <Pressable onPress={onNewConversation} style={styles.toolBtn}>
-            <Ionicons name="add" size={18} color="#6b6478" />
+            <Ionicons name="add" size={15} color="#6b6478" />
           </Pressable>
         )}
 
         {/* Attachment Paperclip Button */}
         <Pressable onPress={attach} style={styles.toolBtn}>
-          <Ionicons name="attach-outline" size={18} color="#6b6478" />
+          <Ionicons name="attach-outline" size={15} color="#6b6478" />
         </Pressable>
 
         {/* Voice Recorder Mic Button */}
@@ -140,9 +140,9 @@ export function PromptComposer({
           {transcribing ? (
             <ActivityIndicator size="small" color="#6b6478" />
           ) : recording ? (
-            <Ionicons name="mic" size={16} color="#ef4444" />
+            <Ionicons name="mic" size={14} color="#ef4444" />
           ) : (
-            <Ionicons name="mic-outline" size={16} color="#6b6478" />
+            <Ionicons name="mic-outline" size={14} color="#6b6478" />
           )}
         </Pressable>
 
@@ -151,30 +151,32 @@ export function PromptComposer({
           onPress={() => dispatch({ type: "incognito", category: cat, enabled: !incognito })}
           style={[styles.toolBtn, incognito && { backgroundColor: "rgba(93,189,255,0.15)", borderWidth: 1, borderColor: "rgba(93,189,255,0.3)" }]}
         >
-          <Ionicons name={incognito ? "eye-off" : "eye-off-outline"} size={16} color={incognito ? "#5dbdff" : "#6b6478"} />
+          <Ionicons name={incognito ? "eye-off" : "eye-off-outline"} size={14} color={incognito ? "#5dbdff" : "#6b6478"} />
         </Pressable>
 
-        {/* Web Search Globe Toggle */}
+        {/* Web Search Globe Toggle — was #10b981 green, a decorative color
+            outside the black/white/crimson/orange palette; orange matches
+            the app's established second accent instead. */}
         <Pressable
           onPress={() => dispatch({ type: "webSearch", category: cat, enabled: !webSearch })}
-          style={[styles.toolBtn, webSearch && { backgroundColor: "rgba(16,185,129,0.15)", borderWidth: 1, borderColor: "rgba(16,185,129,0.3)" }]}
+          style={[styles.toolBtn, webSearch && { backgroundColor: "rgba(255,183,77,0.15)", borderWidth: 1, borderColor: "rgba(255,183,77,0.3)" }]}
         >
-          <Ionicons name={webSearch ? "globe" : "globe-outline"} size={16} color={webSearch ? "#10b981" : "#6b6478"} />
+          <Ionicons name={webSearch ? "globe" : "globe-outline"} size={14} color={webSearch ? "#ffb74d" : "#6b6478"} />
         </Pressable>
 
         {/* Model Mode dropdown chip — matches web 'Default ▾' pill.
             NOTE: react-native-web doesn't reliably "unset" a style property
-            with `width: undefined` (the base toolBtn's fixed 34px width can
-            win depending on atomic-class insertion order) — must override
-            with an explicit value like "auto" instead. */}
+            with `width: undefined` (the base toolBtn's fixed width can win
+            depending on atomic-class insertion order) — must override with
+            an explicit value like "auto" instead. */}
         <Pressable
           onPress={nextMode}
-          style={[styles.toolBtn, { width: "auto", minWidth: 34, height: 34, borderRadius: 17, paddingHorizontal: 10, flexDirection: "row", gap: 4, alignItems: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }]}
+          style={[styles.toolBtn, { width: "auto", minWidth: 28, height: 28, borderRadius: 14, paddingHorizontal: 8, flexDirection: "row", gap: 3, alignItems: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }]}
         >
-          <Text style={{ color: modeColor, fontSize: 10, fontWeight: "700" }}>
+          <Text style={{ color: modeColor, fontSize: 9, fontWeight: "700" }}>
             {mode === "default" ? "Default" : mode === "research" ? "Research" : "Deep"}
           </Text>
-          <Ionicons name="chevron-down" size={10} color={modeColor} />
+          <Ionicons name="chevron-down" size={9} color={modeColor} />
         </Pressable>
 
         {/* Send Arrow Circle Button */}
@@ -190,7 +192,7 @@ export function PromptComposer({
           {sending ? (
             <ActivityIndicator size="small" color="#fff" />
           ) : (
-            <Ionicons name="arrow-up" size={18} color="#fff" />
+            <Ionicons name="arrow-up" size={15} color="#fff" />
           )}
         </Pressable>
       </View>

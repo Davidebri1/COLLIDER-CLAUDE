@@ -177,6 +177,17 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
                         >
                           <Ionicons name="swap-horizontal-outline" size={13} color="#5dbdff" />
                         </Pressable>
+                        {/* Explicit edit affordance — tapping the card body
+                            already opened the edit modal, but nothing on the
+                            card signaled that, so it went undiscovered.
+                            Matches RemindersScreen's pencil icon. */}
+                        <Pressable
+                          hitSlop={8}
+                          onPress={() => setEditingMemory(m)}
+                          style={[localStyles.deleteButton, { backgroundColor: "rgba(226,232,240,0.08)" }]}
+                        >
+                          <Ionicons name="create-outline" size={13} color="#e2e8f0" />
+                        </Pressable>
                         <Pressable
                           hitSlop={8}
                           onPress={() => handleDeleteMemory(m.id)}

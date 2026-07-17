@@ -672,13 +672,13 @@ const localToolbarStyles = StyleSheet.create({
   // text (soft textShadow), not a flat color fill. "No flat colors — every
   // color should be light, diffused, emitting" per design direction.
   glowChip: {
-    flexDirection: "row", alignItems: "center", gap: 5,
-    paddingHorizontal: 10, height: 28, borderRadius: 14,
+    flexDirection: "row", alignItems: "center", gap: 4,
+    paddingHorizontal: 8, height: 24, borderRadius: 11,
     backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   glowChipText: {
-    color: "rgba(255,255,255,0.85)", fontSize: 10.5, lineHeight: 13, fontWeight: "900", letterSpacing: 0.6, textAlignVertical: "center", fontFamily: fontFamilyForWeight(900),
+    color: "rgba(255,255,255,0.85)", fontSize: 9.5, lineHeight: 12, fontWeight: "900", letterSpacing: 0.5, textAlignVertical: "center", fontFamily: fontFamilyForWeight(900),
   },
   // Same 34px translucent icon button used for the hamburger/Smart Gen
   // triggers in the global view's utility row — reused here so CardScreen's
@@ -922,35 +922,37 @@ function Home({
           Smart Gen row floated below it on bare wallpaper with no
           background of its own — disembodied, anchored only by a top
           margin, not actually contained. Now it's a single panel. */}
-      <View style={{ paddingTop: insets.top + 8, paddingBottom: 10, overflow: "hidden" }}>
+      <View style={{ paddingTop: insets.top + 6, paddingBottom: 8, overflow: "hidden" }}>
         <GlossSurface />
-        <View style={{ height: 20, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: "#fff", fontSize: 14, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
+        <View style={{ height: 18, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
         </View>
 
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, marginTop: 10, zIndex: 41 }}>
+        {/* Search moved into the left drawer (see Drawer component) — it was
+            eating most of this row's width every time it's visible, which
+            this row is, always, whether or not the user is searching. The
+            header's only job now is the two entry points that need to be
+            reachable from anywhere: menu and Smart Gen. */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, marginTop: 8, zIndex: 41 }}>
           <Pressable
             onPress={openDrawer}
             style={{
-              width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
+              width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center",
               backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
               shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
             }}
           >
-            <Ionicons name="menu-outline" size={18} color="#fff" />
+            <Ionicons name="menu-outline" size={17} color="#fff" />
           </Pressable>
-          <View style={{ flex: 1 }}>
-            <InlineSearch onNavigate={openScreen} />
-          </View>
           <Pressable
             onPress={openRightDrawer}
             style={{
-              width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
+              width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center",
               backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
               shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
             }}
           >
-            <SmartGenMark size={22} />
+            <SmartGenMark size={20} />
           </Pressable>
         </View>
       </View>
@@ -966,12 +968,12 @@ function Home({
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, paddingHorizontal: 14, marginTop: 4, marginBottom: 6 }}>
         <CategoryDropdownTrigger onPress={() => setCategorySelectorVisible(true)} />
         <Pressable onPress={() => setModelSelectorVisible(true)} style={localToolbarStyles.glowChip}>
-          <Ionicons name="albums-outline" size={12} color="rgba(255,255,255,0.75)" />
+          <Ionicons name="albums-outline" size={10.5} color="rgba(255,255,255,0.75)" />
           <Text style={localToolbarStyles.glowChipText}>MODELS</Text>
-          <Ionicons name="chevron-down" size={11} color="rgba(255,255,255,0.4)" />
+          <Ionicons name="chevron-down" size={10} color="rgba(255,255,255,0.4)" />
         </Pressable>
         <Pressable onPress={() => setRowSelectorVisible(true)} style={[localToolbarStyles.pill, { flexDirection: "row", gap: 2 }]}>
-          <Ionicons name="grid-outline" size={10} color="#fff" />
+          <Ionicons name="grid-outline" size={9} color="#fff" />
           <Text style={localToolbarStyles.pillText}>{rows}</Text>
         </Pressable>
         {state.activeCategory === "coding" && (() => {
@@ -1093,10 +1095,10 @@ function CategoryDropdownTrigger({ onPress }: { onPress: () => void }) {
       style={{
         flexDirection: "row",
         alignItems: "center",
-        gap: 5,
-        paddingHorizontal: 10,
-        height: 28,
-        borderRadius: 14,
+        gap: 4,
+        paddingHorizontal: 8,
+        height: 24,
+        borderRadius: 11,
         backgroundColor: "rgba(255,255,255,0.05)",
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.08)",
@@ -1107,12 +1109,12 @@ function CategoryDropdownTrigger({ onPress }: { onPress: () => void }) {
         elevation: 3,
       }}
     >
-      <Ionicons name={meta.icon} size={12} color={meta.color} style={{ opacity: 0.85 }} />
+      <Ionicons name={meta.icon} size={11} color={meta.color} style={{ opacity: 0.85 }} />
       <Text
         style={{
           color: "rgba(255,255,255,0.9)",
-          fontSize: 10.5,
-          lineHeight: 13,
+          fontSize: 9.5,
+          lineHeight: 12,
           fontWeight: "900",
           letterSpacing: 0.6,
           textAlignVertical: "center",
@@ -2897,6 +2899,18 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           <Pressable onPress={handleClose} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="close" size={16} color="#fff" />
           </Pressable>
+        </View>
+
+        {/* Search — moved here from the header, which had to carry it at
+            full width on every screen whether or not anyone was searching.
+            It belongs in the drawer with everything else it searches
+            across (conversations, memories, reminders, projects,
+            artifacts), not pinned above the card grid. */}
+        <Text style={{ color: "rgba(255,255,255,0.3)", fontSize: 9.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.5, marginBottom: 8 }}>
+          SEARCH
+        </Text>
+        <View style={{ marginBottom: 16 }}>
+          <InlineSearch onNavigate={(s) => handleNav(s)} />
         </View>
 
         {/* Pane 2: History. Visually separate pane — its own label, its own

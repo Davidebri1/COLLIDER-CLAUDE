@@ -142,6 +142,12 @@ type AppState = {
   autoWipeOnConsensus: boolean;
   autoArchiveOnNew: boolean;
   gridRows: 1 | 2 | 3;
+  // Proactive-value philosophy: the Collide bar auto-fills with a short
+  // consensus synthesis as soon as 2+ models have replied, instead of
+  // requiring the user to open a drawer to find out models agree. This is
+  // the opt-out for that — off means the bar goes back to a plain "tap to
+  // compare" button.
+  autoConsensusSummary: boolean;
   customAgents: { id: string; name: string; modelId: string; instructions: string }[];
   customInstructions: string;
   activeSkills: string[];
@@ -229,6 +235,7 @@ type Action =
   | { type: "setAutoWipeOnConsensus"; value: boolean }
   | { type: "setAutoArchiveOnNew"; value: boolean }
   | { type: "setGridRows"; value: 1 | 2 | 3 }
+  | { type: "setAutoConsensusSummary"; value: boolean }
   | { type: "addCustomAgent"; agent: { name: string; modelId: string; instructions: string } }
   | { type: "updateCustomAgent"; agent: { id: string; name: string; modelId: string; instructions: string } }
   | { type: "removeCustomAgent"; id: string }
@@ -415,6 +422,7 @@ function initialState(): AppState {
     autoWipeOnConsensus: false,
     autoArchiveOnNew: true,
     gridRows: 2,
+    autoConsensusSummary: true,
     customAgents: [],
     customInstructions: "",
     activeSkills: [],
@@ -766,6 +774,7 @@ function reducer(state: AppState, action: Action): AppState {
     case "setAutoWipeOnConsensus": return { ...state, autoWipeOnConsensus: action.value };
     case "setAutoArchiveOnNew": return { ...state, autoArchiveOnNew: action.value };
     case "setGridRows": return { ...state, gridRows: action.value };
+    case "setAutoConsensusSummary": return { ...state, autoConsensusSummary: action.value };
     case "addCustomAgent": return { ...state, customAgents: [...state.customAgents, { id: `ag_${ids()}`, ...action.agent }] };
     case "updateCustomAgent": return { ...state, customAgents: state.customAgents.map((a) => a.id === action.agent.id ? action.agent : a) };
     case "removeCustomAgent": {
