@@ -67,16 +67,24 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 5 },
     elevation: 6,
   },
+  // Deliberately NOT the same treatment as the "COLLIDER" app title (white,
+  // fontWeight 900, letterSpacing 3) — that similarity was exactly why this
+  // read as another header instead of a button: same look, different job.
+  // The app's one fixed accent (silver/chrome) marks it as the interactive
+  // element it is.
   title: {
-    color: "#fff",
-    fontSize: 11,
-    fontWeight: "900",
-    letterSpacing: 3,
+    color: "#e2e8f0",
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1.5,
   },
+  // Not fine print — this line carries real information (what tapping does,
+  // or why it's disabled), not decoration, so it needs to actually be
+  // readable, not shrunk down to an afterthought.
   sub: {
-    color: "rgba(255,255,255,0.4)",
-    fontSize: 8.5,
+    color: "rgba(255,255,255,0.55)",
+    fontSize: 10,
     fontWeight: "600",
-    marginTop: 1,
+    marginTop: 2,
   },
 });

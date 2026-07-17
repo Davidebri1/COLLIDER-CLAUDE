@@ -84,12 +84,15 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
           this same row as small icon triggers with a lit dot when active,
           not full "Type: All" / "Model: All" text boxes that doubled the
           bar's height for information that's rarely non-default. */}
+      {/* Same weight as the CATEGORY/MODELS chips below it (thin border, no
+          shadow) — it was previously bordered/shadowed more heavily than
+          any other secondary control on screen, which made a rarely-used
+          utility the most visually loud thing under the title. */}
       <View
         style={{
-          flexDirection: "row", alignItems: "center", height: 36, borderRadius: 12,
-          backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)",
+          flexDirection: "row", alignItems: "center", height: 34, borderRadius: 12,
+          backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
           paddingHorizontal: 10, gap: 8,
-          shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 4,
         }}
       >
         <Ionicons name="search" size={13} color="rgba(255,255,255,0.5)" />
