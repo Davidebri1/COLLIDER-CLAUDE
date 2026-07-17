@@ -301,9 +301,16 @@ export function AgentSkillsDrawer({
               )}
             </ScrollView>
 
-            {/* Frost locked layers for Pro features */}
+            {/* Frost locked layers for Pro features — the overlay itself is
+                now a Pressable that closes the drawer on tap. Previously
+                this was a plain View covering the whole tab with only the
+                UPGRADE button doing anything; tapping anywhere else in the
+                locked area was a dead zone. No overlay should trap a user —
+                it either takes the explicit upgrade action, or any tap
+                outside that button is a clear "let me out" and should just
+                let them out, not force the upgrade flow on them too. */}
             {activeTab === "agents" && !hasPro && (
-              <View style={localStyles.lockedOverlay}>
+              <Pressable style={localStyles.lockedOverlay} onPress={onClose}>
                 <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={localStyles.lockedContent}>
                   <Ionicons name="lock-closed" size={32} color="#e2e8f0" style={{ marginBottom: 12 }} />
@@ -311,18 +318,18 @@ export function AgentSkillsDrawer({
                   <Text style={localStyles.lockDesc}>
                     Custom role creation is unlocked for Pro or Elite subscription tiers.
                   </Text>
-                  <Pressable 
-                    onPress={() => { onClose(); openUpgrade(); }} 
+                  <Pressable
+                    onPress={() => { onClose(); openUpgrade(); }}
                     style={localStyles.lockUpgradeBtn}
                   >
                     <Text style={localStyles.lockUpgradeText}>UPGRADE TO UNLOCK</Text>
                   </Pressable>
                 </View>
-              </View>
+              </Pressable>
             )}
 
             {activeTab === "instructions" && !hasPro && (
-              <View style={localStyles.lockedOverlay}>
+              <Pressable style={localStyles.lockedOverlay} onPress={onClose}>
                 <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={localStyles.lockedContent}>
                   <Ionicons name="lock-closed" size={32} color="#e2e8f0" style={{ marginBottom: 12 }} />
@@ -330,18 +337,18 @@ export function AgentSkillsDrawer({
                   <Text style={localStyles.lockDesc}>
                     Custom global instruction overrides are unlocked for Pro or Elite subscription tiers.
                   </Text>
-                  <Pressable 
-                    onPress={() => { onClose(); openUpgrade(); }} 
+                  <Pressable
+                    onPress={() => { onClose(); openUpgrade(); }}
                     style={localStyles.lockUpgradeBtn}
                   >
                     <Text style={localStyles.lockUpgradeText}>UPGRADE TO UNLOCK</Text>
                   </Pressable>
                 </View>
-              </View>
+              </Pressable>
             )}
 
             {activeTab === "skills" && !hasElite && (
-              <View style={localStyles.lockedOverlay}>
+              <Pressable style={localStyles.lockedOverlay} onPress={onClose}>
                 <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={localStyles.lockedContent}>
                   <Ionicons name="lock-closed" size={32} color="#ffb74d" style={{ marginBottom: 12 }} />
@@ -349,14 +356,14 @@ export function AgentSkillsDrawer({
                   <Text style={localStyles.lockDesc}>
                     Injecting advanced compiled developer skills (dbt, ML, GCP diagnostics) requires an Elite subscription.
                   </Text>
-                  <Pressable 
-                    onPress={() => { onClose(); openUpgrade(); }} 
+                  <Pressable
+                    onPress={() => { onClose(); openUpgrade(); }}
                     style={[localStyles.lockUpgradeBtn, { backgroundColor: "#ffb74d" }]}
                   >
                     <Text style={localStyles.lockUpgradeText}>UNLOCK ELITE ENG</Text>
                   </Pressable>
                 </View>
-              </View>
+              </Pressable>
             )}
           </View>
         </View>
