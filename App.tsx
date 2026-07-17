@@ -666,6 +666,14 @@ const localToolbarStyles = StyleSheet.create({
   glowChipText: {
     color: "rgba(255,255,255,0.85)", fontSize: 10.5, lineHeight: 13, fontWeight: "900", letterSpacing: 0.6, textAlignVertical: "center", fontFamily: fontFamilyForWeight(900),
   },
+  // Same 34px translucent icon button used for the hamburger/Smart Gen
+  // triggers in the global view's utility row — reused here so CardScreen's
+  // toolbar follows the same conventions instead of inventing its own.
+  toolbarIconBtn: {
+    width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
+    backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
+    shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
+  },
 });
 
 const localDrawerStyles = StyleSheet.create({
@@ -888,49 +896,49 @@ function Home({
 
   return (
     <View style={styles.flex}>
-      {/* Header — orientation only. Title, sized snugly to itself, nothing
-          else in it: headers are for "where am I", not controls. Every
-          functional control lives with what it actually affects instead. */}
-      <View style={{ paddingTop: insets.top + 8, paddingBottom: 8, overflow: "hidden" }}>
+      {/* Header — title AND the utility row (menu/search/Smart Gen) share
+          ONE anchored surface, edge to edge. Previously the title sat in
+          its own black bar that faded out after 10px, and the menu/search/
+          Smart Gen row floated below it on bare wallpaper with no
+          background of its own — disembodied, anchored only by a top
+          margin, not actually contained. Now it's a single panel. */}
+      <View style={{ paddingTop: insets.top + 8, paddingBottom: 10, overflow: "hidden" }}>
         <GlossSurface />
         <View style={{ height: 20, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: "#fff", fontSize: 14, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
         </View>
+
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, marginTop: 10, zIndex: 41 }}>
+          <Pressable
+            onPress={openDrawer}
+            style={{
+              width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
+              backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+              shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
+            }}
+          >
+            <Ionicons name="menu-outline" size={18} color="#fff" />
+          </Pressable>
+          <View style={{ flex: 1 }}>
+            <InlineSearch onNavigate={openScreen} />
+          </View>
+          <Pressable
+            onPress={openRightDrawer}
+            style={{
+              width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
+              backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
+              shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
+            }}
+          >
+            <SmartGenMark size={22} />
+          </Pressable>
+        </View>
       </View>
       <LinearGradient
-        colors={["#060608", "rgba(6,6,8,0)"]}
+        colors={["#040404", "rgba(4,4,4,0)"]}
         style={{ height: 10, marginTop: -1 }}
         pointerEvents="none"
       />
-
-      {/* Utility row — menu (global nav) + Smart Gen tools + the persistent
-          search bar. openRightDrawer had no trigger anywhere in this screen
-          before — Smart Gen's global-view entry point simply didn't exist. */}
-      <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 14, marginTop: 10, zIndex: 41 }}>
-        <Pressable
-          onPress={openDrawer}
-          style={{
-            width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
-            backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
-            shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
-          }}
-        >
-          <Ionicons name="menu-outline" size={18} color="#fff" />
-        </Pressable>
-        <View style={{ flex: 1 }}>
-          <InlineSearch onNavigate={openScreen} />
-        </View>
-        <Pressable
-          onPress={openRightDrawer}
-          style={{
-            width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
-            backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
-            shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
-          }}
-        >
-          <SmartGenMark size={22} />
-        </Pressable>
-      </View>
 
       {/* Grid-scoped row — category, models, density/rows: these all affect
           the card grid directly below, so they live right above it instead
@@ -2294,10 +2302,14 @@ function CardScreen({
         pointerEvents="none"
       />
 
-      {/* Sub Tabs Tray — tabs on the left, utility icons (History, Outputs)
-          right-aligned in the same bar instead of scattered up in the
-          header. They act on this screen the same way the tabs do. */}
-      <View style={[styles.subTabTray, { flexDirection: "row", alignItems: "center" }]}>
+      {/* Sub Tabs Tray — same conventions as the global view's utility row:
+          same translucent chip style as the CATEGORY/MODELS pills (not an
+          inverted solid-white toggle found nowhere else in the app), same
+          34px translucent icon-button style as the hamburger/Smart Gen
+          icons up top (not the larger, differently-toned iconBtn). The
+          icon pair sits in its own opaque-backed box so scrolled tab text
+          can never visually bleed through underneath it. */}
+      <View style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#040404", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 14, gap: 6, paddingVertical: 8 }} style={{ flex: 1 }}>
           {(["chat", "memory", "projects", "files", "reminders"] as const).map((t) => {
             const active = activeTab === t;
@@ -2308,30 +2320,13 @@ function CardScreen({
                 onPress={() => setActiveTab(t)}
                 style={[
                   styles.subTab,
-                  active ? {
-                    backgroundColor: "#ffffff",
-                    borderColor: "#ffffff",
-                    shadowColor: "#ffffff",
-                    shadowOffset: { width: 0, height: 3 },
-                    shadowOpacity: 0.5,
-                    shadowRadius: 8,
-                    elevation: 6,
-                  } : {
-                    backgroundColor: "#08080c",
-                    borderColor: "rgba(255,255,255,0.08)",
-                  }
+                  active && { backgroundColor: "rgba(255,255,255,0.14)", borderColor: "rgba(255,255,255,0.25)" },
                 ]}
               >
                 <Text
                   style={[
                     styles.subTabText,
-                    active ? {
-                      color: "#000000",
-                      fontWeight: "900",
-                    } : {
-                      color: "rgba(255,255,255,0.45)",
-                      fontWeight: "700",
-                    },
+                    active && { color: "#ffffff", fontWeight: "900" },
                   ]}
                 >
                   {label.toUpperCase()}
@@ -2340,10 +2335,12 @@ function CardScreen({
             );
           })}
         </ScrollView>
-        <View style={{ flexDirection: "row", gap: 6, paddingRight: 14 }}>
-          <IconButton iconName="time-outline" onPress={openHistory} />
-          <Pressable onPress={() => openRightDrawer(model.id)} style={styles.iconBtn}>
-            <SmartGenMark size={24} />
+        <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 10, backgroundColor: "#040404" }}>
+          <Pressable onPress={openHistory} style={localToolbarStyles.toolbarIconBtn}>
+            <Ionicons name="time-outline" size={16} color="#fff" />
+          </Pressable>
+          <Pressable onPress={() => openRightDrawer(model.id)} style={localToolbarStyles.toolbarIconBtn}>
+            <SmartGenMark size={16} />
           </Pressable>
         </View>
       </View>

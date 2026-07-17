@@ -78,7 +78,7 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
   const open = filtered.length > 0;
 
   return (
-    <View style={{ paddingHorizontal: 14, marginBottom: 6, position: "relative", zIndex: 40 }}>
+    <View style={{ marginBottom: 6, position: "relative", zIndex: 40 }}>
       {/* One row. A sliver, not a block — no title line above it, no
           second row of filter fields below it. Type/Model filters live in
           this same row as small icon triggers with a lit dot when active,
