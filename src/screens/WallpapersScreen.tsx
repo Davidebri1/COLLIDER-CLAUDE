@@ -105,20 +105,6 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
           <Text style={wallStyles.sectionHint}>{FREE_THEMES.length} loaded</Text>
         </View>
         
-        {/* Terminal styled instructions */}
-        <View style={wallStyles.terminalContainer}>
-          <View style={wallStyles.terminalHeader}>
-            <View style={wallStyles.terminalDotRed} />
-            <View style={wallStyles.terminalDotYellow} />
-            <View style={wallStyles.terminalDotGreen} />
-            <Text style={wallStyles.terminalTitle}>assets.sh // import instructions</Text>
-          </View>
-          <Text style={wallStyles.terminalText}>
-            $ cp my_theme.jpg assets/themes/free/{"\n"}
-            $ npm run reload # themes auto-load in real-time
-          </Text>
-        </View>
-
         {FREE_THEMES.length === 0 ? (
           <Text style={localStyles.mutedHint}>Drop custom .jpg assets in your project root to show themes here.</Text>
         ) : (
@@ -156,19 +142,6 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
         <View style={wallStyles.sectionHead}>
           <Text style={wallStyles.sectionLabel}>PREMIUM LIVE WALLPAPERS</Text>
           <Text style={[wallStyles.sectionHint, { color: LOCK_COLOR }]}>{PREMIUM_THEMES.length} available · own individually</Text>
-        </View>
-
-        <View style={[wallStyles.terminalContainer, { borderColor: "rgba(196,181,253,0.18)", backgroundColor: "rgba(196,181,253,0.02)" }]}>
-          <View style={wallStyles.terminalHeader}>
-            <View style={wallStyles.terminalDotRed} />
-            <View style={wallStyles.terminalDotYellow} />
-            <View style={wallStyles.terminalDotGreen} />
-            <Text style={[wallStyles.terminalTitle, { color: "#e2e8f0" }]}>live_wallpapers.sh // video compilation</Text>
-          </View>
-          <Text style={[wallStyles.terminalText, { color: "#e2e8f0" }]}>
-            $ mv loops.mp4 assets/themes/premium/{"\n"}
-            $ metro restart # compiles assets in 60fps loops
-          </Text>
         </View>
 
         {PREMIUM_THEMES.length === 0 ? (
@@ -315,38 +288,6 @@ const wallStyles = StyleSheet.create(withFont({
   sectionHint: {
     color: "#6b6478",
     fontSize: 10.5,
-  },
-  terminalContainer: {
-    backgroundColor: "rgba(0, 0, 0, 0.3)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.06)",
-    borderRadius: 14,
-    padding: 10,
-    marginBottom: 12,
-    gap: 6,
-  },
-  terminalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.03)",
-    paddingBottom: 6,
-  },
-  terminalDotRed: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#ef4444" },
-  terminalDotYellow: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#eab308" },
-  terminalDotGreen: { width: 5, height: 5, borderRadius: 2.5, backgroundColor: "#22c55e" },
-  terminalTitle: {
-    color: "#6b6478",
-    fontSize: 8,
-    fontFamily: "monospace",
-    marginLeft: 4,
-  },
-  terminalText: {
-    color: "#8d8398",
-    fontSize: 10,
-    lineHeight: 14,
-    fontFamily: "monospace",
   },
   liveBadge: {
     position: "absolute",
