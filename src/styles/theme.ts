@@ -184,7 +184,14 @@ export const styles = StyleSheet.create(withFont({
   modelCard: { flex: 1, borderRadius: 18, padding: 7 },
   glow: { position: "absolute", width: 120, height: 120, borderRadius: 60, left: -42, bottom: -42, opacity: 0.2 },
   cardTop: { flexDirection: "row", gap: 8 },
-  cardTitle: { fontSize: 10, fontWeight: "900", letterSpacing: 1.2, textTransform: "uppercase", textShadowColor: "#000000", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 },
+  // wordBreak + overflowWrap — RN Web's default text wrapping breaks
+  // mid-word ("COMMAND R" -> "COMMAN"/"D R") the moment a card gets narrow
+  // (3-row density, smaller viewports). Both properties have to be
+  // overridden together: wordBreak:"keep-all" alone doesn't stop it since
+  // overflowWrap:"break-word" independently permits mid-word breaks as a
+  // fallback. Model names are short enough that breaking only at spaces
+  // is always preferable to a broken word.
+  cardTitle: { fontSize: 10, fontWeight: "900", letterSpacing: 1.2, textTransform: "uppercase", textShadowColor: "#000000", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2, wordBreak: "keep-all", overflowWrap: "normal" },
   // Subheader, not a second headline — this used to be bold/white/shadowed,
   // competing with the title right above it instead of sitting quietly under it.
   cardDesc: { color: "rgba(255,255,255,0.5)", fontWeight: "600", fontSize: 9, letterSpacing: 0.1 },
