@@ -37,6 +37,25 @@ export function AgentSkillsDrawer({
   const [agentName, setAgentName] = useState("");
   const [selectedModel, setSelectedModel] = useState("free/qwen-coder-32b");
   const [agentInstructions, setAgentInstructions] = useState("");
+  // Set when tapping an existing agent card body — reuses the same form for
+  // editing instead of a separate modal, matching how the create form
+  // already looks. Null means the form is in "create new" mode.
+  const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
+
+  const resetAgentForm = () => {
+    setEditingAgentId(null);
+    setAgentName("");
+    setSelectedModel("free/qwen-coder-32b");
+    setAgentInstructions("");
+  };
+
+  const handleEditAgent = (ag: { id: string; name: string; modelId: string; instructions: string }) => {
+    Haptics.selectionAsync().catch(() => {});
+    setEditingAgentId(ag.id);
+    setAgentName(ag.name);
+    setSelectedModel(ag.modelId);
+    setAgentInstructions(ag.instructions);
+  };
 
   const handleCreateAgent = () => {
     if (!agentName.trim() || !agentInstructions.trim()) {
@@ -44,18 +63,38 @@ export function AgentSkillsDrawer({
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    dispatch({
-      type: "addCustomAgent",
-      agent: {
-        name: agentName.trim(),
-        modelId: selectedModel,
-        instructions: agentInstructions.trim(),
-      },
-    });
-    setAgentName("");
-    setAgentInstructions("");
-    toast(`Custom agent "${agentName}" created successfully!`);
+    if (editingAgentId) {
+      dispatch({
+        type: "updateCustomAgent",
+        agent: { id: editingAgentId, name: agentName.trim(), modelId: selectedModel, instructions: agentInstructions.trim() },
+      });
+      toast(`"${agentName}" updated.`);
+    } else {
+      dispatch({
+        type: "addCustomAgent",
+        agent: {
+          name: agentName.trim(),
+          modelId: selectedModel,
+          instructions: agentInstructions.trim(),
+        },
+      });
+      toast(`Custom agent "${agentName}" created successfully!`);
+    }
+    resetAgentForm();
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  };
+
+  const activeAgentId = state.activeAgentId[state.activeCategory];
+
+  const handleToggleActiveAgent = (ag: { id: string; name: string }) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (activeAgentId === ag.id) {
+      dispatch({ type: "setActiveAgent", category: state.activeCategory, agentId: null });
+      toast(`"${ag.name}" deactivated.`);
+    } else {
+      dispatch({ type: "setActiveAgent", category: state.activeCategory, agentId: ag.id });
+      toast(`"${ag.name}" is now active — it'll steer every reply in this tab until you switch it off.`);
+    }
   };
 
   const codingModels = MODELS.filter((m) => m.category.includes("coding"));
@@ -174,12 +213,19 @@ export function AgentSkillsDrawer({
               {activeTab === "agents" && (
                 <View style={{ gap: 14 }}>
                   <View style={localStyles.infoBox}>
-                    <Text style={localStyles.infoBoxTitle}>SYNTHESIZE SPECIAL AGENT</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                      <Text style={localStyles.infoBoxTitle}>{editingAgentId ? "EDIT AGENT" : "SYNTHESIZE SPECIAL AGENT"}</Text>
+                      {editingAgentId && (
+                        <Pressable onPress={resetAgentForm}>
+                          <Text style={{ color: "#858091", fontSize: 9.5, fontWeight: "800", letterSpacing: 0.5 }}>CANCEL</Text>
+                        </Pressable>
+                      )}
+                    </View>
                     <Text style={localStyles.infoBoxDesc}>
-                      Assemble customized agent roles with targeted system instructions and base code models.
+                      Assemble customized agent roles with targeted system instructions and base code models. Activate one to steer replies with its persona in this tab.
                     </Text>
                   </View>
-                  
+
                   <View style={{ gap: 4 }}>
                     <Text style={localStyles.formLabel}>AGENT NAME</Text>
                     <TextInput
@@ -235,37 +281,58 @@ export function AgentSkillsDrawer({
 
                   <Pressable onPress={handleCreateAgent} style={localStyles.submitBtn}>
                     <Text style={{ color: "#000", fontWeight: "900", fontSize: 11.5, letterSpacing: 1 }}>
-                      SYNTHESIZE AGENT
+                      {editingAgentId ? "SAVE CHANGES" : "SYNTHESIZE AGENT"}
                     </Text>
                   </Pressable>
 
                   {/* Active Agents list */}
                   <View style={{ marginTop: 8, gap: 8 }}>
-                    <Text style={localStyles.boardHeader}>ACTIVE CUSTOM CONSOLE AGENTS ({state.customAgents?.length || 0})</Text>
+                    <Text style={localStyles.boardHeader}>YOUR CUSTOM AGENTS ({state.customAgents?.length || 0})</Text>
                     {!state.customAgents || state.customAgents.length === 0 ? (
                       <Text style={styles.muted}>No custom agents created yet.</Text>
                     ) : (
                       state.customAgents.map((ag) => {
                         const mColor = getModelColor(ag.modelId);
+                        const isActive = activeAgentId === ag.id;
                         return (
-                          <View key={ag.id} style={localStyles.activeAgentCard}>
-                            <View style={{ flex: 1, gap: 3 }}>
-                              <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12.5 }}>{ag.name}</Text>
+                          <View key={ag.id} style={[localStyles.activeAgentCard, isActive && localStyles.activeAgentCardOn]}>
+                            <Pressable
+                              style={{ flex: 1, gap: 3 }}
+                              onPress={() => handleEditAgent(ag)}
+                            >
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12.5 }}>{ag.name}</Text>
+                                {isActive && (
+                                  <View style={localStyles.activeBadge}>
+                                    <Text style={localStyles.activeBadgeText}>ACTIVE</Text>
+                                  </View>
+                                )}
+                              </View>
                               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                                 <View style={[localStyles.modelDot, { backgroundColor: mColor, width: 4, height: 4 }]} />
                                 <Text style={{ color: "#858091", fontSize: 9.5 }}>{modelById(ag.modelId)?.label || ag.modelId}</Text>
                               </View>
                               <Text style={{ color: "#6b6478", fontSize: 10.5 }} numberOfLines={1}>{ag.instructions}</Text>
-                            </View>
-                            <Pressable 
-                              onPress={() => {
-                                dispatch({ type: "removeCustomAgent", id: ag.id });
-                                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                              }} 
-                              style={localStyles.trashBtn}
-                            >
-                              <Ionicons name="trash-outline" size={13} color="#ef4444" />
                             </Pressable>
+                            <View style={{ flexDirection: "row", gap: 6 }}>
+                              <Pressable
+                                onPress={() => handleToggleActiveAgent(ag)}
+                                style={[localStyles.useBtn, isActive && localStyles.useBtnOn]}
+                              >
+                                <Text style={[localStyles.useBtnText, isActive && localStyles.useBtnTextOn]}>
+                                  {isActive ? "STOP" : "USE"}
+                                </Text>
+                              </Pressable>
+                              <Pressable
+                                onPress={() => {
+                                  dispatch({ type: "removeCustomAgent", id: ag.id });
+                                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                }}
+                                style={localStyles.trashBtn}
+                              >
+                                <Ionicons name="trash-outline" size={13} color="#ef4444" />
+                              </Pressable>
+                            </View>
                           </View>
                         );
                       })
@@ -563,6 +630,41 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
+  },
+  activeAgentCardOn: {
+    borderColor: "rgba(226,232,240,0.35)",
+    backgroundColor: "rgba(226,232,240,0.05)",
+  },
+  activeBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    backgroundColor: "rgba(226,232,240,0.15)",
+  },
+  activeBadgeText: {
+    color: "#e2e8f0",
+    fontSize: 7.5,
+    fontWeight: "900",
+    letterSpacing: 1,
+  },
+  useBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.06)",
+  },
+  useBtnOn: {
+    backgroundColor: "#e2e8f0",
+  },
+  useBtnText: {
+    color: "#e2e8f0",
+    fontSize: 9.5,
+    fontWeight: "900",
+    letterSpacing: 0.5,
+  },
+  useBtnTextOn: {
+    color: "#000",
   },
   trashBtn: {
     padding: 5,

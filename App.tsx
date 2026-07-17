@@ -649,6 +649,15 @@ const localToolbarStyles = StyleSheet.create({
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   pillText: { color: "#fff", fontSize: 9, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900), textShadowColor: "rgba(0,0,0,0.9)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 14 },
+  // When a custom agent is active for this tab, the pill swaps to showing
+  // its name instead of the generic "AGENTS" label — same treatment
+  // ChatGPT/Claude use to surface which persona is currently steering.
+  pillActive: {
+    backgroundColor: "rgba(226,232,240,0.16)",
+    borderColor: "rgba(226,232,240,0.4)",
+    maxWidth: 140,
+  },
+  pillTextActive: { color: "#e2e8f0" },
   iconBtn: {
     width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
@@ -764,6 +773,7 @@ function Home({
         mode: state.chatMode[state.activeCategory],
         webSearch: state.webSearch[state.activeCategory],
         customInstructions: state.customInstructions,
+        agentInstructions: state.customAgents.find((a) => a.id === state.activeAgentId[state.activeCategory])?.instructions,
         onToken,
       });
       dispatch({
@@ -860,6 +870,7 @@ function Home({
         mode: state.chatMode[state.activeCategory],
         webSearch: state.webSearch[state.activeCategory],
         customInstructions: state.customInstructions,
+        agentInstructions: state.customAgents.find((a) => a.id === state.activeAgentId[state.activeCategory])?.instructions,
         attachments,
         onToken,
       })
@@ -956,11 +967,19 @@ function Home({
           <Ionicons name="grid-outline" size={10} color="#fff" />
           <Text style={localToolbarStyles.pillText}>{rows}</Text>
         </Pressable>
-        {state.activeCategory === "coding" && (
-          <Pressable onPress={() => setAgentSkillsVisible(true)} style={localToolbarStyles.pill}>
-            <Text style={localToolbarStyles.pillText}>AGENTS</Text>
-          </Pressable>
-        )}
+        {state.activeCategory === "coding" && (() => {
+          const activeAgent = state.customAgents.find((a) => a.id === state.activeAgentId[state.activeCategory]);
+          return (
+            <Pressable
+              onPress={() => setAgentSkillsVisible(true)}
+              style={[localToolbarStyles.pill, activeAgent && localToolbarStyles.pillActive]}
+            >
+              <Text style={[localToolbarStyles.pillText, activeAgent && localToolbarStyles.pillTextActive]} numberOfLines={1}>
+                {activeAgent ? activeAgent.name.toUpperCase() : "AGENTS"}
+              </Text>
+            </Pressable>
+          );
+        })()}
       </View>
 
       {/* Measured Grid view container */}
@@ -2273,7 +2292,9 @@ function CardScreen({
         dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: partial, streaming: true, convId });
       });
       const answer = await sendChatWithRetry(model.id, thread, text, state.memories, {
-        mode: state.chatMode[cat], webSearch: state.webSearch[cat], customInstructions: state.customInstructions, attachments, onToken,
+        mode: state.chatMode[cat], webSearch: state.webSearch[cat], customInstructions: state.customInstructions,
+        agentInstructions: state.customAgents.find((a) => a.id === state.activeAgentId[cat])?.instructions,
+        attachments, onToken,
       });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: answer || "No response returned.", convId });
       if (answer) {
@@ -2310,7 +2331,9 @@ function CardScreen({
         dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: partial, streaming: true, convId });
       });
       const answer = await sendChatWithRetry(model.id, thread.slice(0, -2), lastUser.content, state.memories, {
-        mode: state.chatMode[cat], webSearch: state.webSearch[cat], customInstructions: state.customInstructions, onToken,
+        mode: state.chatMode[cat], webSearch: state.webSearch[cat], customInstructions: state.customInstructions,
+        agentInstructions: state.customAgents.find((a) => a.id === state.activeAgentId[cat])?.instructions,
+        onToken,
       });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: answer || "No response returned.", convId });
       if (answer) {

@@ -104,6 +104,10 @@ type AppState = {
   activeCategory: Category;
   selectedModelIds: Record<Category, string[]>;
   activeConversationId: Record<Category, string>;
+  // Which custom agent (if any) is currently "in use" for a given category's
+  // chats — mirrors activeConversationId's per-category shape. Null means no
+  // agent persona is layered on top of the base model for that tab.
+  activeAgentId: Record<Category, string | null>;
   // Which project a given conversation is already "about", once Smart Gen
   // has attached something to one — lets later extraction passes in the same
   // conversation default to that project instead of re-guessing from scratch
@@ -226,7 +230,9 @@ type Action =
   | { type: "setAutoArchiveOnNew"; value: boolean }
   | { type: "setGridRows"; value: 1 | 2 | 3 }
   | { type: "addCustomAgent"; agent: { name: string; modelId: string; instructions: string } }
+  | { type: "updateCustomAgent"; agent: { id: string; name: string; modelId: string; instructions: string } }
   | { type: "removeCustomAgent"; id: string }
+  | { type: "setActiveAgent"; category: Category; agentId: string | null }
   | { type: "setCustomInstructions"; value: string }
   | { type: "toggleSkill"; skillId: string }
   | { type: "publishToMarket"; item: Omit<MarketItem, "id" | "likes" | "likedByUser"> }
@@ -343,6 +349,7 @@ function defaultSelected(category: Category) {
 function initialState(): AppState {
   const selectedModelIds = Object.fromEntries(CATEGORIES.map(({ id }) => [id, defaultSelected(id)])) as Record<Category, string[]>;
   const activeConversationId = Object.fromEntries(CATEGORIES.map(({ id }) => [id, newConvId()])) as Record<Category, string>;
+  const activeAgentId = Object.fromEntries(CATEGORIES.map(({ id }) => [id, null])) as Record<Category, string | null>;
   const incognito = Object.fromEntries(CATEGORIES.map(({ id }) => [id, false])) as Record<Category, boolean>;
   const cardPrompts = Object.fromEntries(CATEGORIES.map(({ id }) => [id, {}])) as Record<Category, Record<string, string>>;
   const chatMode = Object.fromEntries(CATEGORIES.map(({ id }) => [id, "default" as ChatMode])) as Record<Category, ChatMode>;
@@ -355,7 +362,7 @@ function initialState(): AppState {
     lastMonthReset: new Date().toISOString().slice(0, 7),
     lastCreditResetDate: new Date().toISOString().split("T")[0],
     activeCategory: "general",
-    selectedModelIds, activeConversationId, cardPrompts, chatMode, webSearch,
+    selectedModelIds, activeConversationId, activeAgentId, cardPrompts, chatMode, webSearch,
     conversationProjectId: {},
     conversations: [],
     memories: [
@@ -760,7 +767,17 @@ function reducer(state: AppState, action: Action): AppState {
     case "setAutoArchiveOnNew": return { ...state, autoArchiveOnNew: action.value };
     case "setGridRows": return { ...state, gridRows: action.value };
     case "addCustomAgent": return { ...state, customAgents: [...state.customAgents, { id: `ag_${ids()}`, ...action.agent }] };
-    case "removeCustomAgent": return { ...state, customAgents: state.customAgents.filter(a => a.id !== action.id) };
+    case "updateCustomAgent": return { ...state, customAgents: state.customAgents.map((a) => a.id === action.agent.id ? action.agent : a) };
+    case "removeCustomAgent": {
+      // Deactivate this agent everywhere it's currently in use — an active
+      // agent that no longer exists would otherwise silently keep injecting
+      // instructions for a persona the user just deleted.
+      const activeAgentId = Object.fromEntries(
+        Object.entries(state.activeAgentId).map(([cat, id]) => [cat, id === action.id ? null : id])
+      ) as Record<Category, string | null>;
+      return { ...state, customAgents: state.customAgents.filter((a) => a.id !== action.id), activeAgentId };
+    }
+    case "setActiveAgent": return { ...state, activeAgentId: { ...state.activeAgentId, [action.category]: action.agentId } };
     case "setCustomInstructions": return { ...state, customInstructions: action.value };
     case "toggleSkill": return { ...state, activeSkills: state.activeSkills.includes(action.skillId) ? state.activeSkills.filter(s => s !== action.skillId) : [...state.activeSkills, action.skillId] };
     case "publishToMarket": {

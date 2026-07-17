@@ -211,6 +211,10 @@ export type ChatOptions = {
   // panel was cosmetically complete and functionally inert. Wired here the
   // same way memories/webSearch already are.
   customInstructions?: string;
+  // Same "collected but never reached a model" bug as customInstructions,
+  // for the Agents tab: a created agent's persona/instructions previously
+  // had no path into an actual request. Wired the same way.
+  agentInstructions?: string;
   attachments?: Attachment[];
   // Called with the accumulated text so far as tokens arrive. On web this
   // streams in real time (browser fetch supports ReadableStream); on native,
@@ -247,6 +251,9 @@ export async function sendChat(
     // a turn for no reason — the user can ignore or discard it if unwanted.
     "Do not dangle offers. If you can produce something useful (an answer, a draft, a lookup, a generation), do it now in this reply rather than asking permission first.",
   ];
+  if (opts.agentInstructions?.trim()) {
+    sysParts.push(`You are acting as a custom agent with this role — stay in this role for every reply:\n${opts.agentInstructions.trim()}`);
+  }
   if (opts.customInstructions?.trim()) {
     sysParts.push(`User's global instructions — follow these for every reply:\n${opts.customInstructions.trim()}`);
   }
