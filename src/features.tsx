@@ -476,7 +476,7 @@ const styles = StyleSheet.create(withFont({
   sheetKicker: { color: "#8a8496", fontSize: 10, letterSpacing: 2, textTransform: "uppercase" },
   sheetPreview: { color: "#ffffff", fontSize: 13, lineHeight: 18 },
   sheetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 6 },
-  sheetBtn: { width: "22%", aspectRatio: 1, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#241b38", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", gap: 4 },
+  sheetBtn: { width: "22%", aspectRatio: 1, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", gap: 4 },
   sheetIcon: { color: "#e2e8f0", fontSize: 20 },
   sheetLabel: { color: "#f4edf9", fontSize: 11, fontWeight: "600" },
 

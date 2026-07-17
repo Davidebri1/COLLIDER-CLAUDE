@@ -2545,7 +2545,12 @@ function CardScreen({
       {activeTab === "projects" && (
         <ScrollView contentContainerStyle={{ padding: 14, gap: 10 }}>
           <Text style={styles.kicker}>Projects & Model Tasks</Text>
-          {state.projects.map((proj) => (
+          {/* Scoped to this model, same as Memory/Files/Reminders below —
+              Project already carries an optional modelId (auto-generated
+              projects are tagged with it), this tab just never filtered by
+              it, so every model's card showed the full global project list
+              regardless of which model you were looking at. */}
+          {state.projects.filter((p) => p.modelId === model.id).map((proj) => (
             <View key={proj.id} style={[styles.dissentCard, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
               <Text style={[styles.textStrong, { color: model.color }]}>{proj.name}</Text>
               {proj.tasks.map((task) => (
@@ -2558,7 +2563,7 @@ function CardScreen({
                   <Text style={[styles.bodyText, task.done && styles.done]}>{task.title}</Text>
                 </Pressable>
               ))}
-              <View style={[styles.inlineAdd, { backgroundColor: "#201633", marginTop: 10, minHeight: 38, borderRadius: 10 }]}>
+              <View style={[styles.inlineAdd, { backgroundColor: "#161619", marginTop: 10, minHeight: 38, borderRadius: 10 }]}>
                 <TextInput
                   style={[styles.inlineInput, { fontSize: 12 }]}
                   placeholder="New task title..."
