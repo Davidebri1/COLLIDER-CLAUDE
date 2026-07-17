@@ -485,18 +485,6 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
     }
   };
 
-  const handleCreateMockFile = () => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    dispatch({
-      type: "file",
-      file: {
-        name: `cybernetic-harmony-${state.files.length + 1}.png`,
-        kind: "generated",
-        url: "https://picsum.photos/seed/cybernetic-harmony/500/500"
-      }
-    });
-  };
-
   const handleOpenPublish = (file: any) => {
     setPublishFile(file);
     setPublishPrompt(file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "));
@@ -728,24 +716,15 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 <Ionicons name="document-text-outline" size={36} color="rgba(255,255,255,0.2)" style={{ marginBottom: 12 }} />
                 <Text style={[styles.textStrong, { fontSize: 13, marginBottom: 2 }]}>No generated files in vault</Text>
                 <Text style={[styles.muted, { fontSize: 11, textAlign: "center", marginBottom: 20, maxWidth: 220 }]}>Generate images, code or audio inside workspace to publish them here.</Text>
-                
-                <View style={{ flexDirection: "row", gap: 10 }}>
-                  <Pressable onPress={handleCreateMockFile} style={localStyles.mockButton}>
-                    <Ionicons name="add" size={13} color="#ffffff" style={{ marginRight: 2 }} />
-                    <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "800" }}>Mock File</Text>
-                  </Pressable>
-                  <Pressable onPress={goBack} style={localStyles.mockButtonSecondary}>
-                    <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>Workspace</Text>
-                  </Pressable>
-                </View>
+
+                <Pressable onPress={goBack} style={localStyles.mockButtonSecondary}>
+                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>Go to Workspace</Text>
+                </Pressable>
               </View>
             ) : (
               <>
-                <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginVertical: 8 }}>
+                <View style={{ marginVertical: 8 }}>
                   <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", letterSpacing: 1.5 }}>TAP FILE TO PUBLISH</Text>
-                  <Pressable onPress={handleCreateMockFile} style={{ paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.05)" }}>
-                    <Text style={{ color: "#ffffff", fontSize: 10, fontWeight: "700" }}>+ Add Mock File</Text>
-                  </Pressable>
                 </View>
 
                 <FlatList
@@ -1368,16 +1347,6 @@ const localStyles = StyleSheet.create(withFont({
     borderColor: "rgba(255,255,255,0.06)",
     backgroundColor: "rgba(255,255,255,0.01)",
     borderStyle: "dashed"
-  },
-  mockButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.25)"
   },
   mockButtonSecondary: {
     paddingHorizontal: 14,
