@@ -6,7 +6,7 @@ import { styles } from "../styles/theme";
 export function Glass({ children, style, isCard }: { children: ReactNode; style?: StyleProp<ViewStyle>; isCard?: boolean }) {
   if (isCard) {
     return (
-      <View style={[styles.glass, { backgroundColor: "transparent", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.28)" }, style]}>
+      <View style={[styles.glass, { backgroundColor: "transparent", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)" }, style]}>
         {/* Real glass, not frosted plastic: no blur wash and no full-card
             sheen — those read as a milky white film with nothing dark
             backing them on web. Just a crisp border and a small corner
