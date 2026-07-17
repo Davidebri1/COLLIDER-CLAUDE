@@ -65,8 +65,13 @@ import {
   type ModelDef,
   type Tier,
 } from "./src/models";
+import { CONSOLE_SKILLS } from "./src/skills";
 
 import { sendChat, sendChatWithRetry } from "./src/services/chat";
+
+function resolveSkillInstructions(activeSkills: string[]): string[] {
+  return CONSOLE_SKILLS.filter((s) => activeSkills.includes(s.id)).map((s) => s.instruction);
+}
 import { smartGenLLM } from "./src/services/llmExtract";
 import { autoName, fingerprint } from "./src/services/smartgen";
 
@@ -774,6 +779,7 @@ function Home({
         webSearch: state.webSearch[state.activeCategory],
         customInstructions: state.customInstructions,
         agentInstructions: state.customAgents.find((a) => a.id === state.activeAgentId[state.activeCategory])?.instructions,
+        skillInstructions: resolveSkillInstructions(state.activeSkills),
         onToken,
       });
       dispatch({
@@ -871,6 +877,7 @@ function Home({
         webSearch: state.webSearch[state.activeCategory],
         customInstructions: state.customInstructions,
         agentInstructions: state.customAgents.find((a) => a.id === state.activeAgentId[state.activeCategory])?.instructions,
+        skillInstructions: resolveSkillInstructions(state.activeSkills),
         attachments,
         onToken,
       })
@@ -2294,6 +2301,7 @@ function CardScreen({
       const answer = await sendChatWithRetry(model.id, thread, text, state.memories, {
         mode: state.chatMode[cat], webSearch: state.webSearch[cat], customInstructions: state.customInstructions,
         agentInstructions: state.customAgents.find((a) => a.id === state.activeAgentId[cat])?.instructions,
+        skillInstructions: resolveSkillInstructions(state.activeSkills),
         attachments, onToken,
       });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: answer || "No response returned.", convId });
@@ -2333,6 +2341,7 @@ function CardScreen({
       const answer = await sendChatWithRetry(model.id, thread.slice(0, -2), lastUser.content, state.memories, {
         mode: state.chatMode[cat], webSearch: state.webSearch[cat], customInstructions: state.customInstructions,
         agentInstructions: state.customAgents.find((a) => a.id === state.activeAgentId[cat])?.instructions,
+        skillInstructions: resolveSkillInstructions(state.activeSkills),
         onToken,
       });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: answer || "No response returned.", convId });

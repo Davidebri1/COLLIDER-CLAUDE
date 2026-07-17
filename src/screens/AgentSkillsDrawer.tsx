@@ -18,6 +18,7 @@ import { Glass } from "../components/Glass";
 import { GlossSurface } from "../components/GlossSurface";
 import { styles, SCREEN_W, withFont } from "../styles/theme";
 import { MODELS, modelById } from "../models";
+import { CONSOLE_SKILLS } from "../skills";
 import { useToast } from "../components/Toast";
 
 export function AgentSkillsDrawer({
@@ -98,14 +99,7 @@ export function AgentSkillsDrawer({
   };
 
   const codingModels = MODELS.filter((m) => m.category.includes("coding"));
-  
-  const availableSkills = [
-    { id: "accidental-data-loss-prevention", name: "Accidental Data Loss Prevention", desc: "Verifies Drop, Truncate, or broad Delete SQL statements." },
-    { id: "dbt-bigquery", name: "dbt BigQuery Compiler", desc: "Injects dbt analytics compile structures." },
-    { id: "ml-best-practices", name: "ML Best Practices", desc: "Forces statistical validation criteria on regression/clustering." },
-    { id: "gcp-composer-troubleshooting", name: "GCP Composer Diagnostics", desc: "Airflow DAG debugging and Root Cause Analysis." },
-    { id: "dataform-bigquery", name: "Dataform Pipeline Compiler", desc: "Configures dataform workflow sqlx pipelines." },
-  ];
+  const availableSkills = CONSOLE_SKILLS;
 
   const hasPro = state.tier === "pro" || state.tier === "elite";
   const hasElite = state.tier === "elite";

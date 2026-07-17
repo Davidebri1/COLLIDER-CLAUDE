@@ -215,6 +215,11 @@ export type ChatOptions = {
   // for the Agents tab: a created agent's persona/instructions previously
   // had no path into an actual request. Wired the same way.
   agentInstructions?: string;
+  // Same bug again, for the Skills tab: toggling a skill saved its id to
+  // state.activeSkills but nothing ever read that list back out. Callers
+  // resolve the active skill ids to their instruction text and pass it
+  // through here.
+  skillInstructions?: string[];
   attachments?: Attachment[];
   // Called with the accumulated text so far as tokens arrive. On web this
   // streams in real time (browser fetch supports ReadableStream); on native,
@@ -253,6 +258,9 @@ export async function sendChat(
   ];
   if (opts.agentInstructions?.trim()) {
     sysParts.push(`You are acting as a custom agent with this role — stay in this role for every reply:\n${opts.agentInstructions.trim()}`);
+  }
+  if (opts.skillInstructions?.length) {
+    sysParts.push(`Compiled skills are active for this conversation — apply each of these:\n${opts.skillInstructions.map((s) => `- ${s}`).join("\n")}`);
   }
   if (opts.customInstructions?.trim()) {
     sysParts.push(`User's global instructions — follow these for every reply:\n${opts.customInstructions.trim()}`);
