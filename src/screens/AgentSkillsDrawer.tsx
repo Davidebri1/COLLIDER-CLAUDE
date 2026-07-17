@@ -569,7 +569,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   lockedContent: {
     flex: 1,
-    backgroundColor: "rgba(13, 8, 22, 0.45)",
+    backgroundColor: "rgba(4, 4, 4, 0.55)",
     justifyContent: "center",
     alignItems: "center",
     padding: 24,

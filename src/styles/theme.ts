@@ -77,7 +77,7 @@ export const styles = StyleSheet.create(withFont({
     borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
     shadowColor: "#000", shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 9,
   },
-  iconText: { color: "#f9f5ff", fontSize: 20, fontWeight: "600" },
+  iconText: { color: "#ffffff", fontSize: 20, fontWeight: "600" },
 
   // Wordmark — premium brand identity
   wordmarkWrap: {

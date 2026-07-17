@@ -472,9 +472,9 @@ const styles = StyleSheet.create(withFont({
   searchInput: { flex: 1, color: "#fff", fontSize: 14 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
-  sheet: { padding: 18, borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 12, backgroundColor: "#161026", borderTopWidth: 1.5, borderColor: "rgba(255,255,255,0.15)" },
-  sheetKicker: { color: "#a79bb5", fontSize: 10, letterSpacing: 2, textTransform: "uppercase" },
-  sheetPreview: { color: "#f4edf9", fontSize: 13, lineHeight: 18 },
+  sheet: { padding: 18, borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 12, backgroundColor: "#161619", borderTopWidth: 1.5, borderColor: "rgba(255,255,255,0.15)" },
+  sheetKicker: { color: "#8a8496", fontSize: 10, letterSpacing: 2, textTransform: "uppercase" },
+  sheetPreview: { color: "#ffffff", fontSize: 13, lineHeight: 18 },
   sheetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 6 },
   sheetBtn: { width: "22%", aspectRatio: 1, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#241b38", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", gap: 4 },
   sheetIcon: { color: "#e2e8f0", fontSize: 20 },
@@ -538,7 +538,7 @@ const styles = StyleSheet.create(withFont({
     borderColor: "rgba(255,255,255,0.08)",
   },
   segChipText: {
-    color: "#a79bb5",
+    color: "#8a8496",
     fontSize: 11,
     fontWeight: "600",
   },

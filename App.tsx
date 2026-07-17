@@ -891,7 +891,8 @@ function Home({
       {/* Header — orientation only. Title, sized snugly to itself, nothing
           else in it: headers are for "where am I", not controls. Every
           functional control lives with what it actually affects instead. */}
-      <View style={{ backgroundColor: "#060608", paddingTop: insets.top + 8, paddingBottom: 8 }}>
+      <View style={{ paddingTop: insets.top + 8, paddingBottom: 8, overflow: "hidden" }}>
+        <GlossSurface />
         <View style={{ height: 20, alignItems: "center", justifyContent: "center" }}>
           <Text style={{ color: "#fff", fontSize: 14, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
         </View>
@@ -2278,16 +2279,17 @@ function CardScreen({
   };
 
   return (
-    <View style={[styles.flex, { backgroundColor: "rgba(12, 8, 23, 0.45)" }]}>
+    <View style={[styles.flex, { backgroundColor: "rgba(4, 4, 4, 0.45)" }]}>
       {/* Header — orientation only: back + title. No buttons here; headers
           are for "where am I", not controls. */}
-      <View style={[styles.header, { backgroundColor: "#060608", paddingTop: insets.top, height: 52 + insets.top }]}>
+      <View style={[styles.header, { paddingTop: insets.top, height: 52 + insets.top, overflow: "hidden" }]}>
+        <GlossSurface />
         <IconButton iconName="chevron-back" onPress={goBack} />
         <Text style={[styles.pageTitle, { color: model.color }]}>{model.label}</Text>
         <View style={{ width: 40 }} />
       </View>
       <LinearGradient
-        colors={["#060608", "rgba(6,6,8,0)"]}
+        colors={["#040404", "rgba(4,4,4,0)"]}
         style={{ height: 10, marginTop: -1 }}
         pointerEvents="none"
       />
@@ -2405,7 +2407,7 @@ function CardScreen({
                           <Text style={[styles.bodyText, { marginTop: 6, fontSize: 12, opacity: 0.8 }]}>{message.content}</Text>
                         </View>
                       ) : message.role === "assistant" && model.category.includes("music") && message.content ? (
-                        <View style={[styles.audioPlayerCard, { backgroundColor: "#1e172e" }]}>
+                        <View style={[styles.audioPlayerCard, { backgroundColor: "#161619" }]}>
                           <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", marginBottom: 4 }}> SUNO AUDIO GENERATOR</Text>
                           <AudioPlayerControls />
                           <View style={{ marginTop: 8 }}>
@@ -2413,7 +2415,7 @@ function CardScreen({
                           </View>
                         </View>
                       ) : message.role === "assistant" && model.category.includes("video") && message.content ? (
-                        <View style={[styles.videoPlayerCard, { backgroundColor: "#1e172e" }]}>
+                        <View style={[styles.videoPlayerCard, { backgroundColor: "#161619" }]}>
                           <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", marginBottom: 4 }}> SORA STORYBOARD PLAYER</Text>
                           <VideoPlayerSimulated prompt={message.content} />
                           <View style={{ marginTop: 8 }}>
@@ -3240,7 +3242,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
 function IconButton({ iconName, onPress }: { iconName: string; onPress: () => void }) {
   return (
     <Pressable onPress={onPress} style={styles.iconBtn}>
-      <Ionicons name={iconName as any} size={20} color="#f9f5ff" />
+      <Ionicons name={iconName as any} size={20} color="#ffffff" />
     </Pressable>
   );
 }
