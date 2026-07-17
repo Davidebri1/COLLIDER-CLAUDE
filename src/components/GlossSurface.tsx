@@ -14,8 +14,7 @@ import { LinearGradient } from "expo-linear-gradient";
 export function GlossSurface({ borderRadius = 0, variant = "black" }: { borderRadius?: number; variant?: "black" | "white" }) {
   const dark = variant === "black";
   const base = dark ? "#040404" : "#f4f4f6";
-  const shinePeak = dark ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.95)";
-  const shineFade = dark ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.55)";
+  const shinePeak = dark ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.95)";
   const edgeLine = dark ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.85)";
 
   return (
@@ -26,13 +25,25 @@ export function GlossSurface({ borderRadius = 0, variant = "black" }: { borderRa
           percentage of the container. Percentage sizing made this balloon
           into a huge blob on small panels (modals, chips) while looking
           right only on large ones — a fixed size keeps it reading as one
-          consistent tight highlight at every panel size. */}
-      <View style={{ position: "absolute", top: -18, left: 8, width: 90, height: 50, borderRadius: 999, overflow: "hidden" }}>
+          consistent tight highlight at every panel size.
+          Fully inside the container (not straddling the clip edge) — it
+          was previously positioned half off the top, which combined with
+          the parent's overflow:hidden cut it into a flat-edged smudge
+          instead of a soft contained highlight. */}
+      <View style={{ position: "absolute", top: 2, left: 6, width: 90, height: 46, borderRadius: 999, overflow: "hidden" }}>
         <LinearGradient
-          colors={[shinePeak, shineFade, "transparent"]}
-          locations={[0, 0.45, 1]}
-          start={{ x: 0.25, y: 0.1 }}
-          end={{ x: 0.85, y: 0.9 }}
+          // Peak sits in the MIDDLE (position 0.5), transparent on BOTH
+          // ends — a gradient that starts bright at 0% has its peak right
+          // at the shape's edge, which reads as a hard bright wedge/
+          // crescent, not a glow. Fading in-out-in like this is what
+          // actually makes it read as a soft spot of light sitting on the
+          // surface. Every stop shares white's RGB (alpha-only fade) so it
+          // doesn't shift through gray/black like the "transparent"
+          // keyword (rgba(0,0,0,0)) would.
+          colors={["rgba(255,255,255,0)", shinePeak, "rgba(255,255,255,0)"]}
+          locations={[0, 0.5, 1]}
+          start={{ x: 0, y: 0.2 }}
+          end={{ x: 1, y: 0.8 }}
           style={StyleSheet.absoluteFill}
         />
       </View>
