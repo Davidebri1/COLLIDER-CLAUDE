@@ -102,7 +102,7 @@ export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openO
           ))}
           {!!openOutputs && (
             <Pressable onPress={openOutputs} style={localStyles.navTab}>
-              <Text style={localStyles.navTabText}>OUTPUTS</Text>
+              <Text style={localStyles.navTabText}>GENERATIONS</Text>
             </Pressable>
           )}
         </View>

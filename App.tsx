@@ -3056,7 +3056,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
               style={{ flex: 1, paddingVertical: 7, borderRadius: 9, alignItems: "center", backgroundColor: panel === p ? "rgba(255,255,255,0.08)" : "transparent" }}
             >
               <Text style={{ color: panel === p ? "#fff" : "#6b6478", fontSize: 10.5, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900) }}>
-                {p === "tools" ? "SMART GEN TOOLS" : "OUTPUTS"}
+                {p === "tools" ? "SMART GEN TOOLS" : "GENERATIONS"}
               </Text>
             </Pressable>
           ))}

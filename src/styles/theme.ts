@@ -205,20 +205,8 @@ export const styles = StyleSheet.create(withFont({
   },
   input: { color: "#fff", minHeight: 38, maxHeight: 110, fontSize: 15 },
   toolRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingTop: 6 },
-  toolBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 7 },
+  toolBtn: { width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 7 },
   toolIcon: { color: "#6b6478", fontSize: 16 },
-  // The app's namesake feature — gradient-filled and glowing, not just
-  // another muted icon in the utility row next to mic/attach/globe. Black
-  // and white palette: the "glow" is a bright white gloss highlight, not a
-  // colored one.
-  collideBtn: {
-    height: 34, borderRadius: 17, overflow: "hidden",
-    shadowColor: "#ffffff", shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 6,
-  },
-  collideBtnGradient: {
-    height: "100%", paddingHorizontal: 12,
-    flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4,
-  },
   send: {
     marginLeft: "auto",
     width: 38, height: 38, borderRadius: 19,
