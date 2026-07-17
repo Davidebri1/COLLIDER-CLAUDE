@@ -26,7 +26,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 import React, { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Video, ResizeMode, Audio } from "expo-av";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import {
   useFonts,
   Manrope_400Regular,
@@ -3258,18 +3258,19 @@ function IconButton({ iconName, onPress }: { iconName: string; onPress: () => vo
 // stroke, so this fakes one by stacking a slightly larger black copy of the
 // same glyph directly behind the white one (a bold silhouette peeking out
 // around every edge, same trick as a text-stroke).
+// Third attempt at this icon this session — "thought-bubble" read as smoke,
+// a mushroom cloud, or an unreadable blob depending on who you asked. Not
+// guessing a fourth hand-drawn shape: sparkles is the actual industry
+// convention for "AI / smart generation" (ChatGPT, Gemini, and Claude's own
+// UI all use it), so there's no ambiguity left to introduce.
 function SmartGenMark({ size = 18 }: { size?: number }) {
-  const outlineSize = size + 9;
   return (
-    <View style={{ width: outlineSize, height: outlineSize, alignItems: "center", justifyContent: "center" }}>
-      <MaterialCommunityIcons name="thought-bubble" size={outlineSize} color="#000" style={{ position: "absolute" }} />
-      <MaterialCommunityIcons
-        name="thought-bubble"
-        size={size}
-        color="#fff"
-        style={{ textShadowColor: "rgba(255,255,255,0.5)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}
-      />
-    </View>
+    <Ionicons
+      name="sparkles"
+      size={size}
+      color="#fff"
+      style={{ textShadowColor: "rgba(255,255,255,0.5)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}
+    />
   );
 }
 
