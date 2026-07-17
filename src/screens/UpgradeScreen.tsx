@@ -49,7 +49,10 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
   };
 
   const getTierGradient = (tier: Tier): [string, string] => {
-    if (tier === "elite") return ["#d39e00", "#e2e8f0"];
+    // #d39e00 (gold) was here for elite — explicitly banned by the palette
+    // rule, no tier-specific exception carved out. Matches TIER_INFO's
+    // established orange accent instead.
+    if (tier === "elite") return ["#ffb74d", "#e2e8f0"];
     if (tier === "pro") return ["#dc2626", "#e2e8f0"];
     return ["#3b3846", "#8d8398"]; // free
   };
@@ -116,7 +119,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
               {/* Features list */}
               <View style={{ gap: 8, marginVertical: 8 }}>
                 <View style={localStyles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={13} color="#10b981" />
+                  <Ionicons name="checkmark-circle" size={13} color={info.color} />
                   <Text style={localStyles.featureText}>
                     {tier === "free"
                       ? "6 free General models (unlimited queries)"
@@ -126,7 +129,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                   </Text>
                 </View>
                 <View style={localStyles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={13} color="#10b981" />
+                  <Ionicons name="checkmark-circle" size={13} color={info.color} />
                   <Text style={localStyles.featureText}>
                     {tier === "free"
                       ? `20 daily messages for media generation tabs`
@@ -137,7 +140,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                 </View>
                 {tier !== "free" && (
                   <View style={localStyles.featureRow}>
-                    <Ionicons name="checkmark-circle" size={13} color="#10b981" />
+                    <Ionicons name="checkmark-circle" size={13} color={info.color} />
                     <Text style={localStyles.featureText}>
                       {tier === "pro"
                         ? "Unlock 10+ custom wallpaper presets and system instructions"

@@ -102,8 +102,13 @@ export const TIER_INFO: Record<Tier, { label: string; pool: number; price: strin
   // Free tier has zero access to credit-spending categories (media gen,
   // coding — see SPEC.md tiers section), so a nonzero pool here was showing
   // users a "300 credits" number they could never actually spend on anything.
-  free:  { label: "Free",  pool: 0,    price: "$0",       color: "#4be6b1" },
-  pro:   { label: "Pro",   pool: 3000, price: "$19.99/mo", color: "#a46cff" },
+  // Colors match the spec-approved palette: silver/chrome (the app's fixed
+  // accent), crimson (an approved bold exception), and orange (the app's
+  // established second accent, already used for Deep mode/Upgrade CTAs).
+  // Previously free was green (#4be6b1) and pro was literal purple
+  // (#a46cff) — both explicitly banned by the palette rule.
+  free:  { label: "Free",  pool: 0,    price: "$0",       color: "#e2e8f0" },
+  pro:   { label: "Pro",   pool: 3000, price: "$19.99/mo", color: "#dc2626" },
   elite: { label: "Elite", pool: 9000, price: "$49.99/mo", color: "#ffb74d" },
 };
 
