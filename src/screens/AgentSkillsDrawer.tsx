@@ -449,8 +449,8 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "space-between",
   },
   skillCardActive: {
-    borderColor: "rgba(196,181,253,0.3)",
-    backgroundColor: "rgba(196,181,253,0.05)",
+    borderColor: "rgba(226,232,240,0.3)",
+    backgroundColor: "rgba(226,232,240,0.05)",
   },
   skillName: {
     color: "#fff",
