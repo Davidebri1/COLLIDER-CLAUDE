@@ -61,22 +61,11 @@ export function ModelCard({
         }
       }}
       delayLongPress={380}
-      style={{
-        height,
-        marginBottom: 4,
-        // Shadow lives on this unclipped wrapper, not on Glass's own View —
-        // Glass has overflow:hidden (for the blur/sheen layers), which cuts
-        // off the box-shadow on web since it renders outside the border box.
-        shadowColor: "#000",
-        shadowOpacity: 0.65,
-        shadowRadius: 20,
-        shadowOffset: { width: 0, height: 10 },
-        elevation: 12,
-      }}
+      style={{ height, marginBottom: 4 }}
     >
       <Glass
         isCard
-        style={[styles.modelCard, { backgroundColor: "rgba(8,7,13,0.6)" }]}
+        style={[styles.modelCard, { backgroundColor: "rgba(8,7,13,0.32)" }]}
       >
         {/* Header strip: accent dot + name + X dismiss. Name gets up to 2
             lines — narrow cards (dense grids) were truncating "LLAMA 3.3
