@@ -206,6 +206,11 @@ export type Attachment = { kind: "image"; dataUri: string; mime: string };
 export type ChatOptions = {
   mode?: "default" | "research" | "deep";
   webSearch?: boolean;
+  // Was collected in the AgentSkillsDrawer's Rules tab and saved to state,
+  // but never actually reached a model — the whole "Console Control"
+  // panel was cosmetically complete and functionally inert. Wired here the
+  // same way memories/webSearch already are.
+  customInstructions?: string;
   attachments?: Attachment[];
   // Called with the accumulated text so far as tokens arrive. On web this
   // streams in real time (browser fetch supports ReadableStream); on native,
@@ -242,6 +247,9 @@ export async function sendChat(
     // a turn for no reason — the user can ignore or discard it if unwanted.
     "Do not dangle offers. If you can produce something useful (an answer, a draft, a lookup, a generation), do it now in this reply rather than asking permission first.",
   ];
+  if (opts.customInstructions?.trim()) {
+    sysParts.push(`User's global instructions — follow these for every reply:\n${opts.customInstructions.trim()}`);
+  }
   // This answer gets saved as a real Artifact document (see
   // saveResearchArtifact in App.tsx) — it needs to read as a standalone
   // report someone opens later, not a chat reply that only makes sense

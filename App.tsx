@@ -763,6 +763,7 @@ function Home({
       const answer = await sendChatWithRetry(mId, history, text, state.memories, {
         mode: state.chatMode[state.activeCategory],
         webSearch: state.webSearch[state.activeCategory],
+        customInstructions: state.customInstructions,
         onToken,
       });
       dispatch({
@@ -858,6 +859,7 @@ function Home({
       sendChatWithRetry(model.id, history, text, state.memories, {
         mode: state.chatMode[state.activeCategory],
         webSearch: state.webSearch[state.activeCategory],
+        customInstructions: state.customInstructions,
         attachments,
         onToken,
       })
@@ -2271,7 +2273,7 @@ function CardScreen({
         dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: partial, streaming: true, convId });
       });
       const answer = await sendChatWithRetry(model.id, thread, text, state.memories, {
-        mode: state.chatMode[cat], webSearch: state.webSearch[cat], attachments, onToken,
+        mode: state.chatMode[cat], webSearch: state.webSearch[cat], customInstructions: state.customInstructions, attachments, onToken,
       });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: answer || "No response returned.", convId });
       if (answer) {
@@ -2308,7 +2310,7 @@ function CardScreen({
         dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: partial, streaming: true, convId });
       });
       const answer = await sendChatWithRetry(model.id, thread.slice(0, -2), lastUser.content, state.memories, {
-        mode: state.chatMode[cat], webSearch: state.webSearch[cat], onToken,
+        mode: state.chatMode[cat], webSearch: state.webSearch[cat], customInstructions: state.customInstructions, onToken,
       });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: answer || "No response returned.", convId });
       if (answer) {
