@@ -105,13 +105,21 @@ export function ConsensusModal({
   };
 
   // Real LLM-synthesized consensus + per-model alignment scores.
+  // Same completeness rule as the Collide bar (CollideBanner.tsx): wait for
+  // EVERY selected model to reply before synthesizing. Previously this
+  // drawer synthesized from whatever subset had replied so far, while the
+  // bar waited for all of them — same feature, two different answers
+  // (e.g. bar: "Not available", drawer: "7/8") depending on which one you
+  // looked at. Aligned to one rule.
+  const selectedIds = state.selectedModelIds[state.activeCategory];
+  const allIn = selectedIds.length >= 2 && replies.length === selectedIds.length;
   const [consensusResult, setConsensusResult] = useState<{ verdict: string; scores: Record<string, number> } | null>(null);
   const [synthesizing, setSynthesizing] = useState(false);
   const repliesKey = replies.map((r) => `${r.model.id}:${r.last.content.length}`).join("|");
 
   useEffect(() => {
     let cancelled = false;
-    if (!isOpen || replies.length === 0) { setConsensusResult(null); return; }
+    if (!isOpen || !allIn) { setConsensusResult(null); return; }
     setSynthesizing(true);
     scoreConsensus(replies.map((r) => ({ modelId: r.model.id, label: r.model.label, content: r.last.content })))
       .then((res) => { if (!cancelled) setConsensusResult(res); })
@@ -119,7 +127,7 @@ export function ConsensusModal({
       .finally(() => { if (!cancelled) setSynthesizing(false); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, repliesKey]);
+  }, [isOpen, repliesKey, allIn]);
 
   const scores = consensusResult?.scores || {};
   const fallbackScore = (i: number) => {
@@ -134,11 +142,13 @@ export function ConsensusModal({
   }));
 
   const agrees = scoredReplies.filter((r) => r.score >= DISSENT_THRESHOLD).length;
-  const ratioN = replies.length ? agrees : 0;
-  const ratioM = Math.max(replies.length, 1);
-  const verdict = synthesizing
+  const ratioN = allIn ? agrees : 0;
+  const ratioM = Math.max(selectedIds.length, 1);
+  const verdict = !allIn
+    ? `Waiting on ${selectedIds.length - replies.length} of ${selectedIds.length} replies…`
+    : synthesizing
     ? "Synthesizing consensus…"
-    : (consensusResult?.verdict || replies[0]?.last.content || "Not enough responses yet.");
+    : (consensusResult?.verdict || "Not available");
 
   const dissenters = scoredReplies
     .filter((r) => r.score < DISSENT_THRESHOLD)

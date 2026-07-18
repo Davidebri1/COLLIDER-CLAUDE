@@ -51,7 +51,11 @@ export function CardGrid({
   // this ratio even when vertical space is available. This is deliberate:
   // the grid is a custom, user-tuned area (density is the user's own
   // choice), not a "no dead space" zone like the header chrome is.
-  const CARD_RATIO = 1.5; // height = width * ratio
+  // Bumped from 1.5 — cards were leaving unused vertical space below them
+  // whenever width (not height) was the binding constraint, i.e. real
+  // estate toward the bottom of the grid going unused instead of making
+  // the cards themselves bigger.
+  const CARD_RATIO = 1.7; // height = width * ratio
   const cardWidth = Math.max(0, Math.min(maxWidthFromW, maxHeightFromH / CARD_RATIO));
   const cardHeight = cardWidth * CARD_RATIO;
 

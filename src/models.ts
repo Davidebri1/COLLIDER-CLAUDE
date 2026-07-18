@@ -50,9 +50,12 @@ export const MODELS: ModelDef[] = [
   { id: "elite/nemotron-ultra",     label: "Nemotron Ultra 550B",short: "NemU", desc: "NVIDIA's largest open MoE. 1M ctx.",             tier: "elite", category: ["general"],          weight: 7, color: "#8ee878" },
   { id: "elite/gpt-5-6-sol-pro",    label: "GPT-5.6 Sol Pro",    short: "5.6S", desc: "OpenAI's top-end frontier model.",               tier: "elite", category: ["general"],          weight: 9, color: "#d9d3c7" },
 
-  // ── Coding · Free (2) ─────────────────────────────────────────────────────
-  { id: "free/qwen3-coder",         label: "Qwen3 Coder (free)", short: "Q3CF", desc: "Qwen3's coder model, free tier. 1M ctx.",        tier: "free", category: ["coding"],            weight: 2, color: "#e8c15a" },
-  { id: "free/qwen-coder-32b",      label: "Qwen Coder 32B",     short: "QC32", desc: "Code-tuned Qwen, fast inference.",               tier: "free", category: ["coding"],            weight: 2, color: "#e8c15a" },
+  // ── Coding · low-cost Pro (2) — there is no free-tier coding, full stop;
+  // these two just cost the fewest credits within Pro/Elite, same as any
+  // other low-weight model in another category. No "(free)" anywhere in
+  // their text — that word doesn't apply to this category at all.
+  { id: "free/qwen3-coder",         label: "Qwen3 Coder Lite",   short: "Q3CL", desc: "Qwen3's coder model, lighter/faster variant, 1M ctx.", tier: "pro", category: ["coding"],       weight: 2, color: "#e8c15a" },
+  { id: "free/qwen-coder-32b",      label: "Qwen Coder 32B",     short: "QC32", desc: "Code-tuned Qwen, fast inference.",               tier: "pro", category: ["coding"],            weight: 2, color: "#e8c15a" },
 
   // ── Coding · Pro (4) ──────────────────────────────────────────────────────
   { id: "pro/gpt-oss-20b",          label: "GPT-OSS 20B",        short: "OSS",  desc: "OpenAI's open-weight coding model.",             tier: "pro",  category: ["coding"],            weight: 3, color: "#d9d3c7" },

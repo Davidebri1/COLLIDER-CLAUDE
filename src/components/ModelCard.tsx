@@ -1,11 +1,13 @@
 import React, { useRef, useState } from "react";
 import { View, Text, Pressable, ScrollView, StyleSheet, LayoutAnimation } from "react-native";
 import { BlurView } from "expo-blur";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useCollider, ChatMessage } from "../state";
 import { Glass } from "./Glass";
 import { Markdown } from "./Markdown";
+import { ScrollCueArrow } from "./ScrollCueArrow";
 import { styles, withFont } from "../styles/theme";
 import { ModelDef, canUse } from "../models";
 
@@ -34,6 +36,14 @@ export function ModelCard({
   const hasMore = visibleCount < thread.length;
   const scrollRef = useRef<ScrollView>(null);
   const wasAtBottom = useRef(false);
+  // "There's more below" cue — without a visible scrollbar in this cramped
+  // grid card, a long reply just looks finished at whatever line happens to
+  // sit at the card's bottom edge, with no signal that scrolling reveals
+  // more. Tracked from real measurements (content height vs. container
+  // height), not guessed.
+  const [hasOverflow, setHasOverflow] = useState(false);
+  const [atBottom, setAtBottom] = useState(false);
+  const containerHeightRef = useRef(0);
   // Scroll to the TOP of the latest message, not the bottom of it — a new
   // reply should let you read from its start, not dump you at its end. Same
   // pattern as the full CardScreen detail view's chat log.
@@ -141,9 +151,13 @@ export function ModelCard({
           ref={scrollRef}
           style={[styles.cardBody, { flex: 1 }]}
           showsVerticalScrollIndicator={false}
+          onLayout={(e) => { containerHeightRef.current = e.nativeEvent.layout.height; }}
+          onContentSizeChange={(_, h) => setHasOverflow(h > containerHeightRef.current + 4)}
           onScroll={(e) => {
             const { contentOffset, contentSize, layoutMeasurement } = e.nativeEvent;
-            wasAtBottom.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 24;
+            const nowAtBottom = contentOffset.y + layoutMeasurement.height >= contentSize.height - 24;
+            wasAtBottom.current = nowAtBottom;
+            setAtBottom(nowAtBottom);
             if (contentOffset.y < 24 && hasMore) setVisibleCount((v) => v + PAGE);
           }}
           scrollEventThrottle={100}
@@ -187,6 +201,16 @@ export function ModelCard({
           )}
         </ScrollView>
 
+        {hasOverflow && !atBottom && !!last && (
+          <View style={localStyles.scrollCue} pointerEvents="none">
+            <LinearGradient
+              colors={["rgba(8,7,13,0)", "rgba(8,7,13,0.85)"]}
+              style={StyleSheet.absoluteFill}
+            />
+            <ScrollCueArrow />
+          </View>
+        )}
+
         {!usable && (
           <View style={[StyleSheet.absoluteFill, styles.fogContainer, { overflow: "hidden" }]}>
             <BlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
@@ -206,6 +230,16 @@ export function ModelCard({
 // fontWeight 700+ resolves to synthetic faux-bold instead of the real
 // static Manrope Bold/ExtraBold file.
 const localStyles = StyleSheet.create(withFont({
+  scrollCue: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 26,
+    alignItems: "center",
+    justifyContent: "flex-end",
+    paddingBottom: 2,
+  },
   miniBubble: {
     maxWidth: "92%",
     paddingHorizontal: 8,

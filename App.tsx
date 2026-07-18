@@ -23,7 +23,6 @@ import {
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import React, { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Video, ResizeMode, Audio } from "expo-av";
@@ -975,9 +974,9 @@ function Home({
             );
           })()}
         </ScrollView>
-        <Pressable onPress={openRightDrawer} style={{ width: 26, height: 26, borderRadius: 13, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
-          <GlossButton borderRadius={13} />
-          <SmartGenMark size={19} />
+        <Pressable onPress={openRightDrawer} style={{ width: 32, height: 32, borderRadius: 16, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+          <GlossButton borderRadius={16} />
+          <SmartGenMark size={24} />
         </Pressable>
       </View>
 
@@ -3360,25 +3359,22 @@ function IconButton({ iconName, onPress }: { iconName: string; onPress: () => vo
 // container treatment, not the icon having color. Ionicons glyphs render
 // as a single flat color, so the gradient has to be baked into the glyph
 // itself; drawn as SVG paths with a gradient fill instead.
+// Reverted from a custom SVG gradient-fill sparkle back to the plain
+// Ionicons glyph — the SVG version was confirmed rendering correctly by
+// every technical check available (DOM inspection, computed style, an 8x
+// CSS-scaled screenshot all showed a correct crimson-to-gold gradient), but
+// it repeatedly wasn't visible in practice, and chasing a rendering path
+// that can't be reliably confirmed working isn't worth it. Solid, bright,
+// guaranteed-to-render color instead of a gradient — this is the simplest
+// version that still isn't the original plain white.
 function SmartGenMark({ size = 18 }: { size?: number }) {
-  const gradId = "smartGenSparkleGrad";
   return (
-    <Svg width={size} height={size} viewBox="0 0 24 24">
-      <Defs>
-        <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#ff3b3b" />
-          <Stop offset="1" stopColor="#ffd166" />
-        </SvgGradient>
-      </Defs>
-      <Path
-        d="M12 2C12.4 7.2 13 12 22 12C13 12 12.4 16.8 12 22C11.6 16.8 11 12 2 12C11 12 11.6 7.2 12 2Z"
-        fill={`url(#${gradId})`}
-      />
-      <Path
-        d="M19 3C19.2 5 19.5 6 22 6C19.5 6 19.2 7 19 9C18.8 7 18.5 6 16 6C18.5 6 18.8 5 19 3Z"
-        fill={`url(#${gradId})`}
-      />
-    </Svg>
+    <Ionicons
+      name="sparkles"
+      size={size}
+      color="#ff5a3d"
+      style={{ textShadowColor: "#ff5a3d", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }}
+    />
   );
 }
 

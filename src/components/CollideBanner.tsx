@@ -1,13 +1,17 @@
-import React, { useEffect, useRef, useState } from "react";
-import { View, Pressable, Text, StyleSheet, Animated, Easing } from "react-native";
+import React, { useEffect, useState } from "react";
+import { View, Pressable, Text, StyleSheet } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, LinearGradient as SvgGradient, Stop, Polygon } from "react-native-svg";
+import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from "react-native-svg";
 import { useCollider } from "../state";
 import { modelById } from "../models";
 import { scoreConsensus } from "../services/chat";
 
 const DISSENT_THRESHOLD = 0.5;
 const SILVER = "#e2e8f0";
+// A border you can barely see reads as noise (was it intentional? is it a
+// rendering glitch?), not as a boundary. Same width/color on the badge and
+// the bar below it, opaque enough to read as one deliberate frame.
+const BORDER = "rgba(226,232,240,0.65)";
 
 // Proactive-value bar: the user types a prompt, gets replies from every
 // selected model, and the synthesis of what they said is sitting right
@@ -53,24 +57,6 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repliesKey, allIn, state.autoConsensusSummary]);
 
-  // Breathing glow while synthesizing — brightness pulse, not a scale
-  // change, borrowed from the original Collide-button spec's "aura"
-  // treatment as a loading-state accent rather than the button's whole
-  // visual identity.
-  const pulse = useRef(new Animated.Value(0)).current;
-  const isPulsing = loading && allIn;
-  useEffect(() => {
-    if (!isPulsing) { pulse.setValue(0); return; }
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-        Animated.timing(pulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [isPulsing, pulse]);
-
   // Fraction, not a percentage — a direct count you can sanity-check
   // against the panel, not a number you have to trust.
   const scores = result?.scores || {};
@@ -91,16 +77,15 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           not a circle: an angled shape holds a 2-3 character fraction more
           efficiently than a circle/semicircle does. Always rendered —
           "Consensus:" and the score are this bar's identity, not a state
-          that comes and goes. */}
-      <Animated.View
-        style={{
-          marginBottom: -1,
-          shadowColor: SILVER,
-          shadowOpacity: isPulsing ? pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.85] }) : 0.3,
-          shadowRadius: isPulsing ? pulse.interpolate({ inputRange: [0, 1], outputRange: [4, 12] }) : 6,
-          shadowOffset: { width: 0, height: 0 },
-        }}
-      >
+          that comes and goes.
+          The badge's Path is drawn with the bottom edge OPEN (no L back to
+          the start, no Z) so only the two slanted sides + top are stroked —
+          the bar's own top border below is what visually closes the shape,
+          at the exact same width/color, so it reads as one continuous
+          outline instead of two mismatched borders with a seam between
+          them (badge stroke was 1.25px, bar border was 1px, with a visible
+          gap line where they met). */}
+      <View style={{ marginBottom: 0 }}>
         <Svg width={60} height={24} viewBox="0 0 60 24">
           <Defs>
             <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
@@ -108,14 +93,14 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
               <Stop offset="1" stopColor="#170a2e" />
             </SvgGradient>
           </Defs>
-          <Polygon points="2,24 58,24 50,1 10,1" fill={`url(#${gradId})`} stroke={SILVER} strokeWidth={1.25} />
+          <Path d="M2,24 L10,1 L50,1 L58,24" fill={`url(#${gradId})`} stroke={BORDER} strokeWidth={1.5} strokeLinejoin="round" />
         </Svg>
         <View style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center", paddingBottom: 2 }]}>
           <Text style={[styles.badgeScore, { color: scoreColor, textShadowColor: scoreColor }]}>
             {available ? `${agreeCount}/${totalCount}` : "–/–"}
           </Text>
         </View>
-      </Animated.View>
+      </View>
 
       <Pressable onPress={disabled ? undefined : onPress} disabled={disabled} style={[styles.banner, disabled && { opacity: 0.4 }]}>
         <LinearGradient
@@ -142,8 +127,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(226,232,240,0.35)",
+    borderWidth: 1.5,
+    borderColor: BORDER,
     overflow: "hidden",
     shadowColor: "#1a0733",
     shadowOpacity: 0.7,
