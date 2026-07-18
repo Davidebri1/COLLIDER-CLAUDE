@@ -68,7 +68,7 @@ import {
 } from "./src/models";
 import { CONSOLE_SKILLS } from "./src/skills";
 
-import { sendChat, sendChatWithRetry } from "./src/services/chat";
+import { sendChat, sendChatWithRetry, friendlyErrorMessage } from "./src/services/chat";
 
 function resolveSkillInstructions(activeSkills: string[]): string[] {
   return CONSOLE_SKILLS.filter((s) => activeSkills.includes(s.id)).map((s) => s.instruction);
@@ -802,7 +802,7 @@ function Home({
         type: "replaceLastAssistant",
         category: state.activeCategory,
         modelId: mId,
-        content: `Error: ${e.message}`,
+        content: friendlyErrorMessage(e),
       });
     } finally {
       setPending((n) => n - 1);
@@ -909,7 +909,7 @@ function Home({
             type: "replaceLastAssistant",
             category: state.activeCategory,
             modelId: model.id,
-            content: `Error: ${error.message}`,
+            content: friendlyErrorMessage(error),
           }),
         )
         .finally(() => setPending((n) => n - 1));
@@ -977,7 +977,7 @@ function Home({
         </ScrollView>
         <Pressable onPress={openRightDrawer} style={{ width: 26, height: 26, borderRadius: 13, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
           <GlossButton borderRadius={13} />
-          <SmartGenMark size={16} />
+          <SmartGenMark size={19} />
         </Pressable>
       </View>
 
@@ -2322,7 +2322,7 @@ function CardScreen({
         dispatch({ type: "addGeneration", generation: { prompt: text, url: imgMatch[1], modelId: model.id, category: cat } });
       }
     } catch (e: any) {
-      dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: `Error: ${e.message}`, convId });
+      dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: friendlyErrorMessage(e), convId });
     } finally { setSending(false); }
   };
 
@@ -2357,7 +2357,7 @@ function CardScreen({
         saveResearchArtifact(lastUser.content, answer, state.chatMode[cat], dispatch, model.id);
       }
     } catch (e: any) {
-      dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: `Error: ${e.message}`, convId });
+      dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: friendlyErrorMessage(e), convId });
     } finally { setSending(false); }
   };
 
@@ -3366,8 +3366,8 @@ function SmartGenMark({ size = 18 }: { size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 24 24">
       <Defs>
         <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-          <Stop offset="0" stopColor="#dc2626" />
-          <Stop offset="1" stopColor="#ffb74d" />
+          <Stop offset="0" stopColor="#ff3b3b" />
+          <Stop offset="1" stopColor="#ffd166" />
         </SvgGradient>
       </Defs>
       <Path

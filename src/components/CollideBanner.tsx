@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { View, Pressable, Text, StyleSheet, ActivityIndicator } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Defs, LinearGradient as SvgGradient, Stop, Polygon } from "react-native-svg";
 import { useCollider } from "../state";
 import { modelById } from "../models";
 import { scoreConsensus } from "../services/chat";
@@ -27,8 +28,6 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
 
   // Wait for EVERY selected model to land (a real reply or an error both
   // count — either way there's nothing left pending) before synthesizing.
-  // Firing as soon as 2 of, say, 4 were in meant "consensus" sometimes
-  // meant "half the panel hasn't even weighed in yet."
   const allIn = selectedIds.length >= 2 && replies.length === selectedIds.length;
 
   const repliesKey = replies.map((r) => `${r.id}:${r.last.content.length}`).join("|");
@@ -47,9 +46,8 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repliesKey, allIn, state.autoConsensusSummary]);
 
-  // Fraction, not a percentage — "3/4 models agree" is a direct count you
-  // can sanity-check against the panel; "72%" is a number you have to
-  // trust. Same aligned/total math as the full drawer's own "N/M" readout.
+  // Fraction, not a percentage — a direct count you can sanity-check
+  // against the panel, not a number you have to trust.
   const scores = result?.scores || {};
   const agreeCount = replies.filter((r) => (scores[r.id] ?? 0) >= DISSENT_THRESHOLD).length;
   const totalCount = replies.length;
@@ -58,13 +56,41 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
   const scoreColor = !hasScore ? "#e2e8f0" : ratio >= 0.66 ? "#10b981" : ratio >= 0.4 ? "#ffb74d" : "#ef4444";
 
   const showSummary = state.autoConsensusSummary && selectedIds.length >= 2;
-  const showMedallion = showSummary && (hasScore || (loading && allIn));
+  const showBadge = showSummary && (hasScore || (loading && allIn));
+
+  const gradId = "collideBadgeGrad";
 
   return (
-    <View style={{ marginHorizontal: 14, marginTop: showMedallion ? 20 : 2 }}>
+    <View style={{ marginHorizontal: 14, marginTop: 2, alignItems: "center" }}>
+      {/* The score tab — sits fully ABOVE the bar (touching, not overlapping
+          into it) so the bar keeps its full interior height for text
+          instead of losing space to a badge dug into its top. A trapezoid,
+          not a circle: an angled shape holds a 2-3 character fraction more
+          efficiently than a circle/semicircle does. */}
+      {showBadge && (
+        <View style={{ marginBottom: -1 }}>
+          <Svg width={60} height={24} viewBox="0 0 60 24">
+            <Defs>
+              <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+                <Stop offset="0" stopColor="#5a1f9e" />
+                <Stop offset="1" stopColor="#170a2e" />
+              </SvgGradient>
+            </Defs>
+            <Polygon points="2,24 58,24 50,1 10,1" fill={`url(#${gradId})`} stroke={GOLD} strokeWidth={1.5} />
+          </Svg>
+          <View style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center", paddingBottom: 2 }]}>
+            {hasScore ? (
+              <Text style={[styles.badgeScore, { color: scoreColor, textShadowColor: scoreColor }]}>{agreeCount}/{totalCount}</Text>
+            ) : (
+              <ActivityIndicator size="small" color="#ffd66b" />
+            )}
+          </View>
+        </View>
+      )}
+
       <Pressable onPress={disabled ? undefined : onPress} disabled={disabled} style={[styles.banner, disabled && { opacity: 0.4 }]}>
         <LinearGradient
-          colors={["#1c1030", "#3a1f5c", "#0a0612"]}
+          colors={["#3a0d63", "#1a0733", "#050208"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
@@ -75,11 +101,11 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
               Waiting on {selectedIds.length - replies.length} of {selectedIds.length} replies…
             </Text>
           ) : loading && !result ? (
-            <Text style={[styles.summary, showMedallion && { marginTop: 14 }]} numberOfLines={2}>
+            <Text style={styles.summary} numberOfLines={2}>
               Synthesizing consensus…
             </Text>
           ) : (
-            <Text style={[styles.summary, showMedallion && { marginTop: 14 }]} numberOfLines={2}>
+            <Text style={styles.summary} numberOfLines={2}>
               <Text style={styles.summaryLead}>Consensus: </Text>
               {result?.verdict || "Not enough responses yet."}
             </Text>
@@ -91,26 +117,6 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           </>
         )}
       </Pressable>
-
-      {/* The score medallion — embedded into the bar's top edge (half
-          overlapping, not floating above it) so it reads as one object
-          with the bar, not a separate chip stapled on top. Same gradient
-          family as the bar itself, with a gold ring as the focal frame. */}
-      {showMedallion && (
-        <View style={styles.medallion} pointerEvents="none">
-          <LinearGradient
-            colors={["#4a2f8a", "#160c28"]}
-            start={{ x: 0.2, y: 0 }}
-            end={{ x: 0.8, y: 1 }}
-            style={StyleSheet.absoluteFill}
-          />
-          {hasScore ? (
-            <Text style={[styles.medallionScore, { color: scoreColor, textShadowColor: scoreColor }]}>{agreeCount}/{totalCount}</Text>
-          ) : (
-            <ActivityIndicator size="small" color="#ffd66b" />
-          )}
-        </View>
-      )}
     </View>
   );
 }
@@ -120,41 +126,23 @@ const GOLD = "#d4af37";
 const styles = StyleSheet.create({
   banner: {
     width: "100%",
-    minHeight: 44,
+    minHeight: 38,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 16,
+    paddingVertical: 8,
+    borderRadius: 14,
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
     borderColor: "rgba(212,175,55,0.5)",
     overflow: "hidden",
-    shadowColor: "#3a1f5c",
-    shadowOpacity: 0.6,
+    shadowColor: "#1a0733",
+    shadowOpacity: 0.7,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 5 },
     elevation: 6,
   },
-  medallion: {
-    position: "absolute",
-    top: -20,
-    alignSelf: "center",
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    overflow: "hidden",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: GOLD,
-    shadowColor: GOLD,
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 8,
-  },
-  medallionScore: {
-    fontSize: 13,
+  badgeScore: {
+    fontSize: 12.5,
     fontWeight: "900",
     letterSpacing: 0.2,
     textShadowOffset: { width: 0, height: 0 },

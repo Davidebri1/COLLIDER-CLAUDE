@@ -10,6 +10,21 @@
 // dedicated search-API keys with their own quotas.
 import type { ChatMessage, Memory } from "../state";
 
+// Provider errors below (Groq/OpenRouter) intentionally carry the raw
+// response body for debugging — but that raw text (rate-limit JSON,
+// provider internals) was reaching end users verbatim as a chat bubble.
+// A clean app never shows a user "OpenRouter 429: {"error":{"message"...".
+// This translates any thrown Error into copy a user should actually see;
+// callers display the result, never error.message directly.
+export function friendlyErrorMessage(error: unknown): string {
+  const msg = error instanceof Error ? error.message : String(error);
+  if (/\b429\b/.test(msg)) return "This model is getting a lot of requests right now — try again in a moment.";
+  if (/\b401\b|\b403\b/.test(msg)) return "This model couldn't be reached with your current access — try again or switch models.";
+  if (/timeout|network|fetch/i.test(msg)) return "Couldn't reach this model — check your connection and try again.";
+  if (/\b5\d\d\b/.test(msg)) return "This model is temporarily unavailable. Try again shortly.";
+  return "Something went wrong generating a response. Try again.";
+}
+
 const GROQ_KEYS = [
   "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",
   "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",
