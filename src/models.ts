@@ -112,15 +112,35 @@ export const TIER_INFO: Record<Tier, { label: string; pool: number; price: strin
   elite: { label: "Elite", pool: 9000, price: "$49.99/mo", color: "#ffb74d" },
 };
 
+// SPEC.md: "Free: ... No access to media gen (image/video/audio) or coding
+// models" — categorical, independent of any individual model's own price
+// tier. The two `tier: "free"` coding models exist so a Pro/Elite user has
+// a no-credit-cost option within coding, not so a free-tier user gets
+// coding access — that's a cost label, not an access label. Bug found by
+// reading canUse() against the spec: it only checked model.tier, so those
+// two models' "free" cost label was accidentally granting free-tier users
+// access to the whole Coding category (isCategoryUnlocked included).
+const CATEGORY_MIN_TIER: Partial<Record<Category, Tier>> = {
+  image: "pro", video: "pro", music: "pro", coding: "pro",
+};
+
+function effectiveMinTier(model: ModelDef): Tier {
+  const catMin = model.category.reduce<Tier>((min, c) => {
+    const m = CATEGORY_MIN_TIER[c];
+    return m && TIER_RANK[m] > TIER_RANK[min] ? m : min;
+  }, "free");
+  return TIER_RANK[catMin] > TIER_RANK[model.tier] ? catMin : model.tier;
+}
+
 export function modelsForCategory(category: Category) {
   return MODELS.filter((m) => m.category.includes(category))
     .sort((a, b) => TIER_RANK[a.tier] - TIER_RANK[b.tier] || a.weight - b.weight);
 }
 export function modelById(id: string) { return MODELS.find((m) => m.id === id); }
 export function canUse(tier: Tier, model: ModelDef) {
-  return !model.locked && TIER_RANK[tier] >= TIER_RANK[model.tier];
+  return !model.locked && TIER_RANK[tier] >= TIER_RANK[effectiveMinTier(model)];
 }
 export function isCategoryUnlocked(tier: Tier, category: Category) {
   if (category === "general") return true;
-  return MODELS.some((m) => m.category.includes(category) && TIER_RANK[tier] >= TIER_RANK[m.tier]);
+  return MODELS.some((m) => m.category.includes(category) && TIER_RANK[tier] >= TIER_RANK[effectiveMinTier(m)]);
 }
