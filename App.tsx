@@ -2236,11 +2236,19 @@ function CardScreen({
   const [selectedProjId, setSelectedProjId] = useState("");
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [editingCardReminder, setEditingCardReminder] = useState<any | null>(null);
-  // Always land on the latest message — after sending, after a streamed
-  // reply grows the content, and after switching back to the chat tab —
-  // instead of leaving the user to scroll down for something this basic.
+  // Always land on the TOP of the latest message — after sending, as a
+  // streamed reply grows, and after switching back to the chat tab.
+  //
+  // Tracks message id, not the last y value: gating on "has y changed" let
+  // a stale early-streaming measurement (taken before the previous bubble
+  // had finished laying out) lock in permanently, since the target
+  // bubble's own y offset barely moves once set — landing a few lines into
+  // the tail of the PREVIOUS message instead of the top of the new one,
+  // with no further correction as the reply kept streaming in. Re-issuing
+  // scrollTo on every layout pass lets it self-correct as measurements
+  // settle; only the jump to a genuinely new message animates.
   const chatScrollRef = useRef<ScrollView>(null);
-  const lastMessageYRef = useRef<number>(0);
+  const lastMessageIdRef = useRef<string | null>(null);
 
   const model = modelId ? modelById(modelId) : undefined;
   const cat = state.activeCategory;
@@ -2432,10 +2440,9 @@ function CardScreen({
                     onLayout={(e) => {
                       if (idx === thread.length - 1) {
                         const y = e.nativeEvent.layout.y;
-                        if (lastMessageYRef.current !== y) {
-                          lastMessageYRef.current = y;
-                          chatScrollRef.current?.scrollTo({ y, animated: true });
-                        }
+                        const isNewMessage = lastMessageIdRef.current !== message.id;
+                        if (isNewMessage) lastMessageIdRef.current = message.id;
+                        chatScrollRef.current?.scrollTo({ y, animated: isNewMessage });
                       }
                     }}
                     onLongPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setActiveMessage(message); }}

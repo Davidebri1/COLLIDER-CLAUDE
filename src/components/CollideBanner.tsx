@@ -43,32 +43,26 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
   const scoreColor = avgScore === null ? "#e2e8f0" : avgScore >= 66 ? "#10b981" : avgScore >= 40 ? "#ffb74d" : "#ef4444";
 
   const showSummary = state.autoConsensusSummary && replies.length >= 2;
+  const showMedallion = showSummary && (avgScore !== null || loading);
 
   return (
-    <View style={{ marginHorizontal: 14, marginTop: 2, alignItems: "center" }}>
-      {/* The lip — was a plain decorative tab; now it's the score badge when
-          a synthesis is available, so the color-coded verdict is visible
-          before the user even taps in. */}
-      <View style={[styles.post, showSummary && avgScore !== null && { borderColor: scoreColor }]}>
-        {showSummary && avgScore !== null ? (
-          <Text style={[styles.postScore, { color: scoreColor, textShadowColor: scoreColor }]}>{avgScore}%</Text>
-        ) : showSummary && loading ? (
-          <ActivityIndicator size="small" color="#ffd66b" />
-        ) : null}
-      </View>
-
+    <View style={{ marginHorizontal: 14, marginTop: showMedallion ? 20 : 2 }}>
       <Pressable onPress={disabled ? undefined : onPress} disabled={disabled} style={[styles.banner, disabled && { opacity: 0.4 }]}>
         <LinearGradient
-          colors={["#241a5e", "#2b3fa8", "#0d1140"]}
+          colors={["#2a1f6b", "#2d3fa8", "#0d1140"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         {showSummary ? (
           loading && !result ? (
-            <Text style={styles.summary} numberOfLines={2}>Synthesizing what {replies.length} models agree on…</Text>
+            <Text style={[styles.summary, showMedallion && { marginTop: 14 }]} numberOfLines={2}>
+              Synthesizing what {replies.length} models agree on…
+            </Text>
           ) : (
-            <Text style={styles.summary} numberOfLines={2}>{result?.verdict || "Not enough responses yet."}</Text>
+            <Text style={[styles.summary, showMedallion && { marginTop: 14 }]} numberOfLines={2}>
+              {result?.verdict || "Not enough responses yet."}
+            </Text>
           )
         ) : (
           <>
@@ -77,6 +71,28 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           </>
         )}
       </Pressable>
+
+      {/* The score medallion — embedded into the bar's top edge (half
+          overlapping, not floating above it) so it reads as one object
+          with the bar, not a separate chip stapled on top. Same gradient
+          family as the bar itself, with a gold ring as the focal frame —
+          this is the single most valuable number on the screen, so it
+          gets the size and prominence to match, not a cramped label. */}
+      {showMedallion && (
+        <View style={styles.medallion} pointerEvents="none">
+          <LinearGradient
+            colors={["#3b4fc7", "#1a1450"]}
+            start={{ x: 0.2, y: 0 }}
+            end={{ x: 0.8, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {avgScore !== null ? (
+            <Text style={[styles.medallionScore, { color: scoreColor, textShadowColor: scoreColor }]}>{avgScore}%</Text>
+          ) : (
+            <ActivityIndicator size="small" color="#ffd66b" />
+          )}
+        </View>
+      )}
     </View>
   );
 }
@@ -84,49 +100,47 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
 const GOLD = "#d4af37";
 
 const styles = StyleSheet.create({
-  post: {
-    width: 52,
-    height: 20,
-    borderRadius: 10,
-    overflow: "hidden",
-    backgroundColor: "#0d1140",
-    borderWidth: 1.5,
-    borderColor: GOLD,
-    borderBottomWidth: 0,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: -9,
-    zIndex: 2,
-    shadowColor: GOLD,
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 0 },
-  },
-  postScore: {
-    fontSize: 10.5,
-    fontWeight: "900",
-    letterSpacing: 0.3,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 8,
-  },
   banner: {
     width: "100%",
-    minHeight: 40,
+    minHeight: 44,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
+    paddingVertical: 10,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    borderBottomWidth: 0,
-    borderColor: GOLD,
+    borderWidth: 1,
+    borderColor: "rgba(212,175,55,0.5)",
     overflow: "hidden",
     shadowColor: "#1d2c8f",
     shadowOpacity: 0.5,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 5 },
     elevation: 6,
+  },
+  medallion: {
+    position: "absolute",
+    top: -20,
+    alignSelf: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: GOLD,
+    shadowColor: GOLD,
+    shadowOpacity: 0.5,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
+  },
+  medallionScore: {
+    fontSize: 13,
+    fontWeight: "900",
+    letterSpacing: 0.2,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
   },
   title: {
     color: "#e2e8f0",

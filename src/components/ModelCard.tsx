@@ -37,7 +37,17 @@ export function ModelCard({
   // Scroll to the TOP of the latest message, not the bottom of it — a new
   // reply should let you read from its start, not dump you at its end. Same
   // pattern as the full CardScreen detail view's chat log.
-  const lastMessageYRef = useRef<number | null>(null);
+  //
+  // Tracks message id, not the last y value: gating on "has y changed" let a
+  // stale early-streaming measurement (taken before the previous bubble had
+  // finished laying out) lock in permanently, since the target bubble's own
+  // y offset barely moves once set — the result was landing a few lines
+  // into the tail of the PREVIOUS message instead of the top of the new
+  // one, with no further correction as the reply kept streaming in below.
+  // Re-issuing scrollTo on every layout pass lets it self-correct as
+  // measurements settle; only the first jump to a genuinely new message
+  // animates, so mid-stream corrections don't look like repeated jank.
+  const lastMessageIdRef = useRef<string | null>(null);
   const [showDesc, setShowDesc] = useState(false);
 
   const handleCardPress = () => {
@@ -149,10 +159,9 @@ export function ModelCard({
                   onLayout={(e) => {
                     if (i !== shown.length - 1) return;
                     const y = e.nativeEvent.layout.y;
-                    if (lastMessageYRef.current !== y) {
-                      lastMessageYRef.current = y;
-                      scrollRef.current?.scrollTo({ y, animated: true });
-                    }
+                    const isNewMessage = lastMessageIdRef.current !== m.id;
+                    if (isNewMessage) lastMessageIdRef.current = m.id;
+                    scrollRef.current?.scrollTo({ y, animated: isNewMessage });
                   }}
                   style={[
                     localStyles.miniBubble,
