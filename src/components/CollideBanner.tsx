@@ -5,6 +5,7 @@ import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from "react-nati
 import { useCollider } from "../state";
 import { modelById } from "../models";
 import { scoreConsensus } from "../services/chat";
+import { ScrollCueArrow } from "./ScrollCueArrow";
 
 const DISSENT_THRESHOLD = 0.5;
 const SILVER = "#e2e8f0";
@@ -117,6 +118,15 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           <Text style={styles.summaryLead}>Consensus: </Text>
           {available ? result!.verdict : "Incomplete"}
         </Text>
+        {/* Tapping this bar opens the full Consensus drawer (map, dissent,
+            per-model detail) — this is what actually surfaces that there's
+            more behind the two-line preview, instead of the preview
+            silently being the whole feature. */}
+        {available && (
+          <View style={{ marginTop: 2 }}>
+            <ScrollCueArrow />
+          </View>
+        )}
       </Pressable>
     </View>
   );

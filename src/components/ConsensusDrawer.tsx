@@ -285,8 +285,7 @@ export function ConsensusModal({
               <View style={{ alignItems: "center" }}>
                 <Text
                   style={{
-                    color: scoreColor, fontSize: 34, fontWeight: "900",
-                    fontFamily: fontFamilyForWeight(900),
+                    color: scoreColor, fontSize: 34, fontWeight: "900", fontFamily: fontFamilyForWeight(900),
                     textShadowColor: scoreColor, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12,
                   }}
                 >

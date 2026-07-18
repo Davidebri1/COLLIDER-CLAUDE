@@ -15,7 +15,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, SCREEN_W, withFont } from "../styles/theme";
+import { styles, SCREEN_W, withFont, fontFamilyForWeight } from "../styles/theme";
 import { TIER_INFO, type Tier } from "../models";
 import { IAP_PRODUCTS, purchaseProduct } from "../services/iap";
 import { useToast } from "../components/Toast";
@@ -111,7 +111,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                 style={[localStyles.creditsPill, { borderColor: `${gradientColors[0]}50` }]}
               >
                 <Ionicons name="sparkles" size={12} color={info.color} />
-                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>
+                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
                   {info.pool.toLocaleString()} CREDS / MONTH
                 </Text>
               </LinearGradient>
@@ -166,7 +166,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                 ]}
               >
                 {isActive ? (
-                  <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "800", letterSpacing: 1 }}>CURRENT SUBSCRIPTION</Text>
+                  <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>CURRENT SUBSCRIPTION</Text>
                 ) : (
                   <LinearGradient 
                     colors={gradientColors} 
@@ -174,7 +174,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                     end={{ x: 1, y: 0 }} 
                     style={localStyles.gradientBtnBg}
                   >
-                    <Text style={{ color: "#000", fontSize: 11.5, fontWeight: "900", letterSpacing: 1.5 }}>
+                    <Text style={{ color: "#000", fontSize: 11.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.5 }}>
                       ACTIVATE {info.label.toUpperCase()}
                     </Text>
                   </LinearGradient>
@@ -245,7 +245,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                 end={{ x: 1, y: 0 }}
                 style={localStyles.gradientBtnBg}
               >
-                <Text style={{ color: "#000", fontWeight: "900", fontSize: 11.5, letterSpacing: 1 }}>
+                <Text style={{ color: "#000", fontWeight: "900", fontFamily: fontFamilyForWeight(900), fontSize: 11.5, letterSpacing: 1 }}>
                   {submitting ? "SENDING ENQUIRY..." : "SUBMIT REQUEST"}
                 </Text>
               </LinearGradient>
@@ -272,19 +272,19 @@ const localStyles = StyleSheet.create(withFont({
   },
   planTitle: {
     fontSize: 9.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 2,
   },
   planPrice: {
     color: "#fff",
     fontSize: 24,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     marginTop: 2,
   },
   planPriceSuffix: {
     color: "rgba(255,255,255,0.4)",
     fontSize: 12,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
     marginBottom: 3,
   },
   activeBadge: {
@@ -294,7 +294,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   activeBadgeText: {
     fontSize: 8.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 0.5,
   },
   creditsPill: {
@@ -346,7 +346,7 @@ const localStyles = StyleSheet.create(withFont({
   formTitle: {
     color: "#6b6478",
     fontSize: 8.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1.5,
   },
   formInput: {

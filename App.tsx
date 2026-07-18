@@ -1112,10 +1112,9 @@ function CategoryDropdownTrigger({ onPress }: { onPress: () => void }) {
           color: "rgba(255,255,255,0.9)",
           fontSize: 9.5,
           lineHeight: 12,
-          fontWeight: "900",
+          fontWeight: "900", fontFamily: fontFamilyForWeight(900),
           letterSpacing: 0.6,
           textAlignVertical: "center",
-          fontFamily: fontFamilyForWeight(900),
           textShadowColor: meta.color,
           textShadowOffset: { width: 0, height: 0 },
           textShadowRadius: 14,
@@ -1142,7 +1141,7 @@ function CategorySelectorModal({ visible, onClose }: { visible: boolean; onClose
         >
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
-            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", textAlign: "center" }}>Select Category</Text>
+            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Select Category</Text>
             <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
@@ -1314,7 +1313,7 @@ function ModelSelectorDrawer({
               {model.label}
             </Text>
             <View style={{ backgroundColor: "#0a0a0c", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-              <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "900" }}>{model.short}</Text>
+              <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{model.short}</Text>
             </View>
           </View>
           <Text style={{ color: "#6b6478", fontSize: 11 }}>{model.desc || "High-quality model for general tasks."}</Text>
@@ -1322,7 +1321,7 @@ function ModelSelectorDrawer({
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           {!usable ? (
             <View style={{ backgroundColor: "rgba(255,255,255,0.1)", borderWidth: 1, borderColor: "rgba(255,255,255,0.3)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-              <Text style={{ color: "#ffffff", fontSize: 9, fontWeight: "900", letterSpacing: 1 }}>LOCK</Text>
+              <Text style={{ color: "#ffffff", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1 }}>LOCK</Text>
             </View>
           ) : (
             isSelected && (
@@ -1345,7 +1344,7 @@ function ModelSelectorDrawer({
         <View style={[styles.editSheet, { width: Math.min(SCREEN_W - 64, 340), alignSelf: "center", marginTop: 0, maxHeight: "70%", padding: 0, overflow: "hidden" }]} onStartShouldSetResponder={() => true}>
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
-            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", textAlign: "center" }}>Select Models ({cat.toUpperCase()})</Text>
+            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Select Models ({cat.toUpperCase()})</Text>
             <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
@@ -1353,19 +1352,19 @@ function ModelSelectorDrawer({
           <ScrollView showsVerticalScrollIndicator={false}>
             {freeModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>FREE MODELS</Text>
+                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>FREE MODELS</Text>
                 {freeModels.map(renderModelRow)}
               </View>
             )}
             {proModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>PRO MODELS</Text>
+                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>PRO MODELS</Text>
                 {proModels.map(renderModelRow)}
               </View>
             )}
             {eliteModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>ELITE MODELS</Text>
+                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>ELITE MODELS</Text>
                 {eliteModels.map(renderModelRow)}
               </View>
             )}
@@ -1415,7 +1414,7 @@ function AudioPlayerControls() {
         <View style={styles.vinylCenter} />
       </Animated.View>
       <View style={{ flex: 1, gap: 4 }}>
-        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "900" }}>Synthesized Master.mp3</Text>
+        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Synthesized Master.mp3</Text>
         <Text style={{ color: "#6b6478", fontSize: 10 }}>Collider Composition Engine</Text>
       </View>
       <Pressable onPress={() => setPlaying(!playing)} style={styles.playPauseBtn}>
@@ -1462,7 +1461,7 @@ function ModelSelectorRow({ selected, onSelect }: { selected?: string; onSelect:
           onPress={() => onSelect("global")}
           style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === "global" && { backgroundColor: "rgba(255,255,255,0.15)", borderColor: "#fff" }]}
         >
-          <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900" }}>GLOBAL</Text>
+          <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>GLOBAL</Text>
         </Pressable>
         {MODELS.map((m) => (
           <Pressable
@@ -1470,7 +1469,7 @@ function ModelSelectorRow({ selected, onSelect }: { selected?: string; onSelect:
             onPress={() => onSelect(m.id)}
             style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === m.id && { backgroundColor: `${m.color}25`, borderColor: m.color }]}
           >
-            <Text style={{ color: selected === m.id ? m.color : "#6b6478", fontSize: 11, fontWeight: "900" }}>{m.label}</Text>
+            <Text style={{ color: selected === m.id ? m.color : "#6b6478", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{m.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -1496,7 +1495,7 @@ function SourceModelBadge({ modelId }: { modelId?: string }) {
       }}
     >
       <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: color }} />
-      <Text style={{ color, fontSize: 11, fontWeight: "900" }}>{label}</Text>
+      <Text style={{ color, fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{label}</Text>
     </View>
   );
 }
@@ -1548,7 +1547,7 @@ function LinkedItemsBlock({
           {allLinked.map((l) => (
             <View key={`${l.kind}_${l.id}`} style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#0a0a0c", borderRadius: 8, padding: 8, gap: 8 }}>
               <Text style={{ color: "#fff", fontSize: 11, flex: 1 }}>
-                <Text style={{ color: "#6b6478", fontWeight: "900" }}>{l.kind.toUpperCase()}  </Text>
+                <Text style={{ color: "#6b6478", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{l.kind.toUpperCase()}  </Text>
                 {titleFor(l.kind, l.id)}
               </Text>
               <Pressable
@@ -1562,7 +1561,7 @@ function LinkedItemsBlock({
         </View>
       )}
       <Pressable onPress={() => setAttaching(true)} style={{ marginTop: 8, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
-        <Text style={{ color: "#5dbdff", fontSize: 11, fontWeight: "900" }}>+ Attach existing item</Text>
+        <Text style={{ color: "#5dbdff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>+ Attach existing item</Text>
       </Pressable>
 
       <Modal transparent visible={attaching} animationType="fade" onRequestClose={() => setAttaching(false)}>
@@ -1581,7 +1580,7 @@ function LinkedItemsBlock({
                   }}
                   style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" }}
                 >
-                  <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900" }}>{c.kind.toUpperCase()}</Text>
+                  <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{c.kind.toUpperCase()}</Text>
                   <ExpandableTrayText style={{ color: "#fff", fontSize: 12 }} text={c.title} />
                 </Pressable>
               ))}
@@ -1684,7 +1683,7 @@ export function ReminderEditModal({
                     }
                   ]}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: "900", color: priority === p ? (p === "high" ? "#ef4444" : "#fff") : "#fff" }}>
+                  <Text style={{ fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), color: priority === p ? (p === "high" ? "#ef4444" : "#fff") : "#fff" }}>
                     {p.toUpperCase()}
                   </Text>
                 </Pressable>
@@ -1695,7 +1694,7 @@ export function ReminderEditModal({
             <View style={{ flexDirection: "row", gap: 6, marginVertical: 4 }}>
               {(["todo", "inprogress", "done"] as const).map((pr) => (
                 <Pressable key={pr} onPress={() => setProgress(pr)} style={[styles.prioBtn, progress === pr && { backgroundColor: "rgba(255,255,255,0.18)", borderColor: "rgba(255,255,255,0.5)" }]}>
-                  <Text style={{ fontSize: 11, fontWeight: "900", color: progress === pr ? "#ffffff" : "#fff" }}>{pr.toUpperCase()}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), color: progress === pr ? "#ffffff" : "#fff" }}>{pr.toUpperCase()}</Text>
                 </Pressable>
               ))}
             </View>
@@ -1800,7 +1799,7 @@ export function MemoryEditModal({
                     }
                   ]}
                 >
-                  <Text style={{ fontSize: 11, fontWeight: "900", color: priority === p ? (p === "high" ? "#ef4444" : "#fff") : "#fff" }}>
+                  <Text style={{ fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), color: priority === p ? (p === "high" ? "#ef4444" : "#fff") : "#fff" }}>
                     {p.toUpperCase()}
                   </Text>
                 </Pressable>
@@ -1903,7 +1902,7 @@ export function ProjectEditModal({
                     <Text style={[{ flex: 1, color: "#fff", fontSize: 13 }, t.done && styles.done]}>{t.title}</Text>
                     {t.priority && t.priority !== "none" && (
                       <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: t.priority === "high" ? "rgba(239,68,68,0.2)" : t.priority === "med" ? "rgba(255,183,77,0.2)" : "rgba(93,189,255,0.2)", marginRight: 6 }}>
-                        <Text style={{ fontSize: 7, color: t.priority === "high" ? "#ef4444" : t.priority === "med" ? "#ffb74d" : "#5dbdff", fontWeight: "900" }}>{t.priority.toUpperCase()}</Text>
+                        <Text style={{ fontSize: 7, color: t.priority === "high" ? "#ef4444" : t.priority === "med" ? "#ffb74d" : "#5dbdff", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{t.priority.toUpperCase()}</Text>
                       </View>
                     )}
                     <Pressable onPress={() => dispatch({ type: "removeTask", projectId: item.id, taskId: t.id })} style={{ paddingHorizontal: 6 }}>
@@ -1942,7 +1941,7 @@ export function ProjectEditModal({
                     }
                   ]}
                 >
-                  <Text style={{ fontSize: 9, fontWeight: "900", color: newTaskPriority === p ? (p === "high" ? "#ef4444" : "#fff") : "#fff" }}>
+                  <Text style={{ fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), color: newTaskPriority === p ? (p === "high" ? "#ef4444" : "#fff") : "#fff" }}>
                     {p.toUpperCase()}
                   </Text>
                 </Pressable>
@@ -2038,7 +2037,7 @@ export function ArtifactEditModal({
                     onPress={() => setKind(k)}
                     style={[styles.prioBtn, kind === k && { backgroundColor: `${kColor}22`, borderColor: `${kColor}80` }]}
                   >
-                    <Text style={{ fontSize: 11, fontWeight: "900", color: kind === k ? kColor : "#fff" }}>{k.toUpperCase()}</Text>
+                    <Text style={{ fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), color: kind === k ? kColor : "#fff" }}>{k.toUpperCase()}</Text>
                   </Pressable>
                 );
               })}
@@ -2053,7 +2052,7 @@ export function ArtifactEditModal({
                     onPress={() => setPreviewMode(m === "preview")}
                     style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: (m === "preview") === previewMode ? "rgba(255,255,255,0.12)" : "transparent" }}
                   >
-                    <Text style={{ fontSize: 10, fontWeight: "800", color: (m === "preview") === previewMode ? "#fff" : "#6b6478" }}>{m.toUpperCase()}</Text>
+                    <Text style={{ fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: (m === "preview") === previewMode ? "#fff" : "#6b6478" }}>{m.toUpperCase()}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -2401,7 +2400,7 @@ function CardScreen({
                 <Text
                   style={[
                     styles.subTabText,
-                    active && { color: "#ffffff", fontWeight: "900" },
+                    active && { color: "#ffffff", fontWeight: "900", fontFamily: fontFamilyForWeight(900) },
                   ]}
                 >
                   {label.toUpperCase()}
@@ -2464,14 +2463,14 @@ function CardScreen({
                                 style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
                               >
                                 <Ionicons name="share-social-outline" size={12} color="#ffffff" />
-                                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900" }}>Share</Text>
+                                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Share</Text>
                               </Pressable>
                               <Pressable 
                                 onPress={() => { Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {}); toast("Saved to gallery!"); }}
                                 style={{ flexDirection: "row", alignItems: "center", gap: 3 }}
                               >
                                 <Ionicons name="download-outline" size={12} color="#ffffff" />
-                                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900" }}>Save</Text>
+                                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Save</Text>
                               </Pressable>
                             </View>
                           </View>
@@ -2479,7 +2478,7 @@ function CardScreen({
                         </View>
                       ) : message.role === "assistant" && model.category.includes("music") && message.content ? (
                         <View style={[styles.audioPlayerCard, { backgroundColor: "#161619" }]}>
-                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", marginBottom: 4 }}> SUNO AUDIO GENERATOR</Text>
+                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> SUNO AUDIO GENERATOR</Text>
                           <AudioPlayerControls />
                           <View style={{ marginTop: 8 }}>
                             <Markdown content={message.content} color="#fff" fontSize={12} />
@@ -2487,7 +2486,7 @@ function CardScreen({
                         </View>
                       ) : message.role === "assistant" && model.category.includes("video") && message.content ? (
                         <View style={[styles.videoPlayerCard, { backgroundColor: "#161619" }]}>
-                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", marginBottom: 4 }}> SORA STORYBOARD PLAYER</Text>
+                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> SORA STORYBOARD PLAYER</Text>
                           <VideoPlayerSimulated prompt={message.content} />
                           <View style={{ marginTop: 8 }}>
                             <Markdown content={message.content} color="#fff" fontSize={12} />
@@ -2503,7 +2502,7 @@ function CardScreen({
                           style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8, alignSelf: "flex-start", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8, backgroundColor: `${model.color}18`, borderWidth: 1, borderColor: `${model.color}40` }}
                         >
                           <Ionicons name="refresh" size={11} color={model.color} />
-                          <Text style={{ color: model.color, fontSize: 11, fontWeight: "900" }}>Retry</Text>
+                          <Text style={{ color: model.color, fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Retry</Text>
                         </Pressable>
                       )}
                     </View>
@@ -2691,7 +2690,7 @@ function CardScreen({
           >
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
               <Ionicons name="calendar-outline" size={14} color="#5dbdff" />
-              <Text style={{ color: "#5dbdff", fontSize: 11.5, fontWeight: "900" }}>Open full Reminders (Google Calendar & Tasks)</Text>
+              <Text style={{ color: "#5dbdff", fontSize: 11.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Open full Reminders (Google Calendar & Tasks)</Text>
             </View>
             <Ionicons name="chevron-forward" size={14} color="#5dbdff" />
           </Pressable>
@@ -3238,7 +3237,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                   tab === t && { backgroundColor: "rgba(255,255,255,0.6)" },
                 ]}
               >
-                <Text style={[{ fontSize: 10, color: "#fff", fontWeight: "900" }, tab === t && { color: "#000" }]}>
+                <Text style={[{ fontSize: 10, color: "#fff", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }, tab === t && { color: "#000" }]}>
                   {t.toUpperCase()}
                 </Text>
               </Pressable>
@@ -3273,7 +3272,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                     </Pressable>
                   ) : (
                     <View style={{ width: 44, height: 44, borderRadius: 6, backgroundColor: "#0a0a0c", alignItems: "center", justifyContent: "center" }}>
-                      <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>DOC</Text>
+                      <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>DOC</Text>
                     </View>
                   )}
                   <View style={{ flex: 1 }}>

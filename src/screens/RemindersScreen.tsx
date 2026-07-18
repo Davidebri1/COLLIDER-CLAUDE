@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider, newId, type Reminder } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, withFont } from "../styles/theme";
+import { styles, withFont, fontFamilyForWeight } from "../styles/theme";
 import { SearchBar, useSearch } from "../features";
 import { convertItem } from "../services/smartgen";
 import { useToast } from "../components/Toast";
@@ -277,7 +277,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                   <Text style={[
                     localStyles.dayCellText,
                     isToday && { color: "#ffb74d" },
-                    isSelected && { color: "#000", fontWeight: "900" }
+                    isSelected && { color: "#000", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }
                   ]}>
                     {d.getDate()}
                   </Text>
@@ -442,57 +442,72 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                 key={r.id}
                 style={[localStyles.reminderCard, isSelected && { borderColor: "rgba(255,255,255,0.5)" }]}
               >
-                {selectMode && (
-                  <Pressable onPress={() => toggleSelected(r.id)} style={{ paddingRight: 4 }}>
-                    <SelectDot selected={isSelected} />
+                {/* Title gets its own full-width row. Packing DUE/PRI/STATUS
+                    plus the edit/delete/sync action icons onto the same row
+                    as the title (the previous layout) left barely any space
+                    for the title on a phone-width card — flexbox obediently
+                    shrank the title's flex:1 box down to 0px whenever the
+                    fixed-width columns plus the icon cluster added up to
+                    more than the card's actual width, making the title
+                    disappear rather than just truncate. A second row for
+                    the metadata guarantees the title always gets the full
+                    card width to itself. */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View style={{ width: 26, alignItems: "center" }}>
+                    {selectMode ? (
+                      <Pressable onPress={() => toggleSelected(r.id)}>
+                        <SelectDot selected={isSelected} />
+                      </Pressable>
+                    ) : (
+                      <Pressable onPress={() => handleToggleReminder(r.id)}>
+                        <Ionicons
+                          name={r.done ? "checkmark-circle" : "ellipse-outline"}
+                          size={18}
+                          color={r.done ? "#ffffff" : "rgba(255,255,255,0.4)"}
+                        />
+                      </Pressable>
+                    )}
+                  </View>
+
+                  <Pressable onPress={() => (selectMode ? toggleSelected(r.id) : setEditingItem(r))} style={{ flex: 1 }}>
+                    <Text style={[
+                      localStyles.reminderTitle,
+                      r.done && { textDecorationLine: "line-through", color: "rgba(255,255,255,0.3)" }
+                    ]} numberOfLines={2}>
+                      {r.title}
+                    </Text>
                   </Pressable>
-                )}
-
-                {/* Custom circular Checkbox */}
-                <Pressable onPress={() => (selectMode ? toggleSelected(r.id) : handleToggleReminder(r.id))} style={{ paddingRight: 8 }}>
-                  <Ionicons
-                    name={r.done ? "checkmark-circle" : "ellipse-outline"}
-                    size={18}
-                    color={r.done ? "#ffffff" : "rgba(255,255,255,0.4)"}
-                  />
-                </Pressable>
-
-                {/* Title */}
-                <Pressable onPress={() => (selectMode ? toggleSelected(r.id) : setEditingItem(r))} style={{ flex: 1 }}>
-                  <Text style={[
-                    localStyles.reminderTitle,
-                    r.done && { textDecorationLine: "line-through", color: "rgba(255,255,255,0.3)" }
-                  ]} numberOfLines={2}>
-                    {r.title}
-                  </Text>
-                </Pressable>
+                </View>
 
                 {/* Due / Priority / Status — same fixed widths as the table
-                    header above, so this reads as columns lining up under
-                    it rather than a free-floating row of pills. */}
-                <View style={{ width: 64 }}>
-                  {r.due && <Text style={localStyles.metaText} numberOfLines={1}>{new Date(r.due).toLocaleDateString()}</Text>}
-                </View>
-                <View style={{ width: 50 }}>
-                  {r.priority && r.priority !== "none" && (
-                    <View style={[
-                      localStyles.priorityBadge,
-                      { alignSelf: "flex-start", backgroundColor: `${getPriorityColor(r.priority)}15`, borderColor: `${getPriorityColor(r.priority)}30` }
-                    ]}>
-                      <Text style={[localStyles.priorityText, { color: getPriorityColor(r.priority) }]}>
-                        {r.priority.toUpperCase()}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-                <View style={{ width: 60 }}>
-                  {r.progress && (
-                    <Text style={[localStyles.metaText, { textTransform: "uppercase" }]} numberOfLines={1}>{r.progress}</Text>
-                  )}
-                </View>
+                    header above, right-aligned within this second row so
+                    they still line up under the header's own right-anchored
+                    DUE/PRI/STATUS columns. */}
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
+                  <View style={{ flex: 1 }} />
+                  <View style={{ width: 64 }}>
+                    {r.due && <Text style={localStyles.metaText} numberOfLines={1}>{new Date(r.due).toLocaleDateString()}</Text>}
+                  </View>
+                  <View style={{ width: 50 }}>
+                    {r.priority && r.priority !== "none" && (
+                      <View style={[
+                        localStyles.priorityBadge,
+                        { alignSelf: "flex-start", backgroundColor: `${getPriorityColor(r.priority)}15`, borderColor: `${getPriorityColor(r.priority)}30` }
+                      ]}>
+                        <Text style={[localStyles.priorityText, { color: getPriorityColor(r.priority) }]}>
+                          {r.priority.toUpperCase()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                  <View style={{ width: 60 }}>
+                    {r.progress && (
+                      <Text style={[localStyles.metaText, { textTransform: "uppercase" }]} numberOfLines={1}>{r.progress}</Text>
+                    )}
+                  </View>
 
-                {/* Edit & Delete Action row */}
-                <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                  {/* Edit & Delete Action row */}
+                  <View style={{ flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
                   <View style={{ flexDirection: "row", gap: 4, alignItems: "center" }}>
                     {googleConnected && r.due && (
                       <Pressable
@@ -554,17 +569,18 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                         toast("Converted to Memory.");
                         setConvertFor(null);
                       }}>
-                        <Text style={{ fontSize: 10, color: "#ffffff", fontWeight: "700" }}> Memory</Text>
+                        <Text style={{ fontSize: 10, color: "#ffffff", fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}> Memory</Text>
                       </Pressable>
                       <Pressable onPress={() => {
                         dispatch({ type: "artifact", ...convertItem(r, "reminder", "artifact"), linkFrom: { kind: "reminder", id: r.id } } as any);
                         toast("Converted to Artifact.");
                         setConvertFor(null);
                       }}>
-                        <Text style={{ fontSize: 10, color: "#ffffff", fontWeight: "700" }}> Artifact</Text>
+                        <Text style={{ fontSize: 10, color: "#ffffff", fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}> Artifact</Text>
                       </Pressable>
                     </View>
                   )}
+                  </View>
                 </View>
 
               </Glass>
@@ -578,6 +594,8 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
         <ReminderEditModal
           visible={!!editingItem}
           item={editingItem}
+          dispatch={dispatch}
+          state={state}
           onClose={() => setEditingItem(null)}
           onSave={(updated) => {
             dispatch({ type: "updateReminder", reminder: updated });
@@ -615,7 +633,7 @@ const localStyles = StyleSheet.create(withFont({
   googleText: {
     color: "rgba(255,255,255,0.7)",
     fontSize: 11.5,
-    fontWeight: "600",
+    fontWeight: "600", fontFamily: fontFamilyForWeight(600),
     flexShrink: 1,
   },
   googleBtn: {
@@ -627,7 +645,7 @@ const localStyles = StyleSheet.create(withFont({
   googleBtnText: {
     color: "#fff",
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   googleEventsBox: {
     marginTop: 8,
@@ -641,7 +659,7 @@ const localStyles = StyleSheet.create(withFont({
   googleEventsTitle: {
     color: "#6b6478",
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 1,
     marginBottom: 2,
   },
@@ -653,13 +671,13 @@ const localStyles = StyleSheet.create(withFont({
   googleEventText: {
     color: "#fff",
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "600", fontFamily: fontFamilyForWeight(600),
     flex: 1,
   },
   googleEventDate: {
     color: "#6b6478",
     fontSize: 9,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
     marginLeft: 6,
   },
   calendarCard: {
@@ -676,7 +694,7 @@ const localStyles = StyleSheet.create(withFont({
   calendarTitle: {
     color: "#ffffff",
     fontSize: 10,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 2,
     textAlign: "center",
     marginBottom: 10,
@@ -692,7 +710,7 @@ const localStyles = StyleSheet.create(withFont({
     width: 34,
     textAlign: "center",
     fontSize: 10,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
   },
   gridRow: {
     flexDirection: "row",
@@ -721,7 +739,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   dayCellText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
     color: "#fff",
   },
   remDot: {
@@ -801,7 +819,7 @@ const localStyles = StyleSheet.create(withFont({
   headerCellText: {
     color: "#6b6478",
     fontSize: 9,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5,
   },
   reminderCard: {
@@ -809,14 +827,13 @@ const localStyles = StyleSheet.create(withFont({
     backgroundColor: "rgba(18,18,22,0.45)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.07)",
-    flexDirection: "row",
+    flexDirection: "column",
     padding: 12,
-    alignItems: "center",
   },
   reminderTitle: {
     color: "#fff",
     fontSize: 13,
-    fontWeight: "600",
+    fontWeight: "600", fontFamily: fontFamilyForWeight(600),
   },
   metaPill: {
     flexDirection: "row",
@@ -830,7 +847,7 @@ const localStyles = StyleSheet.create(withFont({
   metaText: {
     color: "#6b6478",
     fontSize: 9,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   priorityBadge: {
     paddingHorizontal: 6,
@@ -840,7 +857,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   priorityText: {
     fontSize: 8,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
   },
   actionButton: {
     padding: 5,

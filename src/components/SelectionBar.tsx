@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { withFont } from "../styles/theme";
+import { withFont, fontFamilyForWeight } from "../styles/theme";
 
 // Shared bulk-select toolbar for list screens (Memory, Reminders, Projects,
 // Artifacts, Files, History). Screens own their own selection Set — this is
@@ -84,15 +84,15 @@ const localStyles = StyleSheet.create(withFont({
     alignItems: "center", justifyContent: "center",
     backgroundColor: "#0a0a0c",
   },
-  count: { color: "#fff", fontSize: 12, fontWeight: "700", flex: 1 },
+  count: { color: "#fff", fontSize: 12, fontWeight: "700", fontFamily: fontFamilyForWeight(700), flex: 1 },
   textBtn: { paddingHorizontal: 6 },
-  textBtnLabel: { color: "#ffffff", fontSize: 11.5, fontWeight: "700" },
+  textBtnLabel: { color: "#ffffff", fontSize: 11.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
   deleteBtn: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
     backgroundColor: "#ef4444",
   },
-  deleteLabel: { color: "#fff", fontSize: 11.5, fontWeight: "800" },
+  deleteLabel: { color: "#fff", fontSize: 11.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800) },
   toggle: {
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
@@ -101,7 +101,7 @@ const localStyles = StyleSheet.create(withFont({
   toggleActive: {
     backgroundColor: "rgba(255,255,255,0.16)", borderColor: "rgba(255,255,255,0.45)",
   },
-  toggleLabel: { color: "rgba(255,255,255,0.7)", fontSize: 11.5, fontWeight: "700", letterSpacing: 0.3 },
+  toggleLabel: { color: "rgba(255,255,255,0.7)", fontSize: 11.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700), letterSpacing: 0.3 },
   toggleLabelActive: { color: "#ffffff" },
   dot: {
     width: 20, height: 20, borderRadius: 10,

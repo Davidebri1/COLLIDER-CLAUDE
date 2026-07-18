@@ -14,7 +14,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, WALLPAPERS, FREE_THEMES, PREMIUM_THEMES, withFont } from "../styles/theme";
+import { styles, WALLPAPERS, FREE_THEMES, PREMIUM_THEMES, withFont, fontFamilyForWeight } from "../styles/theme";
 import { useToast } from "../components/Toast";
 import * as player from "../services/musicPlayer";
 
@@ -86,7 +86,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
                   <LinearGradient colors={["transparent", "rgba(0,0,0,0.5)"]} style={StyleSheet.absoluteFill} />
                   
                   <View style={{ position: "absolute", bottom: 8, left: 8, right: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                    <Text style={[styles.tileName, { fontSize: 11, fontWeight: "800", color: "#fff", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>{wall.name}</Text>
+                    <Text style={[styles.tileName, { fontSize: 11, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: "#fff", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>{wall.name}</Text>
                     {active ? (
                       <Ionicons name="checkmark-circle" size={14} color="#e2e8f0" />
                     ) : wall.premium && !canUsePremium ? (
@@ -128,7 +128,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
                     <LinearGradient colors={["transparent", "rgba(0,0,0,0.6)"]} style={StyleSheet.absoluteFill} />
                     
                     <View style={{ position: "absolute", bottom: 8, left: 8, right: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
-                      <Text style={[styles.tileName, { fontSize: 11, fontWeight: "800", color: "#fff", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>{theme.name}</Text>
+                      <Text style={[styles.tileName, { fontSize: 11, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: "#fff", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>{theme.name}</Text>
                       {active && <Ionicons name="checkmark-circle" size={14} color="#e2e8f0" />}
                     </View>
                   </Glass>
@@ -182,7 +182,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
 
                       <View style={{ position: "absolute", bottom: 8, left: 8, right: 8, flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                         <View style={{ flex: 1 }}>
-                          <Text style={[styles.tileName, { fontSize: 11, fontWeight: "800", color: "#fff", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>{theme.name}</Text>
+                          <Text style={[styles.tileName, { fontSize: 11, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: "#fff", textShadowColor: "rgba(0,0,0,0.6)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 2 }]}>{theme.name}</Text>
                           {!!theme.tracks?.length && (
                             <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 9.5, marginTop: 1 }}>{theme.tracks.length} tracks included</Text>
                           )}
@@ -283,7 +283,7 @@ const wallStyles = StyleSheet.create(withFont({
     color: "#858091",
     fontSize: 9.5,
     letterSpacing: 2,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
   },
   sectionHint: {
     color: "#6b6478",
@@ -303,7 +303,7 @@ const wallStyles = StyleSheet.create(withFont({
   liveText: {
     color: "#e2e8f0",
     fontSize: 8,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1,
   },
   buyBtn: {
@@ -319,7 +319,7 @@ const wallStyles = StyleSheet.create(withFont({
   buyBtnText: {
     color: "#0a0512",
     fontSize: 11.5,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
   },
   trackList: {
     backgroundColor: "#0a0a0c",

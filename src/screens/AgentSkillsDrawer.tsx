@@ -16,7 +16,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { GlossSurface } from "../components/GlossSurface";
-import { styles, SCREEN_W, withFont } from "../styles/theme";
+import { styles, SCREEN_W, withFont, fontFamilyForWeight } from "../styles/theme";
 import { MODELS, modelById } from "../models";
 import { CONSOLE_SKILLS } from "../skills";
 import { useToast } from "../components/Toast";
@@ -121,7 +121,7 @@ export function AgentSkillsDrawer({
           <View style={localStyles.drawerHeader}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
               <Ionicons name="settings" size={16} color="#e2e8f0" />
-              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", letterSpacing: 1.5 }}>CONSOLE CONTROL</Text>
+              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.5 }}>CONSOLE CONTROL</Text>
             </View>
             <Pressable onPress={onClose} style={localStyles.closeBtn}>
               <Ionicons name="close" size={18} color="#fff" />
@@ -211,7 +211,7 @@ export function AgentSkillsDrawer({
                       <Text style={localStyles.infoBoxTitle}>{editingAgentId ? "EDIT AGENT" : "SYNTHESIZE SPECIAL AGENT"}</Text>
                       {editingAgentId && (
                         <Pressable onPress={resetAgentForm}>
-                          <Text style={{ color: "#858091", fontSize: 9.5, fontWeight: "800", letterSpacing: 0.5 }}>CANCEL</Text>
+                          <Text style={{ color: "#858091", fontSize: 9.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 0.5 }}>CANCEL</Text>
                         </Pressable>
                       )}
                     </View>
@@ -249,7 +249,7 @@ export function AgentSkillsDrawer({
                               <View style={[localStyles.modelDot, { backgroundColor: m.color }]} />
                               <Text style={[
                                 localStyles.modelBtnText,
-                                isSelected && { color: m.color, fontWeight: "900" }
+                                isSelected && { color: m.color, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }
                               ]}>
                                 {m.short.toUpperCase()}
                               </Text>
@@ -274,7 +274,7 @@ export function AgentSkillsDrawer({
                   </View>
 
                   <Pressable onPress={handleCreateAgent} style={localStyles.submitBtn}>
-                    <Text style={{ color: "#000", fontWeight: "900", fontSize: 11.5, letterSpacing: 1 }}>
+                    <Text style={{ color: "#000", fontWeight: "900", fontFamily: fontFamilyForWeight(900), fontSize: 11.5, letterSpacing: 1 }}>
                       {editingAgentId ? "SAVE CHANGES" : "SYNTHESIZE AGENT"}
                     </Text>
                   </Pressable>
@@ -295,7 +295,7 @@ export function AgentSkillsDrawer({
                               onPress={() => handleEditAgent(ag)}
                             >
                               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                                <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12.5 }}>{ag.name}</Text>
+                                <Text style={{ color: "#fff", fontWeight: "700", fontFamily: fontFamilyForWeight(700), fontSize: 12.5 }}>{ag.name}</Text>
                                 {isActive && (
                                   <View style={localStyles.activeBadge}>
                                     <Text style={localStyles.activeBadgeText}>ACTIVE</Text>
@@ -356,7 +356,7 @@ export function AgentSkillsDrawer({
                   />
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                     <Ionicons name="checkmark-circle-outline" size={12} color="#e2e8f0" />
-                    <Text style={{ color: "#e2e8f0", fontSize: 10.5, fontWeight: "600" }}>Directives auto-save in real-time</Text>
+                    <Text style={{ color: "#e2e8f0", fontSize: 10.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>Directives auto-save in real-time</Text>
                   </View>
                 </View>
               )}
@@ -480,7 +480,7 @@ const localStyles = StyleSheet.create(withFont({
   navTabText: {
     fontSize: 9,
     color: "#6b6478",
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
   navTabTextActive: {
@@ -497,7 +497,7 @@ const localStyles = StyleSheet.create(withFont({
   infoBoxTitle: {
     color: "#e2e8f0",
     fontSize: 8.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1.5,
     marginBottom: 3,
   },
@@ -522,7 +522,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   skillName: {
     color: "#fff",
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
     fontSize: 12,
   },
   skillDesc: {
@@ -533,7 +533,7 @@ const localStyles = StyleSheet.create(withFont({
   formLabel: {
     color: "#6b6478",
     fontSize: 8.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1.2,
   },
   formInput: {
@@ -573,7 +573,7 @@ const localStyles = StyleSheet.create(withFont({
   modelBtnText: {
     fontSize: 10,
     color: "#6b6478",
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   formTextarea: {
     backgroundColor: "#0a0a0c",
@@ -611,7 +611,7 @@ const localStyles = StyleSheet.create(withFont({
   boardHeader: {
     color: "#e2e8f0",
     fontSize: 8.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1.5,
     marginTop: 10,
   },
@@ -639,7 +639,7 @@ const localStyles = StyleSheet.create(withFont({
   activeBadgeText: {
     color: "#e2e8f0",
     fontSize: 7.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1,
   },
   useBtn: {
@@ -654,7 +654,7 @@ const localStyles = StyleSheet.create(withFont({
   useBtnText: {
     color: "#e2e8f0",
     fontSize: 9.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 0.5,
   },
   useBtnTextOn: {
@@ -680,7 +680,7 @@ const localStyles = StyleSheet.create(withFont({
   lockHeader: {
     color: "#e2e8f0",
     fontSize: 13,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 2,
     textAlign: "center",
   },
@@ -701,7 +701,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   lockUpgradeText: {
     color: "#000",
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     fontSize: 11,
     letterSpacing: 1,
   },

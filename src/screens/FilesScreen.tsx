@@ -15,7 +15,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, withFont } from "../styles/theme";
+import { styles, withFont, fontFamilyForWeight } from "../styles/theme";
 import { MODELS } from "../models";
 import { SearchBar, useSearch } from "../features";
 import { SelectionBar, SelectModeToggle } from "../components/SelectionBar";
@@ -252,7 +252,7 @@ const localStyles = StyleSheet.create(withFont({
   navTabText: {
     fontSize: 9,
     color: "#6b6478",
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
   navTabTextActive: {
@@ -293,7 +293,7 @@ const localStyles = StyleSheet.create(withFont({
   primaryButtonText: {
     color: "#e2e8f0",
     fontSize: 11.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 0.5,
   },
   emptyContainer: {
@@ -327,17 +327,17 @@ const localStyles = StyleSheet.create(withFont({
   fileName: {
     color: "#fff",
     fontSize: 10.5,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   fileKind: {
     color: "#6b6478",
     fontSize: 8.5,
     textTransform: "uppercase",
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
   },
   fileModel: {
     color: "#ffffff",
     fontSize: 8.5,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
 }));

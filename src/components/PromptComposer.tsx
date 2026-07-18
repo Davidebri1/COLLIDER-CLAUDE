@@ -5,7 +5,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider, type Attachment } from "../state";
 import { pickImage, startRecording, stopRecording } from "../services/media";
 import { transcribeAudio } from "../services/chat";
-import { styles } from "../styles/theme";
+import { styles, fontFamilyForWeight } from "../styles/theme";
 
 export function PromptComposer({
   value,
@@ -102,7 +102,7 @@ export function PromptComposer({
               }}
             >
               <Ionicons name="image-outline" size={12} color="#fff" />
-              <Text style={{ color: "#fff", fontSize: 10.5, fontWeight: "600" }}>Image {i + 1}</Text>
+              <Text style={{ color: "#fff", fontSize: 10.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>Image {i + 1}</Text>
               <Ionicons name="close-circle" size={13} color="rgba(255,255,255,0.4)" />
             </Pressable>
           ))}
@@ -173,7 +173,7 @@ export function PromptComposer({
           onPress={nextMode}
           style={[styles.toolBtn, { width: "auto", minWidth: 28, height: 28, borderRadius: 14, paddingHorizontal: 8, flexDirection: "row", gap: 3, alignItems: "center", backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }]}
         >
-          <Text style={{ color: modeColor, fontSize: 9, fontWeight: "700" }}>
+          <Text style={{ color: modeColor, fontSize: 9, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>
             {mode === "default" ? "Default" : mode === "research" ? "Research" : "Deep"}
           </Text>
           <Ionicons name="chevron-down" size={9} color={modeColor} />

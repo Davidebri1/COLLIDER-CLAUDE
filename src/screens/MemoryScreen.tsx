@@ -14,7 +14,7 @@ import { useCollider, newId } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
 import { InlineAdd } from "../components/InlineAdd";
-import { styles, withFont } from "../styles/theme";
+import { styles, withFont, fontFamilyForWeight } from "../styles/theme";
 import { MODELS, modelById } from "../models";
 import { SearchBar, useSearch } from "../features";
 import { convertItem } from "../services/smartgen";
@@ -205,14 +205,14 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
                           toast("Converted to Reminder.");
                           setConvertFor(null);
                         }}>
-                          <Text style={{ fontSize: 10, color: "#e2e8f0", fontWeight: "700" }}> Reminder</Text>
+                          <Text style={{ fontSize: 10, color: "#e2e8f0", fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}> Reminder</Text>
                         </Pressable>
                         <Pressable onPress={() => {
                           dispatch({ type: "artifact", ...convertItem(m, "memory", "artifact"), linkFrom: { kind: "memory", id: m.id } } as any);
                           toast("Converted to Artifact.");
                           setConvertFor(null);
                         }}>
-                          <Text style={{ fontSize: 10, color: "#e2e8f0", fontWeight: "700" }}> Artifact</Text>
+                          <Text style={{ fontSize: 10, color: "#e2e8f0", fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}> Artifact</Text>
                         </Pressable>
                       </View>
                     )}
@@ -229,6 +229,8 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
           visible={!!editingMemory}
           item={editingMemory}
           projects={state.projects}
+          dispatch={dispatch}
+          state={state}
           onClose={() => setEditingMemory(null)}
           onSave={(updated) => {
             dispatch({ type: "updateMemory", memory: updated });
@@ -345,7 +347,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   badgeText: {
     fontSize: 9.5,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   dateText: {
     color: "#6b6478",

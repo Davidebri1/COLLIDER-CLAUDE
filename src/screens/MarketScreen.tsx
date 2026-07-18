@@ -26,7 +26,7 @@ import { useCollider, type MarketItem, DEFAULT_MARKET_ITEMS, generateMoreMarketI
 import { GlossSurface } from "../components/GlossSurface";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, SCREEN_W, SCREEN_H, withFont } from "../styles/theme";
+import { styles, SCREEN_W, SCREEN_H, withFont, fontFamilyForWeight } from "../styles/theme";
 import { CATEGORIES, MODELS, TIER_INFO, canUse, modelById, modelsForCategory } from "../models";
 import { Picker } from "../components/Picker";
 import { useToast } from "../components/Toast";
@@ -675,12 +675,12 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                               color="#fff" 
                               style={{ marginRight: 2 }}
                             />
-                            <Text style={{ color: "#fff", fontSize: 8, fontWeight: "900", textTransform: "uppercase" }}>{item.kind}</Text>
+                            <Text style={{ color: "#fff", fontSize: 8, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textTransform: "uppercase" }}>{item.kind}</Text>
                           </View>
 
                           {/* Footer information overlay */}
                           <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 10 }}>
-                            <Text style={[styles.bodyText, { fontSize: 11, fontWeight: "600" }]} numberOfLines={2}>
+                            <Text style={[styles.bodyText, { fontSize: 11, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }]} numberOfLines={2}>
                               {item.prompt}
                             </Text>
                             <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 6, alignItems: "center" }}>
@@ -691,7 +691,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                                 style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.3)", borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" }}
                               >
                                 <Ionicons name={isLiked ? "heart" : "heart-outline"} size={10} color={isLiked ? "#ef4444" : "#6b6478"} />
-                                <Text style={[styles.muted, { fontSize: 9, fontWeight: "700" }, isLiked && { color: "#ef4444" }]}>{item.likes}</Text>
+                                <Text style={[styles.muted, { fontSize: 9, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }, isLiked && { color: "#ef4444" }]}>{item.likes}</Text>
                               </Pressable>
                             </View>
                           </View>
@@ -718,13 +718,13 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 <Text style={[styles.muted, { fontSize: 11, textAlign: "center", marginBottom: 20, maxWidth: 220 }]}>Generate images, code or audio inside workspace to publish them here.</Text>
 
                 <Pressable onPress={goBack} style={localStyles.mockButtonSecondary}>
-                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800" }}>Go to Workspace</Text>
+                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>Go to Workspace</Text>
                 </Pressable>
               </View>
             ) : (
               <>
                 <View style={{ marginVertical: 8 }}>
-                  <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", letterSpacing: 1.5 }}>TAP FILE TO PUBLISH</Text>
+                  <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.5 }}>TAP FILE TO PUBLISH</Text>
                 </View>
 
                 <FlatList
@@ -746,7 +746,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                           )}
                           <LinearGradient colors={["transparent", "rgba(0,0,0,0.85)"]} style={StyleSheet.absoluteFill} />
                           <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 8 }}>
-                            <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700" }} numberOfLines={1}>{f.name}</Text>
+                            <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }} numberOfLines={1}>{f.name}</Text>
                             <Text style={{ color: "#6b6478", fontSize: 8, textTransform: "uppercase", marginTop: 2 }}>{f.kind} file</Text>
                           </View>
                         </Glass>
@@ -770,7 +770,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)", padding: 14 }}>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Ionicons name="sparkles" size={14} color="#ffffff" />
-                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900", letterSpacing: 1.5 }}>MARKET PREVIEW</Text>
+                  <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.5 }}>MARKET PREVIEW</Text>
                 </View>
                 <Pressable onPress={() => setSelectedItem(null)} style={{ padding: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 14 }}>
                   <Ionicons name="close" size={16} color="#fff" />
@@ -899,7 +899,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   {/* Category overlay label */}
                   <View style={{ position: "absolute", top: 12, left: 12, backgroundColor: "rgba(0,0,0,0.65)", paddingVertical: 3, paddingHorizontal: 8, borderRadius: 10, flexDirection: "row", alignItems: "center", gap: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
                     <Ionicons name="sparkles" size={8} color="#ffffff" />
-                    <Text style={{ color: "#fff", fontSize: 8, fontWeight: "900", letterSpacing: 0.5 }}>{selectedItem.kind.toUpperCase()}</Text>
+                    <Text style={{ color: "#fff", fontSize: 8, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 0.5 }}>{selectedItem.kind.toUpperCase()}</Text>
                   </View>
                 </View>
 
@@ -941,7 +941,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
 
                   {/* Core Prompt Box */}
                   <View style={localStyles.promptCard}>
-                    <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: "900", letterSpacing: 1.5, marginBottom: 4 }}>PROMPT</Text>
+                    <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 8, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.5, marginBottom: 4 }}>PROMPT</Text>
                     <Text style={{ color: "#fff", fontSize: 12.5, lineHeight: 18, fontWeight: "500" }} selectable>{selectedItem.prompt}</Text>
                   </View>
 
@@ -954,7 +954,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                       }}
                       style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
                     >
-                      <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", letterSpacing: 1.2 }}>SETTINGS & CONFIG</Text>
+                      <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>SETTINGS & CONFIG</Text>
                       <Ionicons name={isParamsOpen ? "chevron-up" : "chevron-down"} size={10} color="#6b6478" />
                     </Pressable>
 
@@ -991,7 +991,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                       from the same category top up the row so it's never
                       thin, same trick real markets use for "related". */}
                   <View style={{ gap: 8 }}>
-                    <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", letterSpacing: 1.2 }}>MORE LIKE THIS</Text>
+                    <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>MORE LIKE THIS</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                       {moreLikeThis.map((rel) => {
                         const relFallback = `https://picsum.photos/seed/${encodeURIComponent(rel.id)}/200/200`;
@@ -1009,7 +1009,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
 
                   {/* Comment Section Panel */}
                   <View style={{ gap: 8 }}>
-                    <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", letterSpacing: 1.2 }}>COMMENTS ({ (itemComments[selectedItem.id] || []).length })</Text>
+                    <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>COMMENTS ({ (itemComments[selectedItem.id] || []).length })</Text>
 
                     {/* Input box */}
                     <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
@@ -1039,7 +1039,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                           <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 2 }}>
                             <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                               <Text style={{ fontSize: 10 }}>{avatarFor(c.author_label)}</Text>
-                              <Text style={{ color: "#fff", fontSize: 9.5, fontWeight: "700" }}>{c.author_label}</Text>
+                              <Text style={{ color: "#fff", fontSize: 9.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>{c.author_label}</Text>
                             </View>
                             <Text style={{ color: "#6b6478", fontSize: 8 }}>{timeAgo(c.created_at)}</Text>
                           </View>
@@ -1088,7 +1088,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
               
               {/* Header */}
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)", paddingBottom: 10, marginBottom: 14 }}>
-                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", letterSpacing: 1.5 }}>PUBLISH CREATION</Text>
+                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.5 }}>PUBLISH CREATION</Text>
                 <Pressable onPress={() => setPublishFile(null)} style={{ padding: 4 }}>
                   <Ionicons name="close" size={18} color="rgba(255,255,255,0.5)" />
                 </Pressable>
@@ -1106,7 +1106,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                     </View>
                   )}
                   <View style={{ flex: 1, justifyContent: "center" }}>
-                    <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700" }} numberOfLines={1}>{publishFile.name}</Text>
+                    <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }} numberOfLines={1}>{publishFile.name}</Text>
                     <Text style={{ color: "#6b6478", fontSize: 8, textTransform: "uppercase", marginTop: 2 }}>{publishCategory} file</Text>
                   </View>
                 </View>
@@ -1194,7 +1194,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 disabled={!publishPrompt.trim() || !agreedToGuidelines}
                 style={[localStyles.publishSubmit, (!publishPrompt.trim() || !agreedToGuidelines) && { opacity: 0.4 }]}
               >
-                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", letterSpacing: 1.2 }}>CONFIRM & PUBLISH</Text>
+                <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>CONFIRM & PUBLISH</Text>
               </Pressable>
             </View>
           </View>
@@ -1208,7 +1208,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
         <Modal transparent visible={!!reportSheetFor} animationType="fade" onRequestClose={() => setReportSheetFor(null)}>
           <Pressable style={styles.modalBackdrop} onPress={() => setReportSheetFor(null)}>
             <View style={localStyles.reportSheet} onStartShouldSetResponder={() => true}>
-              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800", marginBottom: 4 }}>Report this content</Text>
+              <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800", fontFamily: fontFamilyForWeight(800), marginBottom: 4 }}>Report this content</Text>
               <Text style={{ color: "#6b6478", fontSize: 10.5, marginBottom: 12, lineHeight: 14 }}>
                 It's removed from your feed immediately and queued for review.
               </Text>
@@ -1222,7 +1222,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 </Pressable>
               ))}
               <Pressable onPress={() => setReportSheetFor(null)} style={{ paddingVertical: 10, alignItems: "center" }}>
-                <Text style={{ color: "#6b6478", fontSize: 11, fontWeight: "700" }}>Cancel</Text>
+                <Text style={{ color: "#6b6478", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>Cancel</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -1258,7 +1258,7 @@ const localStyles = StyleSheet.create(withFont({
   navTabText: {
     fontSize: 11,
     color: "rgba(255,255,255,0.45)",
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5,
   },
   navTabTextActive: {
@@ -1312,7 +1312,7 @@ const localStyles = StyleSheet.create(withFont({
   kindText: {
     color: "#6b6478",
     fontSize: 11,
-    fontWeight: "700"
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700)
   },
   kindTextActive: {
     color: "#fff"
@@ -1372,7 +1372,7 @@ const localStyles = StyleSheet.create(withFont({
   followButtonText: {
     color: "#ffffff",
     fontSize: 9.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     textTransform: "uppercase"
   },
   followButtonTextActive: {
@@ -1453,7 +1453,7 @@ const localStyles = StyleSheet.create(withFont({
   actionBtnText: {
     color: "#fff",
     fontSize: 9.5,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
   actionBtnPrimary: {
@@ -1474,7 +1474,7 @@ const localStyles = StyleSheet.create(withFont({
   actionBtnPrimaryText: {
     color: "#ffffff",
     fontSize: 9.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 0.5
   },
   publishContainer: {
@@ -1494,7 +1494,7 @@ const localStyles = StyleSheet.create(withFont({
   publishFormLabel: {
     color: "#6b6478",
     fontSize: 8.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1,
     textTransform: "uppercase"
   },
