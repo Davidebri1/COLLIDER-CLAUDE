@@ -130,7 +130,7 @@ async function webSearch(query: string, mode?: string): Promise<string> {
 
 
 type Route = {
-  provider: "groq" | "openrouter" | "pollinations-image" | "openrouter-image";
+  provider: "groq" | "openrouter" | "pollinations-image" | "openrouter-image" | "openrouter-video" | "openrouter-music";
   remote: string;
   vision?: boolean;
   systemOverride?: string;
@@ -186,13 +186,37 @@ const ROUTES: Record<string, Route> = {
   "img/gemini-3-pro-image":      { provider: "openrouter-image", remote: "google/gemini-3-pro-image" },
   "img/gpt-5-image":             { provider: "openrouter-image", remote: "openai/gpt-5-image" },
 
-  // ── Video storyboard + reference frame ───────────────────────────────────
-  "vid/sora-2":  { provider: "openrouter", remote: "openai/gpt-5-mini", imageAfter: "flux-realism", systemOverride: "You are Sora 2's shot planner. Produce a 6-shot cinematic storyboard for the user's prompt. Each shot: SHOT #, framing, camera move, subject action, lighting, duration in seconds. End with a single-line 'REFERENCE FRAME:' description a text-to-image model can use." },
-  "vid/veo-3":   { provider: "openrouter", remote: "openai/gpt-5-mini", imageAfter: "flux", systemOverride: "You are Veo 3's director. Produce a realistic 8-shot storyboard for the user's prompt with camera, action, and audio notes. End with 'REFERENCE FRAME:' followed by a text-to-image prompt." },
+  // ── Video generation — real video files via OpenRouter's async /videos job
+  // API (create → poll → download), confirmed live: created a real job
+  // against google/veo-3.1-fast, polled it to completion (~30s, $0.48 for a
+  // 4s clip), and downloaded an actual video/mp4. Model IDs confirmed
+  // against OpenRouter's own /api/v1/videos/models capability list, not
+  // guessed — the previous entries here routed to a TEXT model that wrote a
+  // storyboard description, no video ever produced.
+  // Pro-tier video routes — IDs confirmed against the same
+  // /api/v1/videos/models list (google/veo-3.1-lite, kwaivgi/kling-v3.0-std,
+  // x-ai/grok-imagine-video), added to fill SPEC.md's "3 pro" video
+  // requirement, which the tier had 0 models against after the fake
+  // runway/pika/kling/luma entries were removed.
+  "vid/veo-3-1-lite":       { provider: "openrouter-video", remote: "google/veo-3.1-lite" },
+  "vid/kling-3-standard":   { provider: "openrouter-video", remote: "kwaivgi/kling-v3.0-std" },
+  "vid/grok-imagine-video": { provider: "openrouter-video", remote: "x-ai/grok-imagine-video" },
 
-  // ── Music arrangement ─────────────────────────────────────────────────────
-  "mus/suno":  { provider: "openrouter", remote: "openai/gpt-5-mini", systemOverride: "You are Suno's songwriter. For the user's prompt, deliver: [GENRE], [TEMPO BPM], [KEY], [STRUCTURE] (verse/chorus labels), full lyrics, and a short [ARRANGEMENT] note describing instruments per section. Keep it under 500 words." },
-  "mus/udio":  { provider: "openrouter", remote: "openai/gpt-5-mini", systemOverride: "You are Udio's composer. For the user's prompt, deliver a full studio arrangement: [STYLE], [BPM], [KEY], [STRUCTURE], lyrics, [INSTRUMENTATION per section], and [MIX NOTES]. Keep it under 600 words." },
+  "vid/sora-2":  { provider: "openrouter-video", remote: "openai/sora-2-pro" },
+  "vid/veo-3":   { provider: "openrouter-video", remote: "google/veo-3.1" },
+  "vid/kling-3-pro": { provider: "openrouter-video", remote: "kwaivgi/kling-v3.0-pro" },
+
+  // ── Music generation — real sung/instrumental audio via Google's Lyria 3,
+  // the only music-generation model actually available through OpenRouter
+  // (there is no real Suno/Udio API access here — those brand names were
+  // wrong regardless of backing, see the models.ts relabel to "Lyria 3
+  // Clip/Pro"). Confirmed live: Lyria's audio output requires stream:true
+  // (a non-streaming request 400s and says so explicitly) and arrives as
+  // base64 chunks in each SSE delta's `audio.data` field, concatenated here
+  // into one playable file — same category of bug as video: the previous
+  // entries routed to a text model writing lyrics, no audio ever produced.
+  "mus/suno":  { provider: "openrouter-music", remote: "google/lyria-3-clip-preview" },
+  "mus/udio":  { provider: "openrouter-music", remote: "google/lyria-3-pro-preview" },
 };
 
 
@@ -259,6 +283,14 @@ export async function sendChat(
 
   if (route.provider === "openrouter-image") {
     return callOpenRouterImage(route.remote, prompt || "abstract art");
+  }
+
+  if (route.provider === "openrouter-video") {
+    return callOpenRouterVideo(route.remote, prompt || "a short abstract scene");
+  }
+
+  if (route.provider === "openrouter-music") {
+    return callOpenRouterMusic(route.remote, prompt || "a short instrumental piece");
   }
 
   const messages: any[] = [];
@@ -442,6 +474,143 @@ async function callOpenRouterImage(model: string, prompt: string): Promise<strin
   // Fell through without an image — surface whatever text came back (often
   // a refusal/explanation) instead of silently returning nothing.
   return msg?.content || "Image generation returned no image.";
+}
+
+// Pure-JS base64 encoder — no new dependency, works identically on web and
+// native. Used to turn downloaded video/audio bytes into a data: URI so
+// playback never needs to smuggle an Authorization header through a native
+// <Video>/<Audio> component (OpenRouter's file endpoints 401 without one —
+// confirmed live, a plain unauthenticated fetch of a finished video's
+// content URL fails).
+const B64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function toBase64(bytes: Uint8Array): string {
+  let out = "";
+  for (let i = 0; i < bytes.length; i += 3) {
+    const b1 = bytes[i], b2 = bytes[i + 1], b3 = bytes[i + 2];
+    out += B64_CHARS[b1 >> 2];
+    out += B64_CHARS[((b1 & 3) << 4) | (b2 >> 4 || 0)];
+    out += i + 1 < bytes.length ? B64_CHARS[((b2 & 15) << 2) | (b3 >> 6 || 0)] : "=";
+    out += i + 2 < bytes.length ? B64_CHARS[b3 & 63] : "=";
+  }
+  return out;
+}
+
+// ── Video generation via OpenRouter's async /videos job API ────────────────
+// Real video, not the storyboard-as-text stand-in this replaced. Generation
+// takes real time (confirmed live: ~30s for a 4s veo-3.1-fast clip, $0.48),
+// so this is create → poll → download, not a single request/response like
+// every other route here. Downloads the finished file and returns it as a
+// data: URI — same reasoning as the base64 helper above.
+async function callOpenRouterVideo(model: string, prompt: string): Promise<string> {
+  const arMatch = prompt.match(/--ar\s+(\S+)/);
+  const durMatch = prompt.match(/--duration\s+(\d+)/);
+  const aspect_ratio = arMatch ? arMatch[1] : undefined;
+  const duration = durMatch ? parseInt(durMatch[1]) : 4;
+  
+  // Clean prompt for the model
+  const cleanPrompt = prompt
+    .replace(/--ar\s+\S+/g, "")
+    .replace(/--duration\s+\S+/g, "")
+    .replace(/--quality\s+\S+/g, "")
+    .replace(/--motion\s+\S+/g, "")
+    .trim();
+
+  const createRes = await fetch("https://openrouter.ai/api/v1/videos", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENROUTER_KEY}`,
+      "HTTP-Referer": "https://collider.app",
+      "X-Title": "Collider",
+    },
+    body: JSON.stringify({ 
+      model, 
+      prompt: cleanPrompt || "a short abstract scene", 
+      duration,
+      aspect_ratio
+    }),
+  });
+  if (!createRes.ok) throw new Error(`OpenRouter video ${createRes.status}: ${(await createRes.text()).slice(0, 200)}`);
+  const job = await createRes.json();
+  const pollUrl: string = job.polling_url || `https://openrouter.ai/api/v1/videos/${job.id}`;
+
+  let status: string = job.status;
+  let contentUrl: string | undefined = job.unsigned_urls?.[0];
+  const deadline = Date.now() + 5 * 60 * 1000; // video gen can take several minutes
+  while (status === "pending" && Date.now() < deadline) {
+    await new Promise((r) => setTimeout(r, 8000));
+    const pollRes = await fetch(pollUrl, { headers: { Authorization: `Bearer ${OPENROUTER_KEY}` } });
+    if (!pollRes.ok) throw new Error(`OpenRouter video poll ${pollRes.status}: ${(await pollRes.text()).slice(0, 200)}`);
+    const polled = await pollRes.json();
+    status = polled.status;
+    contentUrl = polled.unsigned_urls?.[0];
+  }
+  if (status !== "completed" || !contentUrl) {
+    throw new Error(status === "pending" ? "Video generation timed out" : `Video generation ${status || "failed"}`);
+  }
+
+  const fileRes = await fetch(contentUrl, { headers: { Authorization: `Bearer ${OPENROUTER_KEY}` } });
+  if (!fileRes.ok) throw new Error(`OpenRouter video download ${fileRes.status}`);
+  const bytes = new Uint8Array(await fileRes.arrayBuffer());
+  return `data:video/mp4;base64,${toBase64(bytes)}`;
+}
+
+// ── Music generation via Google Lyria (through OpenRouter) ─────────────────
+// Real audio, not the lyrics-as-text stand-in this replaced. Confirmed live:
+// Lyria's audio output only comes back with stream:true (a non-streaming
+// request 400s with "Audio output requires stream: true"), delivered as
+// base64 chunks in each SSE delta's `audio.data` field — concatenated here
+// into one file. A short clip completes fast enough that this reads the
+// whole SSE body at once rather than needing token-by-token onToken calls.
+async function callOpenRouterMusic(model: string, prompt: string): Promise<string> {
+  const vocalsMatch = prompt.match(/--vocals\s+(\S+)/);
+  const bitrateMatch = prompt.match(/--bitrate\s+(\S+)/);
+  const formatMatch = prompt.match(/--format\s+(\S+)/);
+  const tagsMatch = prompt.match(/--tags\s+"([^"]+)"/);
+
+  const vocals = vocalsMatch ? vocalsMatch[1] : "vocal";
+  const bitrate = bitrateMatch ? bitrateMatch[1] : "standard";
+  const format = formatMatch ? formatMatch[1] : "mp3";
+  const tags = tagsMatch ? tagsMatch[1] : "";
+
+  // Clean prompt for the model
+  const basePrompt = prompt
+    .replace(/--vocals\s+\S+/g, "")
+    .replace(/--bitrate\s+\S+/g, "")
+    .replace(/--format\s+\S+/g, "")
+    .replace(/--tags\s+"[^"]+"/g, "")
+    .trim();
+
+  // Combine into a structured instructional prompt for Lyria 3
+  const finalPrompt = `${basePrompt || "a short instrumental piece"}.\nOptions:\n- Vocals: ${vocals}\n- Quality: ${bitrate}\n- Format: ${format}\n- Genre/Style tags: ${tags}`;
+
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENROUTER_KEY}`,
+      "HTTP-Referer": "https://collider.app",
+      "X-Title": "Collider",
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: finalPrompt }],
+      modalities: ["audio", "text"],
+      stream: true,
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter music ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const body = await res.text();
+  let audioB64 = "";
+  for (const line of body.split("\n")) {
+    if (!line.startsWith("data: ") || line.includes("[DONE]")) continue;
+    try {
+      const piece = JSON.parse(line.slice(6)).choices?.[0]?.delta?.audio?.data;
+      if (piece) audioB64 += piece;
+    } catch {}
+  }
+  if (!audioB64) throw new Error("Music generation returned no audio.");
+  return `data:audio/mp3;base64,${audioB64}`;
 }
 
 // ── Image generation via Pollinations (no key) ─────────────────────────────

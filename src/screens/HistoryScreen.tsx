@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, withFont } from "../styles/theme";
+import { styles, withFont, fontFamilyForWeight } from "../styles/theme";
 import { CATEGORIES, modelById } from "../models";
 import { SearchBar, useSearch, ConsensusRunCard } from "../features";
 import { SelectionBar, SelectModeToggle, SelectDot } from "../components/SelectionBar";
@@ -154,9 +154,7 @@ export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => voi
                       onPress={() => {
                         if (selectMode) { toggleSelected(conv.id); return; }
                         if (modelId) {
-                          // Local to this model only — the shared multi-model
-                          // pointer (and every other model's card) is untouched.
-                          dispatch({ type: "loadConversationForModel", modelId, id: conv.id });
+                          dispatch({ type: "loadConversation", category: conv.tab, id: conv.id });
                           openCard(modelId);
                           return;
                         }
@@ -173,7 +171,7 @@ export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => voi
                         <View style={[localStyles.cardAccent, { backgroundColor: borderAccent }]} />
                         
                         <View style={{ flex: 1, padding: 12, gap: 6 }}>
-                          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700" }} numberOfLines={1}>
+                          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }} numberOfLines={1}>
                             {conv.title || "Untitled Conversation"}
                           </Text>
                           
@@ -298,7 +296,7 @@ const localStyles = StyleSheet.create(withFont({
   navTabText: {
     fontSize: 9,
     color: "#6b6478",
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
   navTabTextActive: {
@@ -344,7 +342,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   catBadgeText: {
     fontSize: 8,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
   },
   metaText: {
     color: "#858091",

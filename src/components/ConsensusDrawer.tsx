@@ -111,7 +111,7 @@ export function ConsensusModal({
   // bar waited for all of them — same feature, two different answers
   // (e.g. bar: "Not available", drawer: "7/8") depending on which one you
   // looked at. Aligned to one rule.
-  const selectedIds = state.selectedModelIds[state.activeCategory];
+  const selectedIds = (state.selectedModelIds[state.activeCategory] || []).filter((id) => modelById(id));
   const allIn = selectedIds.length >= 2 && replies.length === selectedIds.length;
   const [consensusResult, setConsensusResult] = useState<{ verdict: string; scores: Record<string, number> } | null>(null);
   const [synthesizing, setSynthesizing] = useState(false);
@@ -285,8 +285,7 @@ export function ConsensusModal({
               <View style={{ alignItems: "center" }}>
                 <Text
                   style={{
-                    color: scoreColor, fontSize: 34, fontWeight: "900",
-                    fontFamily: fontFamilyForWeight(900),
+                    color: scoreColor, fontSize: 34, fontWeight: "900", fontFamily: fontFamilyForWeight(900),
                     textShadowColor: scoreColor, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12,
                   }}
                 >

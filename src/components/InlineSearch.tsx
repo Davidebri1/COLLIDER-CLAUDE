@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCollider } from "../state";
 import { modelById, MODELS } from "../models";
 import { Picker } from "./Picker";
+import { fontFamilyForWeight } from "../styles/theme";
 
 type ResultKind = "conversation" | "memory" | "reminder" | "project" | "artifact";
 type Result = {
@@ -152,7 +153,7 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
                       <Ionicons name={meta.icon} size={13} color={meta.color} />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600" }} numberOfLines={1}>{r.title}</Text>
+                      <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }} numberOfLines={1}>{r.title}</Text>
                       <Text style={{ color: "#6b6478", fontSize: 10, marginTop: 1 }} numberOfLines={1}>
                         {meta.label}{model ? ` · ${model.label}` : ""}{r.subtitle ? ` · ${r.subtitle}` : ""}
                       </Text>

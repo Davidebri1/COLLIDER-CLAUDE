@@ -1,36 +1,55 @@
 import React, { useEffect, useRef } from "react";
-import { Animated, Easing, View, StyleSheet } from "react-native";
+import { View, StyleSheet, Animated } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-// "There's more below" cue — the convention from racing games / any UI that
-// wants to hint at more content beneath the fold without a scrollbar: a
-// chevron with a few short dashes trailing upward, fading out, and a slow,
-// small bounce. Purely a hint, not a distraction — no fast motion, no long
-// travel distance, no loud color. Shown only when the content genuinely
-// overflows the visible area (caller decides that; this component is pure
-// presentation).
+// Animated "there's more" cue with horizontal gradient tail dashes fading upwards
 export function ScrollCueArrow() {
-  const bounce = useRef(new Animated.Value(0)).current;
+  const animValue = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    const loop = Animated.loop(
+    Animated.loop(
       Animated.sequence([
-        Animated.timing(bounce, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        Animated.timing(bounce, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-      ]),
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [bounce]);
+        Animated.timing(animValue, {
+          toValue: 1,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+        Animated.timing(animValue, {
+          toValue: 0,
+          duration: 1500,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, [animValue]);
 
-  const translateY = bounce.interpolate({ inputRange: [0, 1], outputRange: [0, 4] });
+  const translateY = animValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 3],
+  });
+
+  const opacity1 = animValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.1, 0.25, 0.1],
+  });
+
+  const opacity2 = animValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.2, 0.45, 0.2],
+  });
+
+  const opacity3 = animValue.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0.35, 0.7, 0.3],
+  });
 
   return (
     <View style={styles.wrap} pointerEvents="none">
-      <View style={styles.dash1} />
-      <View style={styles.dash2} />
+      <Animated.View style={[styles.dash, styles.dash1, { opacity: opacity1 }]} />
+      <Animated.View style={[styles.dash, styles.dash2, { opacity: opacity2 }]} />
+      <Animated.View style={[styles.dash, styles.dash3, { opacity: opacity3 }]} />
       <Animated.View style={{ transform: [{ translateY }] }}>
-        <Ionicons name="chevron-down" size={13} color="rgba(226,232,240,0.85)" />
+        <Ionicons name="chevron-down" size={11} color="rgba(255, 255, 255, 0.9)" />
       </Animated.View>
     </View>
   );
@@ -39,18 +58,21 @@ export function ScrollCueArrow() {
 const styles = StyleSheet.create({
   wrap: {
     alignItems: "center",
-    gap: 2,
+    gap: 1.5,
+    marginTop: 2,
+  },
+  dash: {
+    height: 1,
+    borderRadius: 0.5,
+    backgroundColor: "#ffffff",
   },
   dash1: {
-    width: 14,
-    height: 1.5,
-    borderRadius: 1,
-    backgroundColor: "rgba(226,232,240,0.18)",
+    width: 6,
   },
   dash2: {
-    width: 18,
-    height: 1.5,
-    borderRadius: 1,
-    backgroundColor: "rgba(226,232,240,0.35)",
+    width: 10,
+  },
+  dash3: {
+    width: 14,
   },
 });

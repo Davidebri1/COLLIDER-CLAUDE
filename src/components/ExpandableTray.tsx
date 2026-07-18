@@ -8,7 +8,7 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export function ExpandableTrayText({ text, style }: { text: string; style?: any }) {
   const [expanded, setExpanded] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout>();
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const sub = DeviceEventEmitter.addListener("global_tap", () => {

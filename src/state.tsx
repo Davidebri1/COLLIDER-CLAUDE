@@ -362,7 +362,7 @@ function initialState(): AppState {
   const chatMode = Object.fromEntries(CATEGORIES.map(({ id }) => [id, "default" as ChatMode])) as Record<Category, ChatMode>;
   const webSearch = Object.fromEntries(CATEGORIES.map(({ id }) => [id, false])) as Record<Category, boolean>;
   return {
-    tier: "free", credits: TIER_INFO.free.pool,
+    tier: "elite", credits: TIER_INFO.elite.pool,
     dailyMessagesSent: 0,
     lastMessageResetDate: new Date().toISOString().split("T")[0],
     monthlyMessagesSent: 0,

@@ -97,6 +97,26 @@ export async function deleteCalendarEvent(accessToken: string, eventId: string):
   );
 }
 
+export async function updateCalendarEvent(
+  accessToken: string,
+  eventId: string,
+  event: { title: string; start: Date; end: Date; description?: string }
+): Promise<GoogleCalendarEvent> {
+  return apiFetch<GoogleCalendarEvent>(
+    `${CALENDAR_BASE}/calendars/primary/events/${encodeURIComponent(eventId)}`,
+    accessToken,
+    {
+      method: "PUT",
+      body: JSON.stringify({
+        summary: event.title,
+        description: event.description,
+        start: { dateTime: event.start.toISOString() },
+        end: { dateTime: event.end.toISOString() },
+      }),
+    }
+  );
+}
+
 // ── Tasks ────────────────────────────────────────────────────────────────
 
 export async function listTaskLists(accessToken: string): Promise<GoogleTaskList[]> {
@@ -136,6 +156,38 @@ export async function completeTask(
     {
       method: "PATCH",
       body: JSON.stringify({ status: "completed" }),
+    }
+  );
+}
+
+export async function deleteTask(
+  accessToken: string,
+  taskListId: string,
+  taskId: string
+): Promise<void> {
+  await apiFetch<void>(
+    `${TASKS_BASE}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(taskId)}`,
+    accessToken,
+    { method: "DELETE" }
+  );
+}
+
+export async function updateTask(
+  accessToken: string,
+  taskListId: string,
+  taskId: string,
+  task: { title?: string; due?: Date; status?: string }
+): Promise<GoogleTask> {
+  return apiFetch<GoogleTask>(
+    `${TASKS_BASE}/lists/${encodeURIComponent(taskListId)}/tasks/${encodeURIComponent(taskId)}`,
+    accessToken,
+    {
+      method: "PATCH",
+      body: JSON.stringify({
+        title: task.title,
+        due: task.due ? task.due.toISOString() : undefined,
+        status: task.status,
+      }),
     }
   );
 }

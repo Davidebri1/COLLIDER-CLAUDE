@@ -12,7 +12,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCollider, newId, type Artifact } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, withFont } from "../styles/theme";
+import { styles, withFont, fontFamilyForWeight } from "../styles/theme";
 import { useSearch } from "../features";
 import { useToast } from "../components/Toast";
 import { SelectionBar, SelectModeToggle, SelectDot } from "../components/SelectionBar";
@@ -177,7 +177,7 @@ export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
                         <View style={[localStyles.kindBadge, { backgroundColor: `${accentColor}18`, borderColor: `${accentColor}35` }]}>
                           <Text style={[localStyles.kindBadgeText, { color: accentColor }]}>{a.kind.toUpperCase()}</Text>
                         </View>
-                        <Text style={[styles.bodyText, { fontSize: 13, fontWeight: "700", color: "#fff", flex: 1 }]} numberOfLines={1}>
+                        <Text style={[styles.bodyText, { fontSize: 13, fontWeight: "700", fontFamily: fontFamilyForWeight(700), color: "#fff", flex: 1 }]} numberOfLines={1}>
                           {a.title}
                         </Text>
                       </View>
@@ -294,7 +294,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   kindChipText: {
     fontSize: 9.5,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     color: "#fff",
   },
   emptyContainer: {
@@ -334,7 +334,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   kindBadgeText: {
     fontSize: 9.5,
-    fontWeight: "700",
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   dateText: {
     color: "#6b6478",

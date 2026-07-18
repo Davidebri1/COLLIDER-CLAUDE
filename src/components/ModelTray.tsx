@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, Pressable, ScrollView, LayoutAnimation } from "react-native";
 import { useCollider } from "../state";
-import { styles } from "../styles/theme";
+import { styles, fontFamilyForWeight } from "../styles/theme";
 import { MODELS, canUse } from "../models";
 
 /**
@@ -37,7 +37,7 @@ export function ModelTray({
           justifyContent: "center", alignItems: "flex-start",
         }}
       >
-        <Text style={{ fontSize: 11, color: "#6b6478", fontWeight: "600" }}>
+        <Text style={{ fontSize: 11, color: "#6b6478", fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>
           + Add models
         </Text>
       </Pressable>
@@ -76,7 +76,7 @@ export function ModelTray({
                 elevation: 4,
               }}
             >
-              <Text style={{ color: "#000", fontSize: 10, fontWeight: "900", letterSpacing: 0.3 }}>
+              <Text style={{ color: "#000", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 0.3 }}>
                 {model.short}
               </Text>
             </Pressable>

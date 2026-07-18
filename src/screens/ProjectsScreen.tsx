@@ -14,7 +14,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider, newId } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, SCREEN_W, withFont } from "../styles/theme";
+import { styles, SCREEN_W, withFont, fontFamilyForWeight } from "../styles/theme";
 import { MODELS } from "../models";
 import { SearchBar, useSearch } from "../features";
 import { SelectionBar, SelectModeToggle, SelectDot } from "../components/SelectionBar";
@@ -182,7 +182,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                           </Pressable>
                         )}
                         <Pressable onPress={() => (selectMode ? toggleSelected(p.id) : setEditingProject(p))} style={{ flex: 1, gap: 2 }}>
-                          <Text style={{ color: "#fff", fontSize: 13.5, fontWeight: "800" }}>{p.name}</Text>
+                          <Text style={{ color: "#fff", fontSize: 13.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>{p.name}</Text>
                           <View style={localStyles.modelRow}>
                             <View style={localStyles.modelDot} />
                             <Text style={localStyles.modelText}>{projectModel}</Text>
@@ -291,7 +291,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                       <Ionicons name="square-outline" size={15} color="rgba(255,255,255,0.4)" />
                     </Pressable>
                     <Pressable onPress={() => setEditingTask({ projectId: t.projectId, task: t })} style={{ flex: 1, gap: 3 }}>
-                      <Text style={{ color: "#fff", fontSize: 12.5, fontWeight: "600" }}>{t.title}</Text>
+                      <Text style={{ color: "#fff", fontSize: 12.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>{t.title}</Text>
                       <Text style={{ color: "#6b6478", fontSize: 9.5 }}>Project: {t.projectName}</Text>
                     </Pressable>
                     {t.priority && t.priority !== "none" && (
@@ -321,7 +321,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                       <Ionicons name="checkbox" size={15} color="#e2e8f0" />
                     </Pressable>
                     <Pressable onPress={() => setEditingTask({ projectId: t.projectId, task: t })} style={{ flex: 1, gap: 3 }}>
-                      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 12.5, fontWeight: "600", textDecorationLine: "line-through" }}>{t.title}</Text>
+                      <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 12.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600), textDecorationLine: "line-through" }}>{t.title}</Text>
                       <Text style={{ color: "#6b6478", fontSize: 9.5 }}>Project: {t.projectName}</Text>
                     </Pressable>
                   </Glass>
@@ -363,6 +363,8 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
         <ProjectEditModal
           visible={!!editingProject}
           item={editingProject}
+          dispatch={dispatch}
+          state={state}
           onClose={() => setEditingProject(null)}
           onSave={(updated) => {
             dispatch({ type: "updateProject", project: updated });
@@ -374,7 +376,6 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
             setEditingProject(null);
             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
           }}
-          dispatch={dispatch}
         />
       )}
     </Page>
@@ -411,7 +412,7 @@ const localStyles = StyleSheet.create(withFont({
   navTabText: {
     fontSize: 9.5,
     color: "#6b6478",
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
   navTabTextActive: {
@@ -503,7 +504,7 @@ const localStyles = StyleSheet.create(withFont({
   modelText: {
     color: "#6b6478",
     fontSize: 9,
-    fontWeight: "700"
+    fontWeight: "700", fontFamily: fontFamilyForWeight(700)
   },
   headerActionBtn: {
     width: 24,
@@ -531,7 +532,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   priorityText: {
     fontSize: 8,
-    fontWeight: "800",
+    fontWeight: "800", fontFamily: fontFamilyForWeight(800),
   },
   taskAddBox: {
     flexDirection: "row",
@@ -564,7 +565,7 @@ const localStyles = StyleSheet.create(withFont({
   boardHeader: {
     color: "#e2e8f0",
     fontSize: 9.5,
-    fontWeight: "900",
+    fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1.5,
     marginBottom: 4,
     marginTop: 4,

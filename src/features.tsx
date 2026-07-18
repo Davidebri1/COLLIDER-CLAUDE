@@ -12,7 +12,7 @@ import { modelById, MODELS, type Category } from "./models";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Page } from "./components/Page";
 import { Toggle } from "./components/Toggle";
-import { withFont } from "./styles/theme";
+import { withFont, fontFamilyForWeight } from "./styles/theme";
 
 // ── Search bar ─────────────────────────────────────────────────────────────
 export function SearchBar({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
@@ -62,7 +62,7 @@ export function MessageActions({
   const selectAllAction = { label: "Select All", icon: "⚄", onPress: async () => { const { copyText } = await import("./services/media"); await copyText(message.content); onClose(); } };
   const shareAction = { label: "Share", icon: "↗", onPress: () => { Share.share({ message: message.content }).catch(() => {}); onClose(); } };
   const saveFilesAction = { label: "Save", icon: "▣", onPress: () => { dispatch({ type: "file", file: { name: `message-${message.id.slice(0,6)}.txt`, kind: "generated", url: `text://${encodeURIComponent(message.content).slice(0,120)}` } }); onClose(); } };
-  const saveNotesAction = { label: "Notes", icon: "▤", onPress: () => { dispatch({ type: "memory", memory: { id: `m_${Math.random().toString(36).slice(2, 9)}`, ts: Date.now(), title: "Saved Note", content: message.content, projectId: "" } }); onClose(); } };
+  const saveNotesAction = { label: "Notes", icon: "▤", onPress: () => { dispatch({ type: "memory", id: `m_${Math.random().toString(36).slice(2, 9)}`, content: message.content, projectId: "" }); onClose(); } };
   const deleteAction = { label: "Delete", icon: "✕", onPress: () => { dispatch({ type: "deleteMessage", category, modelId, messageId: message.id }); onClose(); } };
 
   if (message.role === "user") {
@@ -167,12 +167,12 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
             })}
           >
             <View>
-              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600" }}>Reset Usage Limits</Text>
+              <Text style={{ color: "#fff", fontSize: 14, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>Reset Usage Limits</Text>
               <Text style={{ color: "rgba(255,255,255,0.45)", fontSize: 12, marginTop: 2 }}>
                 Zero daily & monthly counters · refill credits to tier pool
               </Text>
             </View>
-            <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "700" }}>RESET</Text>
+            <Text style={{ color: "#e2e8f0", fontSize: 13, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>RESET</Text>
           </Pressable>
         </SettingsSection>
 
@@ -196,7 +196,7 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                   onPress={() => dispatch({ type: "setGlobalDefaultChatMode", value: m.value })}
                   style={[styles.segChip, state.globalDefaultChatMode === m.value && { backgroundColor: activeTint, borderColor: activeBorder }]}
                 >
-                  <Text style={[styles.segChipText, state.globalDefaultChatMode === m.value && { color: activeText, fontWeight: "800" as const }]}>{m.label}</Text>
+                  <Text style={[styles.segChipText, state.globalDefaultChatMode === m.value && { color: activeText, fontWeight: "800" as const, fontFamily: fontFamilyForWeight(800) }]}>{m.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -217,7 +217,7 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                   onPress={() => dispatch({ type: "setMessageDensity", value: d.value })}
                   style={[styles.segChip, state.messageDensity === d.value && { backgroundColor: activeTint, borderColor: activeBorder }]}
                 >
-                  <Text style={[styles.segChipText, state.messageDensity === d.value && { color: activeText, fontWeight: "800" as const }]}>{d.label}</Text>
+                  <Text style={[styles.segChipText, state.messageDensity === d.value && { color: activeText, fontWeight: "800" as const, fontFamily: fontFamilyForWeight(800) }]}>{d.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -234,7 +234,7 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                   onPress={() => dispatch({ type: "setFontSize", value: f.value })}
                   style={[styles.segChip, state.fontSize === f.value && { backgroundColor: activeTint, borderColor: activeBorder }]}
                 >
-                  <Text style={[styles.segChipText, state.fontSize === f.value && { color: activeText, fontWeight: "800" as const }]}>{f.label}</Text>
+                  <Text style={[styles.segChipText, state.fontSize === f.value && { color: activeText, fontWeight: "800" as const, fontFamily: fontFamilyForWeight(800) }]}>{f.label}</Text>
                 </Pressable>
               ))}
             </View>
@@ -267,7 +267,7 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
                     onPress={() => dispatch({ type: "setLanguage", value: lang })}
                     style={[styles.segChip, state.language === lang && { backgroundColor: activeTint, borderColor: activeBorder }]}
                   >
-                    <Text style={[styles.segChipText, state.language === lang && { color: activeText, fontWeight: "800" as const }]}>{lang}</Text>
+                    <Text style={[styles.segChipText, state.language === lang && { color: activeText, fontWeight: "800" as const, fontFamily: fontFamilyForWeight(800) }]}>{lang}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -464,8 +464,8 @@ const styles = StyleSheet.create(withFont({
   flex: { flex: 1 },
   header: { height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)" },
-  iconText: { color: "#fff", fontSize: 20, fontWeight: "600" },
-  pageTitle: { color: "#fff", fontSize: 17, fontWeight: "800", letterSpacing: 1 },
+  iconText: { color: "#fff", fontSize: 20, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
+  pageTitle: { color: "#fff", fontSize: 17, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 },
   page: { padding: 14, gap: 14, paddingBottom: 120 },
 
   searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: "#161619", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)", height: 40 },
@@ -479,13 +479,13 @@ const styles = StyleSheet.create(withFont({
   sheetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 6 },
   sheetBtn: { width: "22%", aspectRatio: 1, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", gap: 4 },
   sheetIcon: { color: "#e2e8f0", fontSize: 20 },
-  sheetLabel: { color: "#f4edf9", fontSize: 11, fontWeight: "600" },
+  sheetLabel: { color: "#f4edf9", fontSize: 11, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
 
   section: { gap: 8 },
-  sectionKicker: { color: "#6b6478", fontSize: 9.5, fontWeight: "900", letterSpacing: 2, textTransform: "uppercase", paddingHorizontal: 4 },
+  sectionKicker: { color: "#6b6478", fontSize: 9.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 2, textTransform: "uppercase", paddingHorizontal: 4 },
   sectionBody: { borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", overflow: "hidden", backgroundColor: "#0a0a0c" },
   settingsRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
-  settingsLabel: { color: "#fff", fontSize: 14, fontWeight: "600" },
+  settingsLabel: { color: "#fff", fontSize: 14, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
   settingsHint: { color: "#858091", fontSize: 11, marginTop: 2 },
   settingsChev: { color: "#6b6478", fontSize: 20 },
 
@@ -501,7 +501,7 @@ const styles = StyleSheet.create(withFont({
   authIntro: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 19, paddingHorizontal: 4 },
   authCard: { padding: 18, borderRadius: 20, gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "#0a0a0c" },
   authInput: { color: "#fff", fontSize: 14, backgroundColor: "#0a0a0c", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
-  authError: { color: "#ef4444", fontSize: 11.5, fontWeight: "600", marginTop: -4 },
+  authError: { color: "#ef4444", fontSize: 11.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600), marginTop: -4 },
   authPrimary: {
     backgroundColor: "rgba(255,255,255,0.18)",
     borderWidth: 1,
@@ -515,18 +515,18 @@ const styles = StyleSheet.create(withFont({
     borderRadius: 14,
     alignItems: "center",
   },
-  authPrimaryText: { color: "#e2e8f0", fontWeight: "800" },
+  authPrimaryText: { color: "#e2e8f0", fontWeight: "800", fontFamily: fontFamilyForWeight(800) },
   divider: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginVertical: 4 },
   dividerText: { color: "#8d8398", fontSize: 11, letterSpacing: 2 },
   authProvider: { padding: 13, borderRadius: 14, alignItems: "center", backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
-  authProviderText: { color: "#fff", fontWeight: "600" },
+  authProviderText: { color: "#fff", fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
   authGuest: { padding: 13, alignItems: "center" },
   authGuestText: { color: "#858091", fontSize: 13, textDecorationLine: "underline" },
   authFine: { color: "#6b6478", fontSize: 11, textAlign: "center", paddingHorizontal: 12 },
 
   consensusItem: { padding: 14, borderRadius: 18, gap: 8, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", backgroundColor: "#0a0a0c" },
   consensusRow: { flexDirection: "row", alignItems: "center", gap: 12 },
-  consensusScore: { fontSize: 22, fontWeight: "900", minWidth: 60 },
+  consensusScore: { fontSize: 22, fontWeight: "900", fontFamily: fontFamilyForWeight(900), minWidth: 60 },
   consensusVerdict: { color: "#fff", fontSize: 13, lineHeight: 18 },
 
   // Segment chip for settings selectors
@@ -541,6 +541,6 @@ const styles = StyleSheet.create(withFont({
   segChipText: {
     color: "#8a8496",
     fontSize: 11,
-    fontWeight: "600",
+    fontWeight: "600", fontFamily: fontFamilyForWeight(600),
   },
 }));
