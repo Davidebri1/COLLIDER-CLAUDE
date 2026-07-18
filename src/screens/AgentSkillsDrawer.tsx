@@ -451,14 +451,14 @@ const localStyles = StyleSheet.create(withFont({
     height: 26,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 13,
   },
   tabContainer: {
     flexDirection: "row",
     paddingHorizontal: 12,
     marginVertical: 10,
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 14,
     padding: 3,
     marginHorizontal: 12,
@@ -473,7 +473,7 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center"
   },
   navTabActive: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)"
   },
@@ -509,7 +509,7 @@ const localStyles = StyleSheet.create(withFont({
   skillCard: {
     padding: 12,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.02)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
     flexDirection: "row",
@@ -537,7 +537,7 @@ const localStyles = StyleSheet.create(withFont({
     letterSpacing: 1.2,
   },
   formInput: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -547,7 +547,7 @@ const localStyles = StyleSheet.create(withFont({
     fontSize: 12,
   },
   modelScroller: {
-    backgroundColor: "rgba(255,255,255,0.02)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -561,7 +561,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#0a0a0c",
     borderColor: "transparent",
     borderWidth: 1,
   },
@@ -576,7 +576,7 @@ const localStyles = StyleSheet.create(withFont({
     fontWeight: "700",
   },
   formTextarea: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -588,7 +588,7 @@ const localStyles = StyleSheet.create(withFont({
     textAlignVertical: "top",
   },
   formTextareaBig: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -618,7 +618,7 @@ const localStyles = StyleSheet.create(withFont({
   activeAgentCard: {
     padding: 10,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.02)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
     flexDirection: "row",
@@ -646,7 +646,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "#0a0a0c",
   },
   useBtnOn: {
     backgroundColor: "#e2e8f0",

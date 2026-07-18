@@ -23,6 +23,7 @@ import {
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import React, { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Video, ResizeMode, Audio } from "expo-av";
@@ -651,7 +652,7 @@ function CollideButton({ onPress }: { onPress: () => void }) {
 const localToolbarStyles = StyleSheet.create({
   pill: {
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6,
-    backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   pillText: { color: "#fff", fontSize: 9, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900), textShadowColor: "rgba(0,0,0,0.9)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 14 },
@@ -666,7 +667,7 @@ const localToolbarStyles = StyleSheet.create({
   pillTextActive: { color: "#e2e8f0" },
   iconBtn: {
     width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   // Small paired chip for Category/Models, right above the grid — glowing
@@ -675,7 +676,7 @@ const localToolbarStyles = StyleSheet.create({
   glowChip: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 8, height: 24, borderRadius: 11,
-    backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   glowChipText: {
@@ -686,7 +687,7 @@ const localToolbarStyles = StyleSheet.create({
   // toolbar follows the same conventions instead of inventing its own.
   toolbarIconBtn: {
     width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
   },
 });
@@ -694,7 +695,7 @@ const localToolbarStyles = StyleSheet.create({
 const localDrawerStyles = StyleSheet.create({
   utilIcon: {
     width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
   },
   upgradeBtn: {
     flexDirection: "row", alignItems: "center", gap: 4,
@@ -1095,7 +1096,7 @@ function CategoryDropdownTrigger({ onPress }: { onPress: () => void }) {
         paddingHorizontal: 8,
         height: 24,
         borderRadius: 11,
-        backgroundColor: "rgba(255,255,255,0.05)",
+        backgroundColor: "#0a0a0c",
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.08)",
         shadowColor: "#000",
@@ -1142,7 +1143,7 @@ function CategorySelectorModal({ visible, onClose }: { visible: boolean; onClose
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", textAlign: "center" }}>Select Category</Text>
-            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>
+            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
           </View>
@@ -1215,7 +1216,7 @@ function RowSelectorModal({
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Grid Rows</Text>
-            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>
+            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
           </View>
@@ -1312,7 +1313,7 @@ function ModelSelectorDrawer({
             >
               {model.label}
             </Text>
-            <View style={{ backgroundColor: "rgba(255,255,255,0.08)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+            <View style={{ backgroundColor: "#0a0a0c", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
               <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "900" }}>{model.short}</Text>
             </View>
           </View>
@@ -1345,26 +1346,26 @@ function ModelSelectorDrawer({
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", textAlign: "center" }}>Select Models ({cat.toUpperCase()})</Text>
-            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 16 }}>
+            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
             {freeModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "rgba(255,255,255,0.02)" }}>FREE MODELS</Text>
+                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>FREE MODELS</Text>
                 {freeModels.map(renderModelRow)}
               </View>
             )}
             {proModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "rgba(255,255,255,0.02)" }}>PRO MODELS</Text>
+                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>PRO MODELS</Text>
                 {proModels.map(renderModelRow)}
               </View>
             )}
             {eliteModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "rgba(255,255,255,0.02)" }}>ELITE MODELS</Text>
+                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>ELITE MODELS</Text>
                 {eliteModels.map(renderModelRow)}
               </View>
             )}
@@ -1459,7 +1460,7 @@ function ModelSelectorRow({ selected, onSelect }: { selected?: string; onSelect:
       <View style={{ flexDirection: "row", gap: 6, paddingVertical: 2 }}>
         <Pressable
           onPress={() => onSelect("global")}
-          style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === "global" && { backgroundColor: "rgba(255,255,255,0.15)", borderColor: "#fff" }]}
+          style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === "global" && { backgroundColor: "rgba(255,255,255,0.15)", borderColor: "#fff" }]}
         >
           <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900" }}>GLOBAL</Text>
         </Pressable>
@@ -1467,7 +1468,7 @@ function ModelSelectorRow({ selected, onSelect }: { selected?: string; onSelect:
           <Pressable
             key={m.id}
             onPress={() => onSelect(m.id)}
-            style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === m.id && { backgroundColor: `${m.color}25`, borderColor: m.color }]}
+            style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === m.id && { backgroundColor: `${m.color}25`, borderColor: m.color }]}
           >
             <Text style={{ color: selected === m.id ? m.color : "#6b6478", fontSize: 11, fontWeight: "900" }}>{m.label}</Text>
           </Pressable>
@@ -1545,7 +1546,7 @@ function LinkedItemsBlock({
       ) : (
         <View style={{ marginTop: 6, gap: 6 }}>
           {allLinked.map((l) => (
-            <View key={`${l.kind}_${l.id}`} style={{ flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 8, gap: 8 }}>
+            <View key={`${l.kind}_${l.id}`} style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#0a0a0c", borderRadius: 8, padding: 8, gap: 8 }}>
               <Text style={{ color: "#fff", fontSize: 11, flex: 1 }}>
                 <Text style={{ color: "#6b6478", fontWeight: "900" }}>{l.kind.toUpperCase()}  </Text>
                 {titleFor(l.kind, l.id)}
@@ -1560,7 +1561,7 @@ function LinkedItemsBlock({
           ))}
         </View>
       )}
-      <Pressable onPress={() => setAttaching(true)} style={{ marginTop: 8, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+      <Pressable onPress={() => setAttaching(true)} style={{ marginTop: 8, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
         <Text style={{ color: "#5dbdff", fontSize: 11, fontWeight: "900" }}>+ Attach existing item</Text>
       </Pressable>
 
@@ -1890,7 +1891,7 @@ export function ProjectEditModal({
             <SourceModelBadge modelId={modelId} />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>TASKS BOARD ({item?.tasks?.length || 0})</Text>
-            <View style={{ backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 8, marginVertical: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+            <View style={{ backgroundColor: "#0a0a0c", borderRadius: 12, padding: 8, marginVertical: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
               {item?.tasks?.length === 0 ? (
                 <Text style={[styles.muted, { padding: 8 }]}>No tasks added yet.</Text>
               ) : (
@@ -2045,7 +2046,7 @@ export function ArtifactEditModal({
 
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
               <Text style={styles.kicker}>CONTENT</Text>
-              <View style={{ flexDirection: "row", backgroundColor: "rgba(255,255,255,0.05)", borderRadius: 8, padding: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
+              <View style={{ flexDirection: "row", backgroundColor: "#0a0a0c", borderRadius: 8, padding: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
                 {(["edit", "preview"] as const).map((m) => (
                   <Pressable
                     key={m}
@@ -2058,7 +2059,7 @@ export function ArtifactEditModal({
               </View>
             </View>
             {previewMode ? (
-              <View style={{ minHeight: 140, padding: 10, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", marginTop: 4 }}>
+              <View style={{ minHeight: 140, padding: 10, borderRadius: 12, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", marginTop: 4 }}>
                 {content.trim() ? (
                   <Markdown content={content} color="#fff" fontSize={13} />
                 ) : (
@@ -2089,7 +2090,7 @@ export function ArtifactEditModal({
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
               <Pressable onPress={handleSave} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: `${accent}22`, borderColor: `${accent}80`, shadowColor: accent }]}><Text style={[styles.primaryText, { color: accent }]}>Save</Text></Pressable>
-              <Pressable onPress={handleExport} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.25)", shadowColor: "#fff" }]}><Text style={[styles.primaryText, { color: "#e2e8f0" }]}>Export</Text></Pressable>
+              <Pressable onPress={handleExport} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.25)", shadowColor: "#fff" }]}><Text style={[styles.primaryText, { color: "#e2e8f0" }]}>Export</Text></Pressable>
               <Pressable onPress={() => onDelete(item.id)} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.5)", shadowColor: "#ef4444" }]}><Text style={[styles.primaryText, { color: "#ef4444" }]}>Delete</Text></Pressable>
             </View>
           </ScrollView>
@@ -2186,13 +2187,13 @@ export function FileEditModal({
                 placeholderTextColor="#8f849c"
               />
             ) : (
-              <View style={{ backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 12, marginVertical: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+              <View style={{ backgroundColor: "#0a0a0c", borderRadius: 12, padding: 12, marginVertical: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
                 <Text style={{ color: "#6b6478", fontSize: 11, fontFamily: "monospace" }}>{item?.url || "No content url available."}</Text>
               </View>
             )}
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
-              <Pressable onPress={handleShare} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.25)" }]}>
+              <Pressable onPress={handleShare} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.25)" }]}>
                 <Text style={[styles.primaryText, { color: "#fff" }]}>Share</Text>
               </Pressable>
               <Pressable onPress={handleSave} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: `${accent}22`, borderColor: `${accent}80`, shadowColor: accent }]}><Text style={[styles.primaryText, { color: accent }]}>Save</Text></Pressable>
@@ -2513,10 +2514,10 @@ function CardScreen({
             {/* Scroll FABs */}
             {thread.length > 2 && (
               <View style={{ position: "absolute", right: 16, bottom: 24, gap: 12, pointerEvents: "box-none", alignItems: "center" }}>
-                <Pressable onPress={() => chatScrollRef.current?.scrollTo({ y: 0, animated: true })} style={[styles.iconBtnLg, { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.2)", borderWidth: StyleSheet.hairlineWidth }]}>
+                <Pressable onPress={() => chatScrollRef.current?.scrollTo({ y: 0, animated: true })} style={[styles.iconBtnLg, { width: 36, height: 36, borderRadius: 18, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.2)", borderWidth: StyleSheet.hairlineWidth }]}>
                   <Ionicons name="chevron-up" size={16} color="#fff" />
                 </Pressable>
-                <Pressable onPress={() => chatScrollRef.current?.scrollToEnd({ animated: true })} style={[styles.iconBtnLg, { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.2)", borderWidth: StyleSheet.hairlineWidth }]}>
+                <Pressable onPress={() => chatScrollRef.current?.scrollToEnd({ animated: true })} style={[styles.iconBtnLg, { width: 36, height: 36, borderRadius: 18, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.2)", borderWidth: StyleSheet.hairlineWidth }]}>
                   <Ionicons name="chevron-down" size={16} color="#fff" />
                 </Pressable>
               </View>
@@ -2558,7 +2559,7 @@ function CardScreen({
                 Start a fresh conversation thread for {model.label}? This will sync globally across all active cards in this category.
               </Text>
               <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-                <Pressable onPress={() => setConfirmingNewConvo(false)} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(255,255,255,0.08)", borderColor: "rgba(255,255,255,0.2)" }]}>
+                <Pressable onPress={() => setConfirmingNewConvo(false)} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.2)" }]}>
                   <Text style={[styles.primaryText, { color: "#fff" }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
@@ -2868,10 +2869,10 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           },
         ]}
       >
-        {/* Gloss black, same treatment as the Smart Gen panel — true
-            near-black base + a diagonal specular sheen, not a flat gray
-            gradient. */}
-        <GlossSurface />
+        {/* Flat solid black — no fake diagonal highlight. A real gloss
+            treatment needs a proper radial specular highlight (see the
+            Figma reference), not a hand-built linear-gradient wash. */}
+        <GlossSurface flat />
 
         {/* Pane 1: Account. Everything about who's logged in and their tier
             lives in ONE row — identity, usage, upgrade, settings, close —
@@ -2899,7 +2900,7 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           <Pressable onPress={() => handleNav("settings")} style={localDrawerStyles.utilIcon}>
             <Ionicons name="settings-outline" size={16} color="rgba(255,255,255,0.5)" />
           </Pressable>
-          <Pressable onPress={handleClose} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
+          <Pressable onPress={handleClose} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="close" size={16} color="#fff" />
           </Pressable>
         </View>
@@ -2943,7 +2944,7 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
         {/* History — same sortable-table pattern as Reminders: tap a header
             to sort by it, tap again to flip direction. Consensus is a tab
             lip alongside Conversations, not a separate screen. */}
-        <View style={{ flexDirection: "row", marginBottom: 8, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 10, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+        <View style={{ flexDirection: "row", marginBottom: 8, backgroundColor: "#0a0a0c", borderRadius: 10, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
           {(["convos", "consensus"] as const).map((t) => (
             <Pressable
               key={t}
@@ -3118,12 +3119,10 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
           },
         ]}
       >
-        {/* Gloss black, not flat gray — a true near-black base plus a
-            diagonal specular sheen streak. #161618/#080809 were both just
-            dark grays with nothing reflective about them, which is exactly
-            why this read as matte gray instead of the glossy-black finish
-            the palette calls for. */}
-        <GlossSurface />
+        {/* Flat solid black — no fake diagonal highlight. A real gloss
+            treatment needs a proper radial specular highlight (see the
+            Figma reference), not a hand-built linear-gradient wash. */}
+        <GlossSurface flat />
         <View style={styles.header}>
           <Text style={styles.kicker}>{scopeModelId ? "MODEL TOOLS" : "SMART GEN"}</Text>
           <Pressable onPress={handleClose} style={{ padding: 6 }}>
@@ -3186,7 +3185,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                   Account/Usage either). Not auto-generated Smart Gen content
                   like the four above, so a distinct icon each rather than
                   the Smart Gen mark repeated. */}
-              <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.06)", marginVertical: 2 }} />
+              <View style={{ height: 1, backgroundColor: "#0a0a0c", marginVertical: 2 }} />
               {([
                 { screen: "files" as Screen, label: "Files", count: state.files.length, icon: "document-text-outline" as const },
                 { screen: "market" as Screen, label: "Discover Market", count: undefined, icon: "storefront-outline" as const },
@@ -3235,7 +3234,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                 key={t}
                 onPress={() => setTab(t)}
                 style={[
-                  { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.06)" },
+                  { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6, backgroundColor: "#0a0a0c" },
                   tab === t && { backgroundColor: "rgba(255,255,255,0.6)" },
                 ]}
               >
@@ -3245,7 +3244,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
               </Pressable>
             ))}
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#0a0a0c", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
             <Ionicons name="filter-outline" size={11} color="#6b6478" />
             <Picker
               value={modelFilter}
@@ -3273,7 +3272,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                       </ImageBackground>
                     </Pressable>
                   ) : (
-                    <View style={{ width: 44, height: 44, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 6, backgroundColor: "#0a0a0c", alignItems: "center", justifyContent: "center" }}>
                       <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900" }}>DOC</Text>
                     </View>
                   )}
@@ -3355,26 +3354,34 @@ function IconButton({ iconName, onPress }: { iconName: string; onPress: () => vo
 // guessing a fourth hand-drawn shape: sparkles is the actual industry
 // convention for "AI / smart generation" (ChatGPT, Gemini, and Claude's own
 // UI all use it), so there's no ambiguity left to introduce.
-// Just the glitter, no bubble — a colored circle behind the icon was a
-// container treatment, not the icon having color. Ionicons glyphs render
-// as a single flat color, so the gradient has to be baked into the glyph
-// itself; drawn as SVG paths with a gradient fill instead.
-// Reverted from a custom SVG gradient-fill sparkle back to the plain
-// Ionicons glyph — the SVG version was confirmed rendering correctly by
-// every technical check available (DOM inspection, computed style, an 8x
-// CSS-scaled screenshot all showed a correct crimson-to-gold gradient), but
-// it repeatedly wasn't visible in practice, and chasing a rendering path
-// that can't be reliably confirmed working isn't worth it. Solid, bright,
-// guaranteed-to-render color instead of a gradient — this is the simplest
-// version that still isn't the original plain white.
+// Yellow gradient sparkle. Ionicons glyphs are single-color, so the
+// gradient is baked into custom SVG paths instead. Confirmed rendering
+// correctly at every size tested (an 8x and a 10x CSS-scaled screenshot
+// both showed the gradient clearly) — the recurring "can't see it" problem
+// was never the gradient failing, it was genuine low legibility at small
+// size against a busy dark header. A soft glow behind the glyph (not just
+// a bigger size) is the actual fix for at-a-glance visibility.
 function SmartGenMark({ size = 18 }: { size?: number }) {
+  const gradId = "smartGenSparkleGrad";
   return (
-    <Ionicons
-      name="sparkles"
-      size={size}
-      color="#ff5a3d"
-      style={{ textShadowColor: "#ff5a3d", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 8 }}
-    />
+    <View style={{ shadowColor: "#ffd54f", shadowOpacity: 0.9, shadowRadius: size * 0.4, shadowOffset: { width: 0, height: 0 } }}>
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Defs>
+          <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+            <Stop offset="0" stopColor="#ffe082" />
+            <Stop offset="1" stopColor="#ff8f00" />
+          </SvgGradient>
+        </Defs>
+        <Path
+          d="M12 2C12.4 7.2 13 12 22 12C13 12 12.4 16.8 12 22C11.6 16.8 11 12 2 12C11 12 11.6 7.2 12 2Z"
+          fill={`url(#${gradId})`}
+        />
+        <Path
+          d="M19 3C19.2 5 19.5 6 22 6C19.5 6 19.2 7 19 9C18.8 7 18.5 6 16 6C18.5 6 18.8 5 19 3Z"
+          fill={`url(#${gradId})`}
+        />
+      </Svg>
+    </View>
   );
 }
 

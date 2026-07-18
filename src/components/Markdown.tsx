@@ -1,5 +1,6 @@
 import React from "react";
 import { Text, View, StyleSheet, type TextStyle } from "react-native";
+import { fontFamilyForWeight } from "../styles/theme";
 
 // ── Inline renderer ─────────────────────────────────────────────────────────
 // Handles: **bold**, __bold__, *italic*, _italic_, ~~strike~~, `code`, [text](url)
@@ -10,15 +11,19 @@ function InlineText({ text, baseStyle }: { text: string; baseStyle: TextStyle })
   return (
     <Text style={baseStyle}>
       {parts.map((part, i) => {
-        // Bold: **text** or __text__
+        // Bold: **text** or __text__ — real bold weight + the matching
+        // static-weight font file (see theme.ts's fontFamilyForWeight: a
+        // bare fontWeight without it resolves to browser-synthesized
+        // faux-bold, thin and blurry, not a real bold face). Markdown not
+        // rendering as markdown — bold indistinguishable from plain text —
+        // was a bigger problem than one reply looking bolder than another.
         if ((part.startsWith("**") && part.endsWith("**")) ||
             (part.startsWith("__") && part.endsWith("__"))) {
-          // Bold suppressed for now — a chat where one model's reply
-          // happens to use ** or a # header and another doesn't was
-          // rendering wildly inconsistent-looking bubbles side by side
-          // (one huge/bold, one normal). Kept visually distinct via opacity
-          // instead of weight until there's a real glow/emphasis treatment.
-          return <Text key={i} style={{ opacity: 0.92 }}>{part.slice(2, -2)}</Text>;
+          return (
+            <Text key={i} style={{ fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>
+              {part.slice(2, -2)}
+            </Text>
+          );
         }
         // Strikethrough: ~~text~~
         if (part.startsWith("~~") && part.endsWith("~~")) {
@@ -119,14 +124,11 @@ export function Markdown({ content, color = "#fff", fontSize = 14 }: {
     const h = trimmed.match(/^(#{1,3})\s+(.*)/);
     if (h) {
       const level = h[1].length;
-      // Weight/size bump kept modest — one model's reply using a "#" header
-      // and another's not was rendering as one huge/bold bubble next to a
-      // plain one. No bold for now (see InlineText's bold case); size still
-      // differentiates level, just not dramatically.
-      const hSize = level === 1 ? fontSize + 2 : level === 2 ? fontSize + 1 : fontSize;
+      const hSize = level === 1 ? fontSize + 4 : level === 2 ? fontSize + 2 : fontSize + 1;
+      const hWeight = level === 1 ? 800 : 700;
       blocks.push(
         <InlineText key={key++} text={h[2]} baseStyle={{
-          color, fontSize: hSize,
+          color, fontSize: hSize, fontWeight: String(hWeight) as TextStyle["fontWeight"], fontFamily: fontFamilyForWeight(hWeight),
           lineHeight: hSize * 1.3, marginTop: 10, marginBottom: 2,
         }} />
       );

@@ -93,7 +93,7 @@ export function PromptComposer({
                 paddingHorizontal: 8,
                 paddingVertical: 5,
                 borderRadius: 10,
-                backgroundColor: "rgba(255,255,255,0.05)",
+                backgroundColor: "#0a0a0c",
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 6,
@@ -171,7 +171,7 @@ export function PromptComposer({
             an explicit value like "auto" instead. */}
         <Pressable
           onPress={nextMode}
-          style={[styles.toolBtn, { width: "auto", minWidth: 28, height: 28, borderRadius: 14, paddingHorizontal: 8, flexDirection: "row", gap: 3, alignItems: "center", backgroundColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }]}
+          style={[styles.toolBtn, { width: "auto", minWidth: 28, height: 28, borderRadius: 14, paddingHorizontal: 8, flexDirection: "row", gap: 3, alignItems: "center", backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }]}
         >
           <Text style={{ color: modeColor, fontSize: 9, fontWeight: "700" }}>
             {mode === "default" ? "Default" : mode === "research" ? "Research" : "Deep"}

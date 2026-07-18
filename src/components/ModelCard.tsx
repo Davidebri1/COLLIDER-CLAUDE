@@ -81,7 +81,16 @@ export function ModelCard({
         }
       }}
       delayLongPress={380}
-      style={{ height, marginBottom: 4 }}
+      style={{
+        height, marginBottom: 4,
+        // Drop shadow lives on this outer wrapper, not inside Glass — Glass's
+        // own View clips via overflow:hidden (needed for its corner-highlight
+        // gradient), which would clip a shadow applied there to nothing.
+        // Removed at some point in this project's history along with a
+        // different bug (a shadow rendering as a stray visible square) and
+        // never re-added once that bug was actually fixed elsewhere.
+        shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 6,
+      }}
     >
       <Glass
         isCard
@@ -251,7 +260,7 @@ const localStyles = StyleSheet.create(withFont({
   // its border/tint) — see the render call site.
   miniBubbleUser: {
     alignSelf: "flex-end",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "#0a0a0c",
   },
   cardHeader: {
     flexDirection: "row",
@@ -272,7 +281,7 @@ const localStyles = StyleSheet.create(withFont({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
     alignItems: "center",
     justifyContent: "center",
     marginLeft: 4,

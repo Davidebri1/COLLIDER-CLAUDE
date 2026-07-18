@@ -605,7 +605,7 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "rgba(255,255,255,0.02)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -622,7 +622,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
   },
   googleBtnText: {
     color: "#fff",
@@ -663,7 +663,7 @@ const localStyles = StyleSheet.create(withFont({
     marginLeft: 6,
   },
   calendarCard: {
-    backgroundColor: "rgba(255,255,255,0.02)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 20,
     padding: 12,
     borderWidth: 1,
@@ -735,7 +735,7 @@ const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -751,7 +751,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   addBox: {
     flexDirection: "row",
-    backgroundColor: "rgba(255,255,255,0.02)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.07)",
@@ -822,7 +822,7 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#0a0a0c",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
@@ -845,6 +845,6 @@ const localStyles = StyleSheet.create(withFont({
   actionButton: {
     padding: 5,
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#0a0a0c",
   },
 }));

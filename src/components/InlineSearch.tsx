@@ -91,7 +91,7 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
       <View
         style={{
           flexDirection: "row", alignItems: "center", height: 34, borderRadius: 12,
-          backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
+          backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
           paddingHorizontal: 10, gap: 8,
         }}
       >

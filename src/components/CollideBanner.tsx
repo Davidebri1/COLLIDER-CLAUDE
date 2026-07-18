@@ -20,11 +20,15 @@ const BORDER = "rgba(226,232,240,0.65)";
 // full Consensus drawer for the map/dissenter detail; this is the "give it
 // to them before they ask" layer on top of that.
 //
-// "Consensus:" and the score are the bar's permanent identity, not a
-// conditional state — they never disappear. The bar has exactly one other
-// state to express: available (show the real verdict/score) or not
-// (show "Not available"). No separate copy for "select 2+ models," "waiting
-// on replies," etc. — those all collapse to the same "not available" fact.
+// A consensus is only a valid claim if it's drawn from a fully declared,
+// bound scope — synthesizing from a partial subset and calling it
+// "consensus" isn't a smaller consensus, it's not a consensus at all. So
+// this only ever has two states: complete (show the real verdict/score) or
+// incomplete (say so, plainly). "Consensus:" and the score are the bar's
+// permanent identity — they don't disappear depending on which of the
+// several reasons (too few selected, still waiting, a model errored) the
+// scope isn't complete; the reason doesn't change what's true, so it
+// collapses to one word: "Incomplete."
 export function CollideBanner({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
   const { state } = useCollider();
   const cat = state.activeCategory;
@@ -111,7 +115,7 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
         />
         <Text style={styles.summary} numberOfLines={2}>
           <Text style={styles.summaryLead}>Consensus: </Text>
-          {available ? result!.verdict : "Not available"}
+          {available ? result!.verdict : "Incomplete"}
         </Text>
       </Pressable>
     </View>
@@ -129,6 +133,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 1.5,
     borderColor: BORDER,
+    // No top border — the badge's own Path already draws that edge (its
+    // stroke covers the two slanted sides + top). Giving the bar a top
+    // border too would draw the same edge twice, which is exactly the
+    // visible double-line seam this was meant to fix.
+    borderTopWidth: 0,
     overflow: "hidden",
     shadowColor: "#1a0733",
     shadowOpacity: 0.7,

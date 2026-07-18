@@ -230,7 +230,7 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     paddingHorizontal: 12,
     marginVertical: 10,
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 14,
     padding: 3,
     marginHorizontal: 12,
@@ -245,7 +245,7 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center"
   },
   navTabActive: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)"
   },
@@ -261,7 +261,7 @@ const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -312,7 +312,7 @@ const localStyles = StyleSheet.create(withFont({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.02)",
+    backgroundColor: "#0a0a0c",
   },
   tileInfoBox: {
     position: "absolute",

@@ -322,7 +322,7 @@ const wallStyles = StyleSheet.create(withFont({
     fontWeight: "800",
   },
   trackList: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
     borderRadius: 10,

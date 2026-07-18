@@ -89,7 +89,7 @@ export function ModelTray({
             height: 28,
             paddingHorizontal: 10,
             borderRadius: 14,
-            backgroundColor: "rgba(255,255,255,0.06)",
+            backgroundColor: "#0a0a0c",
             borderWidth: 1,
             borderColor: "rgba(255,255,255,0.12)",
             alignItems: "center",

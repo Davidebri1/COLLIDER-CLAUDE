@@ -162,7 +162,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                 disabled={isActive}
                 style={[
                   localStyles.activateBtn,
-                  isActive && { backgroundColor: "rgba(255,255,255,0.04)" }
+                  isActive && { backgroundColor: "#0a0a0c" }
                 ]}
               >
                 {isActive ? (
@@ -350,7 +350,7 @@ const localStyles = StyleSheet.create(withFont({
     letterSpacing: 1.5,
   },
   formInput: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -360,7 +360,7 @@ const localStyles = StyleSheet.create(withFont({
     fontSize: 12,
   },
   formTextarea: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",

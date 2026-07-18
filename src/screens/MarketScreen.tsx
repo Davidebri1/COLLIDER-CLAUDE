@@ -555,7 +555,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
             sub-tab tray, Files' nav tabs) — this was previously an underline
             style found nowhere else in the app. */}
         <View style={localStyles.tabContainer}>
-          <View style={{ flexDirection: "row", flex: 1, gap: 4, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+          <View style={{ flexDirection: "row", flex: 1, gap: 4, backgroundColor: "#0a0a0c", borderRadius: 12, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
             {(["discover", "published", "my-assets"] as const).map((t) => (
               <Pressable
                 key={t}
@@ -740,7 +740,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                           {isImg ? (
                             <ImageBackground source={{ uri: f.url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                           ) : (
-                            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.03)" }}>
+                            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c" }}>
                               <Ionicons name="document-text" size={32} color="rgba(255,255,255,0.3)" />
                             </View>
                           )}
@@ -772,7 +772,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   <Ionicons name="sparkles" size={14} color="#ffffff" />
                   <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900", letterSpacing: 1.5 }}>MARKET PREVIEW</Text>
                 </View>
-                <Pressable onPress={() => setSelectedItem(null)} style={{ padding: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.06)", borderRadius: 14 }}>
+                <Pressable onPress={() => setSelectedItem(null)} style={{ padding: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 14 }}>
                   <Ionicons name="close" size={16} color="#fff" />
                 </Pressable>
               </View>
@@ -908,7 +908,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   {/* Creator details follow card */}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.08)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#0a0a0c", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
                         <Text style={{ fontSize: 12 }}>🤖</Text>
                       </View>
                       <View>
@@ -1097,11 +1097,11 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
               {/* Form Scroll Area */}
               <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: 14 }}>
                 {/* File preview */}
-                <View style={{ flexDirection: "row", gap: 10, padding: 10, backgroundColor: "rgba(255,255,255,0.02)", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.04)" }}>
+                <View style={{ flexDirection: "row", gap: 10, padding: 10, backgroundColor: "#0a0a0c", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.04)" }}>
                   {publishFile.name.endsWith(".png") || publishFile.name.endsWith(".jpg") ? (
                     <ImageBackground source={{ uri: publishFile.url }} style={{ width: 44, height: 44, borderRadius: 8, overflow: "hidden" }} />
                   ) : (
-                    <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.05)", alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: "#0a0a0c", alignItems: "center", justifyContent: "center" }}>
                       <Ionicons name="document-text" size={20} color="rgba(255,255,255,0.4)" />
                     </View>
                   )}
@@ -1253,7 +1253,7 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center",
   },
   navTabActive: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
   },
   navTabText: {
     fontSize: 11,
@@ -1275,7 +1275,7 @@ const localStyles = StyleSheet.create(withFont({
   searchInner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.07)",
@@ -1306,7 +1306,7 @@ const localStyles = StyleSheet.create(withFont({
     borderColor: "transparent"
   },
   kindPillActive: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
     borderColor: "rgba(255,255,255,0.12)"
   },
   kindText: {
@@ -1321,7 +1321,7 @@ const localStyles = StyleSheet.create(withFont({
     marginLeft: "auto",
     width: 28, height: 28, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "#0a0a0c",
   },
   badgeContainer: {
     position: "absolute",
@@ -1352,7 +1352,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)"
   },
@@ -1365,7 +1365,7 @@ const localStyles = StyleSheet.create(withFont({
     borderColor: "rgba(255,255,255,0.4)",
   },
   followButtonActive: {
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)"
   },
@@ -1379,7 +1379,7 @@ const localStyles = StyleSheet.create(withFont({
     color: "#6b6478"
   },
   promptCard: {
-    backgroundColor: "rgba(255,255,255,0.02)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
@@ -1433,7 +1433,7 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center"
   },
   commentBubble: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 10,
     padding: 8,
     borderWidth: 1,
@@ -1443,7 +1443,7 @@ const localStyles = StyleSheet.create(withFont({
     flex: 1,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
@@ -1499,7 +1499,7 @@ const localStyles = StyleSheet.create(withFont({
     textTransform: "uppercase"
   },
   publishInput: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -1509,7 +1509,7 @@ const localStyles = StyleSheet.create(withFont({
     fontSize: 11.5
   },
   publishTextarea: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -1521,7 +1521,7 @@ const localStyles = StyleSheet.create(withFont({
     textAlignVertical: "top"
   },
   publishSelect: {
-    backgroundColor: "rgba(255,255,255,0.03)",
+    backgroundColor: "#0a0a0c",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",

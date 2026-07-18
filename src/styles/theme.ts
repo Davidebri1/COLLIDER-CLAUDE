@@ -73,7 +73,7 @@ export const styles = StyleSheet.create(withFont({
   iconBtn: {
     width: 40, height: 40, borderRadius: 20,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
     shadowColor: "#000", shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 9,
   },
@@ -318,7 +318,7 @@ export const styles = StyleSheet.create(withFont({
   dissentCard: {
     padding: 10,
     borderRadius: 12,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#0a0a0c",
     marginBottom: 6,
   },
   dissentText: {
@@ -347,7 +347,7 @@ export const styles = StyleSheet.create(withFont({
     marginTop: 8,
     padding: 12,
     borderRadius: 14,
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "#0a0a0c",
   },
   previewActions: {
     flexDirection: "row",
@@ -374,7 +374,7 @@ export const styles = StyleSheet.create(withFont({
   bigText: { fontSize: 20, fontWeight: "800", marginBottom: 8 },
   drawerItem: {
     borderRadius: 16, paddingVertical: 13, paddingHorizontal: 12,
-    marginBottom: 4, backgroundColor: "rgba(255,255,255,0.04)",
+    marginBottom: 4, backgroundColor: "#0a0a0c",
   },
 
   fullModal: { flex: 1, paddingTop: 54, paddingHorizontal: 18 },
@@ -387,7 +387,7 @@ export const styles = StyleSheet.create(withFont({
   messageList: { padding: 14, gap: 10 },
   bubble: {
     maxWidth: "86%", padding: 12, borderRadius: 18,
-    backgroundColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
   },
   // "False bubble" — the response side keeps a real (if faint) glass panel
   // for legibility, but the user's own messages don't need a competing box:
@@ -396,7 +396,7 @@ export const styles = StyleSheet.create(withFont({
   // which are the part actually worth reading.
   userBubble: {
     alignSelf: "flex-end",
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 0,
   },
   listItem: { borderRadius: 20, padding: 14, gap: 8 },
@@ -419,7 +419,7 @@ export const styles = StyleSheet.create(withFont({
   primaryText: { color: "#ffffff", fontWeight: "800" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   segment: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  segmentBtn: { borderRadius: 15, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "rgba(255,255,255,0.05)" },
+  segmentBtn: { borderRadius: 15, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "#0a0a0c" },
   segmentActive: {
     backgroundColor: "rgba(255,255,255,0.16)",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.45)",
@@ -500,7 +500,7 @@ export const styles = StyleSheet.create(withFont({
     alignItems: "center",
     gap: 10,
     marginTop: 8,
-    backgroundColor: "rgba(255,255,255,0.04)",
+    backgroundColor: "#0a0a0c",
     padding: 8,
     borderRadius: 12,
   },
@@ -568,7 +568,7 @@ export const styles = StyleSheet.create(withFont({
     elevation: 10,
   },
   editInput: {
-    backgroundColor: "rgba(255,255,255,0.06)",
+    backgroundColor: "#0a0a0c",
     color: "#fff",
     padding: 10,
     borderRadius: 10,
@@ -581,7 +581,7 @@ export const styles = StyleSheet.create(withFont({
     flex: 1,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "transparent",
     alignItems: "center",
@@ -633,7 +633,7 @@ export const styles = StyleSheet.create(withFont({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: "rgba(255,255,255,0.05)",
+    backgroundColor: "#0a0a0c",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
