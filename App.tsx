@@ -23,6 +23,7 @@ import {
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
+import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import React, { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Video, ResizeMode, Audio } from "expo-av";
@@ -681,17 +682,6 @@ const localToolbarStyles = StyleSheet.create({
   glowChipText: {
     color: "rgba(255,255,255,0.85)", fontSize: 9.5, lineHeight: 12, fontWeight: "900", letterSpacing: 0.5, textAlignVertical: "center", fontFamily: fontFamilyForWeight(900),
   },
-  // Smart Gen's own identity mark — a gradient badge (not another flat
-  // translucent circle like every other icon button) so the one feature
-  // that's always one tap away reads as distinct, not just another utility
-  // icon. Crimson->orange: the app's two established accent colors, not a
-  // new hue.
-  smartGenBtn: {
-    width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center",
-    overflow: "hidden",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",
-    shadowColor: "#dc2626", shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 5,
-  },
   // Same 34px translucent icon button used for the hamburger/Smart Gen
   // triggers in the global view's utility row — reused here so CardScreen's
   // toolbar follows the same conventions instead of inventing its own.
@@ -934,31 +924,15 @@ function Home({
           get their own row below (unchanged) — putting the icons there
           too overcrowded a mobile-width row and forced Smart Gen to wrap
           onto its own orphaned line. */}
+      {/* Title bar shares space with nothing but the title — every prior
+          attempt to save vertical space by putting menu/Smart Gen here was
+          wrong for the same reason each time: a title bar's one job is the
+          title. Utility icons belong with the other interactive controls,
+          not stacked into the one row that isn't supposed to have any. */}
       <View style={{ paddingTop: insets.top + 6, paddingBottom: 4, overflow: "hidden" }}>
         <GlossSurface />
-        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, zIndex: 41 }}>
-          <Pressable
-            onPress={openDrawer}
-            style={{
-              width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center",
-              backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
-              shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
-            }}
-          >
-            <Ionicons name="menu-outline" size={15} color="#fff" />
-          </Pressable>
-          <View style={{ flex: 1, height: 18, alignItems: "center", justifyContent: "center" }}>
-            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
-          </View>
-          <Pressable onPress={openRightDrawer} style={localToolbarStyles.smartGenBtn}>
-            <LinearGradient
-              colors={["#dc2626", "#ffb74d"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <SmartGenMark size={15} />
-          </Pressable>
+        <View style={{ height: 18, alignItems: "center", justifyContent: "center" }}>
+          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
         </View>
       </View>
       <LinearGradient
@@ -967,34 +941,44 @@ function Home({
         pointerEvents="none"
       />
 
-      {/* Grid-scoped row — category, models, density/rows, agents: these
-          all affect the card grid directly below, so they live right
-          above it instead of up in the header, far from what they
-          control. */}
-      <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, paddingHorizontal: 14, marginTop: 4, marginBottom: 6 }}>
-        <CategoryDropdownTrigger onPress={() => setCategorySelectorVisible(true)} />
-        <Pressable onPress={() => setModelSelectorVisible(true)} style={localToolbarStyles.glowChip}>
-          <Ionicons name="albums-outline" size={10.5} color="rgba(255,255,255,0.75)" />
-          <Text style={localToolbarStyles.glowChipText}>MODELS</Text>
-          <Ionicons name="chevron-down" size={10} color="rgba(255,255,255,0.4)" />
+      {/* Utility + grid-scoped row: menu and Smart Gen are fixed bookends;
+          category/model/rows/agents pills scroll horizontally between them
+          instead of wrapping — a wrapped pill landed on its own orphaned
+          line last time, which is worse than just letting the row scroll. */}
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, marginTop: 4, marginBottom: 6 }}>
+        <Pressable onPress={openDrawer} style={{ width: 26, height: 26, borderRadius: 13, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+          <GlossButton borderRadius={13} />
+          <Ionicons name="menu-outline" size={15} color="#fff" />
         </Pressable>
-        <Pressable onPress={() => setRowSelectorVisible(true)} style={[localToolbarStyles.pill, { flexDirection: "row", gap: 2 }]}>
-          <Ionicons name="grid-outline" size={9} color="#fff" />
-          <Text style={localToolbarStyles.pillText}>{rows}</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: "row", alignItems: "center", gap: 6 }} style={{ flex: 1 }}>
+          <CategoryDropdownTrigger onPress={() => setCategorySelectorVisible(true)} />
+          <Pressable onPress={() => setModelSelectorVisible(true)} style={localToolbarStyles.glowChip}>
+            <Ionicons name="albums-outline" size={10.5} color="rgba(255,255,255,0.75)" />
+            <Text style={localToolbarStyles.glowChipText}>MODELS</Text>
+            <Ionicons name="chevron-down" size={10} color="rgba(255,255,255,0.4)" />
+          </Pressable>
+          <Pressable onPress={() => setRowSelectorVisible(true)} style={[localToolbarStyles.pill, { flexDirection: "row", gap: 2 }]}>
+            <Ionicons name="grid-outline" size={9} color="#fff" />
+            <Text style={localToolbarStyles.pillText}>{rows}</Text>
+          </Pressable>
+          {state.activeCategory === "coding" && (() => {
+            const activeAgent = state.customAgents.find((a) => a.id === state.activeAgentId[state.activeCategory]);
+            return (
+              <Pressable
+                onPress={() => setAgentSkillsVisible(true)}
+                style={[localToolbarStyles.pill, activeAgent && localToolbarStyles.pillActive]}
+              >
+                <Text style={[localToolbarStyles.pillText, activeAgent && localToolbarStyles.pillTextActive]} numberOfLines={1}>
+                  {activeAgent ? activeAgent.name.toUpperCase() : "AGENTS"}
+                </Text>
+              </Pressable>
+            );
+          })()}
+        </ScrollView>
+        <Pressable onPress={openRightDrawer} style={{ width: 26, height: 26, borderRadius: 13, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+          <GlossButton borderRadius={13} />
+          <SmartGenMark size={16} />
         </Pressable>
-        {state.activeCategory === "coding" && (() => {
-          const activeAgent = state.customAgents.find((a) => a.id === state.activeAgentId[state.activeCategory]);
-          return (
-            <Pressable
-              onPress={() => setAgentSkillsVisible(true)}
-              style={[localToolbarStyles.pill, activeAgent && localToolbarStyles.pillActive]}
-            >
-              <Text style={[localToolbarStyles.pillText, activeAgent && localToolbarStyles.pillTextActive]} numberOfLines={1}>
-                {activeAgent ? activeAgent.name.toUpperCase() : "AGENTS"}
-              </Text>
-            </Pressable>
-          );
-        })()}
       </View>
 
       {/* Measured Grid view container */}
@@ -2430,14 +2414,8 @@ function CardScreen({
           <Pressable onPress={openHistory} style={localToolbarStyles.toolbarIconBtn}>
             <Ionicons name="time-outline" size={16} color="#fff" />
           </Pressable>
-          <Pressable onPress={() => openRightDrawer(model.id)} style={[localToolbarStyles.toolbarIconBtn, localToolbarStyles.smartGenBtn, { width: 34, height: 34, borderRadius: 17 }]}>
-            <LinearGradient
-              colors={["#dc2626", "#ffb74d"]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={StyleSheet.absoluteFill}
-            />
-            <SmartGenMark size={16} />
+          <Pressable onPress={() => openRightDrawer(model.id)} style={localToolbarStyles.toolbarIconBtn}>
+            <SmartGenMark size={18} />
           </Pressable>
         </View>
       </View>
@@ -3195,7 +3173,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                 >
                   <GlossButton borderRadius={16} />
                   <View style={{ width: 32, height: 32, borderRadius: 16, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
-                    <LinearGradient colors={["#dc2626", "#ffb74d"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
+                    <GlossButton borderRadius={16} />
                     <SmartGenMark size={18} />
                   </View>
                   <Text style={[styles.bodyText, { flex: 1, fontSize: 13.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }]}>{row.label}</Text>
@@ -3378,14 +3356,29 @@ function IconButton({ iconName, onPress }: { iconName: string; onPress: () => vo
 // guessing a fourth hand-drawn shape: sparkles is the actual industry
 // convention for "AI / smart generation" (ChatGPT, Gemini, and Claude's own
 // UI all use it), so there's no ambiguity left to introduce.
+// Just the glitter, no bubble — a colored circle behind the icon was a
+// container treatment, not the icon having color. Ionicons glyphs render
+// as a single flat color, so the gradient has to be baked into the glyph
+// itself; drawn as SVG paths with a gradient fill instead.
 function SmartGenMark({ size = 18 }: { size?: number }) {
+  const gradId = "smartGenSparkleGrad";
   return (
-    <Ionicons
-      name="sparkles"
-      size={size}
-      color="#fff"
-      style={{ textShadowColor: "rgba(255,255,255,0.5)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 6 }}
-    />
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Defs>
+        <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+          <Stop offset="0" stopColor="#dc2626" />
+          <Stop offset="1" stopColor="#ffb74d" />
+        </SvgGradient>
+      </Defs>
+      <Path
+        d="M12 2C12.4 7.2 13 12 22 12C13 12 12.4 16.8 12 22C11.6 16.8 11 12 2 12C11 12 11.6 7.2 12 2Z"
+        fill={`url(#${gradId})`}
+      />
+      <Path
+        d="M19 3C19.2 5 19.5 6 22 6C19.5 6 19.2 7 19 9C18.8 7 18.5 6 16 6C18.5 6 18.8 5 19 3Z"
+        fill={`url(#${gradId})`}
+      />
+    </Svg>
   );
 }
 

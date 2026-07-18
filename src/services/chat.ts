@@ -461,21 +461,19 @@ function fallbackConsensus(replies: ConsensusReply[]): ConsensusResult {
     const maxSim = others.length ? Math.max(...others.map((b) => consensusSim(bags[i], b))) : 0;
     scores[r.modelId] = Math.max(0, Math.min(1, maxSim * 1.8));
   });
-  // Build a real local synthesis: surface the dominant shared idea and note divergence.
+  // The verdict states the actual position, not the vote — how many models
+  // aligned is already shown separately as a count, so restating it in
+  // prose here would just be the arbiter describing its own process
+  // instead of answering the question.
   const sorted = [...replies].sort((a, b) => (scores[b.modelId] ?? 0) - (scores[a.modelId] ?? 0));
   const anchor = sorted[0];
   const DISSENT = 0.28;
-  const aligned = replies.filter((r) => (scores[r.modelId] ?? 0) >= DISSENT);
   const dissenters = replies.filter((r) => (scores[r.modelId] ?? 0) < DISSENT);
-  let verdict = `${aligned.length} of ${replies.length} models converge on a similar position. `;
-  // Grab the opening clause of the highest-scoring reply as the shared thesis.
   const thesis = anchor.content.split(/[.!?]/)[0]?.trim();
-  if (thesis && thesis.length > 20) verdict += `Core consensus: ${thesis}. `;
+  let verdict = thesis && thesis.length > 20 ? `${thesis}.` : anchor.content.slice(0, 200).trim();
   if (dissenters.length) {
-    const names = dissenters.map((d) => d.label).join(", ");
-    verdict += `${names} ${dissenters.length === 1 ? "diverges" : "diverge"} notably from the majority.`;
-  } else {
-    verdict += "No meaningful dissent detected.";
+    const altThesis = dissenters[0].content.split(/[.!?]/)[0]?.trim();
+    if (altThesis && altThesis.length > 20) verdict += ` ${dissenters[0].label} instead holds: ${altThesis}.`;
   }
   return { verdict: verdict.trim(), scores };
 }
@@ -485,11 +483,14 @@ export async function scoreConsensus(replies: ConsensusReply[]): Promise<Consens
   try {
     const sys =
       "You are an impartial arbiter evaluating multiple AI model replies to the same prompt. " +
-      "Read every reply fully, identify the core shared position, and note where individual models diverge in logic, emphasis, or conclusion. " +
+      "Read every reply fully, identify the core shared position, and note where individual models diverge in logic, emphasis, or conclusion. Treat any reply that is an error message (failed request, rate limit, etc.) as absent, not as a position — silently ignore it when forming the synthesis. " +
       "Respond with STRICT JSON only — no markdown, no code fences, no commentary — matching exactly this shape:\n" +
       '{"verdict": "2-3 sentence synthesis", "scores": {"<modelId>": 0.0-1.0, ...}}\n' +
-      "The verdict must convey meaning and intent directly. Be concise and factual. Do NOT use redundant introductory phrases like 'All models converge on', 'The models agree that', or 'Consensus reached'. Just state the facts of the synthesis. " +
-      "Scores: 1.0 = fully aligned with consensus, 0.0 = directly contradicts it. Include a score for every modelId listed, using the exact id strings given.";
+      "The verdict states the position itself, as information — not a narrative about the position, and not a report about the models. Two separate failure modes to avoid:\n" +
+      "1. Meta-commentary about the models: never mention which ones answered, how many did, that one 'provided a substantive response,' or anything else about the polling process — that's shown separately in the UI as a count, so restating it here is redundant.\n" +
+      "2. Editorializing / hedging register: no evaluative or normative words — 'correct,' 'better,' 'best,' 'right,' 'wrong,' 'should,' 'ideal.' No hedge-qualifiers like 'universally,' 'generally,' 'typically,' 'it depends.' No advisor-voice framing ('the key consideration is...', 'ultimately...'). State the substance as a flat, direct claim — what the position IS and, if relevant, the concrete condition under which it holds — not a value judgment on it. " +
+      "The only exception: if every reply is an error with nothing usable to synthesize from, state that plainly ('No model returned a usable answer.') — that IS the fact in that case. " +
+      "Scores: 1.0 = fully aligned with consensus, 0.0 = directly contradicts it. Include a score for every modelId listed, using the exact id strings given — score an error reply 0.0.";
     const body = replies
       .map((r, i) => `Model ${i + 1} (id: ${r.modelId}, label: ${r.label}):\n${r.content.slice(0, 2000)}`)
       .join("\n\n---\n\n");
