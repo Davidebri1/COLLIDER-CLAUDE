@@ -5,8 +5,10 @@ import { useCollider } from "../state";
 import { modelById } from "../models";
 import { scoreConsensus } from "../services/chat";
 
-// Proactive-value bar: the user types a prompt, gets replies from 2+
-// selected models, and the synthesis of what they said is sitting right
+const DISSENT_THRESHOLD = 0.5;
+
+// Proactive-value bar: the user types a prompt, gets replies from every
+// selected model, and the synthesis of what they said is sitting right
 // here — above the composer, zero extra taps — instead of being locked
 // behind a drawer only the curious would ever open. Tapping still opens the
 // full Consensus drawer for the map/dissenter detail; this is the "give it
@@ -15,12 +17,19 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
   const { state } = useCollider();
   const cat = state.activeCategory;
   const conv = state.conversations.find((c) => c.id === state.activeConversationId[cat]);
-  const replies = (state.selectedModelIds[cat] || [])
+  const selectedIds = state.selectedModelIds[cat] || [];
+  const replies = selectedIds
     .map((id) => ({
       id,
       last: [...(conv?.threads[id] || [])].reverse().find((m) => m.role === "assistant" && m.content),
     }))
     .filter((r) => r.last) as { id: string; last: { content: string } }[];
+
+  // Wait for EVERY selected model to land (a real reply or an error both
+  // count — either way there's nothing left pending) before synthesizing.
+  // Firing as soon as 2 of, say, 4 were in meant "consensus" sometimes
+  // meant "half the panel hasn't even weighed in yet."
+  const allIn = selectedIds.length >= 2 && replies.length === selectedIds.length;
 
   const repliesKey = replies.map((r) => `${r.id}:${r.last.content.length}`).join("|");
   const [result, setResult] = useState<{ verdict: string; scores: Record<string, number> } | null>(null);
@@ -28,7 +37,7 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
 
   useEffect(() => {
     let cancelled = false;
-    if (!state.autoConsensusSummary || replies.length < 2) { setResult(null); return; }
+    if (!state.autoConsensusSummary || !allIn) { setResult(null); return; }
     setLoading(true);
     scoreConsensus(replies.map((r) => ({ modelId: r.id, label: modelById(r.id)?.label || r.id, content: r.last.content })))
       .then((res) => { if (!cancelled) setResult(res); })
@@ -36,31 +45,42 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [repliesKey, state.autoConsensusSummary]);
+  }, [repliesKey, allIn, state.autoConsensusSummary]);
 
-  const scoreValues = result ? Object.values(result.scores) : [];
-  const avgScore = scoreValues.length ? Math.round((scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length) * 100) : null;
-  const scoreColor = avgScore === null ? "#e2e8f0" : avgScore >= 66 ? "#10b981" : avgScore >= 40 ? "#ffb74d" : "#ef4444";
+  // Fraction, not a percentage — "3/4 models agree" is a direct count you
+  // can sanity-check against the panel; "72%" is a number you have to
+  // trust. Same aligned/total math as the full drawer's own "N/M" readout.
+  const scores = result?.scores || {};
+  const agreeCount = replies.filter((r) => (scores[r.id] ?? 0) >= DISSENT_THRESHOLD).length;
+  const totalCount = replies.length;
+  const ratio = totalCount ? agreeCount / totalCount : 0;
+  const hasScore = !!result;
+  const scoreColor = !hasScore ? "#e2e8f0" : ratio >= 0.66 ? "#10b981" : ratio >= 0.4 ? "#ffb74d" : "#ef4444";
 
-  const showSummary = state.autoConsensusSummary && replies.length >= 2;
-  const showMedallion = showSummary && (avgScore !== null || loading);
+  const showSummary = state.autoConsensusSummary && selectedIds.length >= 2;
+  const showMedallion = showSummary && (hasScore || (loading && allIn));
 
   return (
     <View style={{ marginHorizontal: 14, marginTop: showMedallion ? 20 : 2 }}>
       <Pressable onPress={disabled ? undefined : onPress} disabled={disabled} style={[styles.banner, disabled && { opacity: 0.4 }]}>
         <LinearGradient
-          colors={["#2a1f6b", "#2d3fa8", "#0d1140"]}
+          colors={["#1c1030", "#3a1f5c", "#0a0612"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
         {showSummary ? (
-          loading && !result ? (
+          !allIn ? (
+            <Text style={styles.summary} numberOfLines={2}>
+              Waiting on {selectedIds.length - replies.length} of {selectedIds.length} replies…
+            </Text>
+          ) : loading && !result ? (
             <Text style={[styles.summary, showMedallion && { marginTop: 14 }]} numberOfLines={2}>
-              Synthesizing what {replies.length} models agree on…
+              Synthesizing consensus…
             </Text>
           ) : (
             <Text style={[styles.summary, showMedallion && { marginTop: 14 }]} numberOfLines={2}>
+              <Text style={styles.summaryLead}>Consensus: </Text>
               {result?.verdict || "Not enough responses yet."}
             </Text>
           )
@@ -75,19 +95,17 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
       {/* The score medallion — embedded into the bar's top edge (half
           overlapping, not floating above it) so it reads as one object
           with the bar, not a separate chip stapled on top. Same gradient
-          family as the bar itself, with a gold ring as the focal frame —
-          this is the single most valuable number on the screen, so it
-          gets the size and prominence to match, not a cramped label. */}
+          family as the bar itself, with a gold ring as the focal frame. */}
       {showMedallion && (
         <View style={styles.medallion} pointerEvents="none">
           <LinearGradient
-            colors={["#3b4fc7", "#1a1450"]}
+            colors={["#4a2f8a", "#160c28"]}
             start={{ x: 0.2, y: 0 }}
             end={{ x: 0.8, y: 1 }}
             style={StyleSheet.absoluteFill}
           />
-          {avgScore !== null ? (
-            <Text style={[styles.medallionScore, { color: scoreColor, textShadowColor: scoreColor }]}>{avgScore}%</Text>
+          {hasScore ? (
+            <Text style={[styles.medallionScore, { color: scoreColor, textShadowColor: scoreColor }]}>{agreeCount}/{totalCount}</Text>
           ) : (
             <ActivityIndicator size="small" color="#ffd66b" />
           )}
@@ -111,8 +129,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "rgba(212,175,55,0.5)",
     overflow: "hidden",
-    shadowColor: "#1d2c8f",
-    shadowOpacity: 0.5,
+    shadowColor: "#3a1f5c",
+    shadowOpacity: 0.6,
     shadowRadius: 14,
     shadowOffset: { width: 0, height: 5 },
     elevation: 6,
@@ -160,5 +178,9 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     lineHeight: 16,
     textAlign: "center",
+  },
+  summaryLead: {
+    fontWeight: "900",
+    letterSpacing: 0.3,
   },
 });

@@ -111,6 +111,7 @@ import { ModelTray } from "./src/components/ModelTray";
 import { PromptComposer } from "./src/components/PromptComposer";
 import { CollideBanner } from "./src/components/CollideBanner";
 import { GlossSurface } from "./src/components/GlossSurface";
+import { GlossButton } from "./src/components/GlossButton";
 import { ConsensusModal } from "./src/components/ConsensusDrawer";
 import { ToastProvider, useToast } from "./src/components/Toast";
 import { InlineSearch } from "./src/components/InlineSearch";
@@ -680,6 +681,17 @@ const localToolbarStyles = StyleSheet.create({
   glowChipText: {
     color: "rgba(255,255,255,0.85)", fontSize: 9.5, lineHeight: 12, fontWeight: "900", letterSpacing: 0.5, textAlignVertical: "center", fontFamily: fontFamilyForWeight(900),
   },
+  // Smart Gen's own identity mark — a gradient badge (not another flat
+  // translucent circle like every other icon button) so the one feature
+  // that's always one tap away reads as distinct, not just another utility
+  // icon. Crimson->orange: the app's two established accent colors, not a
+  // new hue.
+  smartGenBtn: {
+    width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",
+    shadowColor: "#dc2626", shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 5,
+  },
   // Same 34px translucent icon button used for the hamburger/Smart Gen
   // triggers in the global view's utility row — reused here so CardScreen's
   // toolbar follows the same conventions instead of inventing its own.
@@ -916,43 +928,36 @@ function Home({
 
   return (
     <View style={styles.flex}>
-      {/* Header — title AND the utility row (menu/search/Smart Gen) share
-          ONE anchored surface, edge to edge. Previously the title sat in
-          its own black bar that faded out after 10px, and the menu/search/
-          Smart Gen row floated below it on bare wallpaper with no
-          background of its own — disembodied, anchored only by a top
-          margin, not actually contained. Now it's a single panel. */}
-      <View style={{ paddingTop: insets.top + 6, paddingBottom: 8, overflow: "hidden" }}>
+      {/* Header — covers only the title row, with menu and Smart Gen
+          sharing it at the edges instead of a whole separate 30px-tall
+          row stacked on top just for two buttons. Category/model pills
+          get their own row below (unchanged) — putting the icons there
+          too overcrowded a mobile-width row and forced Smart Gen to wrap
+          onto its own orphaned line. */}
+      <View style={{ paddingTop: insets.top + 6, paddingBottom: 4, overflow: "hidden" }}>
         <GlossSurface />
-        <View style={{ height: 18, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
-        </View>
-
-        {/* Search moved into the left drawer (see Drawer component) — it was
-            eating most of this row's width every time it's visible, which
-            this row is, always, whether or not the user is searching. The
-            header's only job now is the two entry points that need to be
-            reachable from anywhere: menu and Smart Gen. */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14, marginTop: 8, zIndex: 41 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 14, zIndex: 41 }}>
           <Pressable
             onPress={openDrawer}
             style={{
-              width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center",
+              width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center",
               backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
               shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
             }}
           >
-            <Ionicons name="menu-outline" size={17} color="#fff" />
+            <Ionicons name="menu-outline" size={15} color="#fff" />
           </Pressable>
-          <Pressable
-            onPress={openRightDrawer}
-            style={{
-              width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center",
-              backgroundColor: "rgba(255,255,255,0.07)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
-              shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
-            }}
-          >
-            <SmartGenMark size={20} />
+          <View style={{ flex: 1, height: 18, alignItems: "center", justifyContent: "center" }}>
+            <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
+          </View>
+          <Pressable onPress={openRightDrawer} style={localToolbarStyles.smartGenBtn}>
+            <LinearGradient
+              colors={["#dc2626", "#ffb74d"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
+            <SmartGenMark size={15} />
           </Pressable>
         </View>
       </View>
@@ -962,9 +967,10 @@ function Home({
         pointerEvents="none"
       />
 
-      {/* Grid-scoped row — category, models, density/rows: these all affect
-          the card grid directly below, so they live right above it instead
-          of up in the header, far from what they control. */}
+      {/* Grid-scoped row — category, models, density/rows, agents: these
+          all affect the card grid directly below, so they live right
+          above it instead of up in the header, far from what they
+          control. */}
       <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "center", gap: 6, paddingHorizontal: 14, marginTop: 4, marginBottom: 6 }}>
         <CategoryDropdownTrigger onPress={() => setCategorySelectorVisible(true)} />
         <Pressable onPress={() => setModelSelectorVisible(true)} style={localToolbarStyles.glowChip}>
@@ -1014,8 +1020,15 @@ function Home({
           user wants it separated out as its own docked banner instead.
           Global view only (no card-view Collide), sits in the gap between
           the grid and the composer so it neither overlaps the model cards
-          above nor the composer below. */}
-      <CollideBanner onPress={openConsensus} disabled={selected.length <= 1} />
+          above nor the composer below.
+          General + Coding only — Consensus synthesizes and scores TEXT
+          replies to the same prompt. Image/Video/Music models return
+          media, not comparable prose, so there's no text verdict to
+          produce there; showing it on those tabs would just be a button
+          that can never do the one thing it exists to do. */}
+      {(state.activeCategory === "general" || state.activeCategory === "coding") && (
+        <CollideBanner onPress={openConsensus} disabled={selected.length <= 1} />
+      )}
 
       <PromptComposer
         value={prompt}
@@ -2417,7 +2430,13 @@ function CardScreen({
           <Pressable onPress={openHistory} style={localToolbarStyles.toolbarIconBtn}>
             <Ionicons name="time-outline" size={16} color="#fff" />
           </Pressable>
-          <Pressable onPress={() => openRightDrawer(model.id)} style={localToolbarStyles.toolbarIconBtn}>
+          <Pressable onPress={() => openRightDrawer(model.id)} style={[localToolbarStyles.toolbarIconBtn, localToolbarStyles.smartGenBtn, { width: 34, height: 34, borderRadius: 17 }]}>
+            <LinearGradient
+              colors={["#dc2626", "#ffb74d"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={StyleSheet.absoluteFill}
+            />
             <SmartGenMark size={16} />
           </Pressable>
         </View>
@@ -3139,13 +3158,15 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
             to share this drawer. A simple two-way toggle instead of burying
             "Outputs" as a 5th option inside what should read as the Smart
             Gen suite. */}
-        <View style={{ flexDirection: "row", marginHorizontal: 12, marginBottom: 10, backgroundColor: "rgba(255,255,255,0.03)", borderRadius: 12, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+        <View style={{ flexDirection: "row", marginHorizontal: 12, marginBottom: 10, borderRadius: 12, padding: 3, overflow: "hidden" }}>
+          <GlossButton borderRadius={12} />
           {(["tools", "outputs"] as const).map((p) => (
             <Pressable
               key={p}
               onPress={() => setPanel(p)}
-              style={{ flex: 1, paddingVertical: 7, borderRadius: 9, alignItems: "center", backgroundColor: panel === p ? "rgba(255,255,255,0.08)" : "transparent" }}
+              style={{ flex: 1, paddingVertical: 7, borderRadius: 9, alignItems: "center", overflow: "hidden" }}
             >
+              {panel === p && <GlossButton borderRadius={9} active />}
               <Text style={{ color: panel === p ? "#fff" : "#6b6478", fontSize: 10.5, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900) }}>
                 {p === "tools" ? "SMART GEN TOOLS" : "GENERATIONS"}
               </Text>
@@ -3170,9 +3191,11 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                 <Pressable
                   key={row.screen}
                   onPress={() => { handleClose(); setTimeout(() => nav(row.screen), 200); }}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 16, overflow: "hidden" }}
                 >
-                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }}>
+                  <GlossButton borderRadius={16} />
+                  <View style={{ width: 32, height: 32, borderRadius: 16, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+                    <LinearGradient colors={["#dc2626", "#ffb74d"]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
                     <SmartGenMark size={18} />
                   </View>
                   <Text style={[styles.bodyText, { flex: 1, fontSize: 13.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }]}>{row.label}</Text>
@@ -3194,10 +3217,12 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                 <Pressable
                   key={row.screen}
                   onPress={() => { handleClose(); setTimeout(() => nav(row.screen), 200); }}
-                  style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.03)", borderWidth: 1, borderColor: "rgba(255,255,255,0.07)" }}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 16, overflow: "hidden" }}
                 >
-                  <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: "rgba(255,255,255,0.06)", alignItems: "center", justifyContent: "center" }}>
-                    <Ionicons name={row.icon} size={16} color="rgba(255,255,255,0.6)" />
+                  <GlossButton borderRadius={16} />
+                  <View style={{ width: 32, height: 32, borderRadius: 16, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+                    <GlossButton borderRadius={16} />
+                    <Ionicons name={row.icon} size={16} color="rgba(255,255,255,0.75)" />
                   </View>
                   <Text style={[styles.bodyText, { flex: 1, fontSize: 13.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }]}>{row.label}</Text>
                   {row.count !== undefined && (
@@ -3213,8 +3238,9 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                 so it reads as one consistent brand mark for this feature. */}
             <Pressable
               onPress={() => { handleClose(); setTimeout(() => nav("settings"), 200); }}
-              style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, margin: 12, padding: 12, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.02)", borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}
+              style={{ flexDirection: "row", alignItems: "flex-start", gap: 8, margin: 12, padding: 12, borderRadius: 14, overflow: "hidden" }}
             >
+              <GlossButton borderRadius={14} />
               <View style={{ marginTop: 1 }}>
                 <SmartGenMark size={16} />
               </View>
