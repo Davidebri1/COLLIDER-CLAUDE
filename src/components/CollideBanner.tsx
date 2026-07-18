@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, Text, StyleSheet, ActivityIndicator } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { View, Pressable, Text, StyleSheet, Animated, Easing } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, LinearGradient as SvgGradient, Stop, Polygon } from "react-native-svg";
 import { useCollider } from "../state";
@@ -7,6 +7,7 @@ import { modelById } from "../models";
 import { scoreConsensus } from "../services/chat";
 
 const DISSENT_THRESHOLD = 0.5;
+const SILVER = "#e2e8f0";
 
 // Proactive-value bar: the user types a prompt, gets replies from every
 // selected model, and the synthesis of what they said is sitting right
@@ -14,6 +15,12 @@ const DISSENT_THRESHOLD = 0.5;
 // behind a drawer only the curious would ever open. Tapping still opens the
 // full Consensus drawer for the map/dissenter detail; this is the "give it
 // to them before they ask" layer on top of that.
+//
+// "Consensus:" and the score are the bar's permanent identity, not a
+// conditional state — they never disappear. The bar has exactly one other
+// state to express: available (show the real verdict/score) or not
+// (show "Not available"). No separate copy for "select 2+ models," "waiting
+// on replies," etc. — those all collapse to the same "not available" fact.
 export function CollideBanner({ onPress, disabled }: { onPress: () => void; disabled?: boolean }) {
   const { state } = useCollider();
   const cat = state.activeCategory;
@@ -46,6 +53,24 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repliesKey, allIn, state.autoConsensusSummary]);
 
+  // Breathing glow while synthesizing — brightness pulse, not a scale
+  // change, borrowed from the original Collide-button spec's "aura"
+  // treatment as a loading-state accent rather than the button's whole
+  // visual identity.
+  const pulse = useRef(new Animated.Value(0)).current;
+  const isPulsing = loading && allIn;
+  useEffect(() => {
+    if (!isPulsing) { pulse.setValue(0); return; }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 0, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [isPulsing, pulse]);
+
   // Fraction, not a percentage — a direct count you can sanity-check
   // against the panel, not a number you have to trust.
   const scores = result?.scores || {};
@@ -53,10 +78,8 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
   const totalCount = replies.length;
   const ratio = totalCount ? agreeCount / totalCount : 0;
   const hasScore = !!result;
-  const scoreColor = !hasScore ? "#e2e8f0" : ratio >= 0.66 ? "#10b981" : ratio >= 0.4 ? "#ffb74d" : "#ef4444";
-
-  const showSummary = state.autoConsensusSummary && selectedIds.length >= 2;
-  const showBadge = showSummary && (hasScore || (loading && allIn));
+  const scoreColor = !hasScore ? SILVER : ratio >= 0.66 ? "#10b981" : ratio >= 0.4 ? "#ffb74d" : "#ef4444";
+  const available = state.autoConsensusSummary && hasScore;
 
   const gradId = "collideBadgeGrad";
 
@@ -66,27 +89,33 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           into it) so the bar keeps its full interior height for text
           instead of losing space to a badge dug into its top. A trapezoid,
           not a circle: an angled shape holds a 2-3 character fraction more
-          efficiently than a circle/semicircle does. */}
-      {showBadge && (
-        <View style={{ marginBottom: -1 }}>
-          <Svg width={60} height={24} viewBox="0 0 60 24">
-            <Defs>
-              <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-                <Stop offset="0" stopColor="#5a1f9e" />
-                <Stop offset="1" stopColor="#170a2e" />
-              </SvgGradient>
-            </Defs>
-            <Polygon points="2,24 58,24 50,1 10,1" fill={`url(#${gradId})`} stroke={GOLD} strokeWidth={1.5} />
-          </Svg>
-          <View style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center", paddingBottom: 2 }]}>
-            {hasScore ? (
-              <Text style={[styles.badgeScore, { color: scoreColor, textShadowColor: scoreColor }]}>{agreeCount}/{totalCount}</Text>
-            ) : (
-              <ActivityIndicator size="small" color="#ffd66b" />
-            )}
-          </View>
+          efficiently than a circle/semicircle does. Always rendered —
+          "Consensus:" and the score are this bar's identity, not a state
+          that comes and goes. */}
+      <Animated.View
+        style={{
+          marginBottom: -1,
+          shadowColor: SILVER,
+          shadowOpacity: isPulsing ? pulse.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.85] }) : 0.3,
+          shadowRadius: isPulsing ? pulse.interpolate({ inputRange: [0, 1], outputRange: [4, 12] }) : 6,
+          shadowOffset: { width: 0, height: 0 },
+        }}
+      >
+        <Svg width={60} height={24} viewBox="0 0 60 24">
+          <Defs>
+            <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0" stopColor="#5a1f9e" />
+              <Stop offset="1" stopColor="#170a2e" />
+            </SvgGradient>
+          </Defs>
+          <Polygon points="2,24 58,24 50,1 10,1" fill={`url(#${gradId})`} stroke={SILVER} strokeWidth={1.25} />
+        </Svg>
+        <View style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center", paddingBottom: 2 }]}>
+          <Text style={[styles.badgeScore, { color: scoreColor, textShadowColor: scoreColor }]}>
+            {available ? `${agreeCount}/${totalCount}` : "–/–"}
+          </Text>
         </View>
-      )}
+      </Animated.View>
 
       <Pressable onPress={disabled ? undefined : onPress} disabled={disabled} style={[styles.banner, disabled && { opacity: 0.4 }]}>
         <LinearGradient
@@ -95,33 +124,14 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        {showSummary ? (
-          !allIn ? (
-            <Text style={styles.summary} numberOfLines={2}>
-              Waiting on {selectedIds.length - replies.length} of {selectedIds.length} replies…
-            </Text>
-          ) : loading && !result ? (
-            <Text style={styles.summary} numberOfLines={2}>
-              Synthesizing consensus…
-            </Text>
-          ) : (
-            <Text style={styles.summary} numberOfLines={2}>
-              <Text style={styles.summaryLead}>Consensus: </Text>
-              {result?.verdict || "Not enough responses yet."}
-            </Text>
-          )
-        ) : (
-          <>
-            <Text style={styles.title}>COLLIDE</Text>
-            <Text style={styles.sub}>{disabled ? "Select 2+ models to compare" : "Tap or drag up for consensus"}</Text>
-          </>
-        )}
+        <Text style={styles.summary} numberOfLines={2}>
+          <Text style={styles.summaryLead}>Consensus: </Text>
+          {available ? result!.verdict : "Not available"}
+        </Text>
       </Pressable>
     </View>
   );
 }
-
-const GOLD = "#d4af37";
 
 const styles = StyleSheet.create({
   banner: {
@@ -133,7 +143,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     borderWidth: 1,
-    borderColor: "rgba(212,175,55,0.5)",
+    borderColor: "rgba(226,232,240,0.35)",
     overflow: "hidden",
     shadowColor: "#1a0733",
     shadowOpacity: 0.7,
@@ -147,18 +157,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 10,
-  },
-  title: {
-    color: "#e2e8f0",
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-  },
-  sub: {
-    color: "rgba(255,255,255,0.65)",
-    fontSize: 10,
-    fontWeight: "600",
-    marginTop: 2,
   },
   summary: {
     color: "#fff",
