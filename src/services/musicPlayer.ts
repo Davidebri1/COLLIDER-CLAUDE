@@ -33,12 +33,15 @@ export async function playTrack(trackId: string, url: string, volume: number, on
   if (!sound) {
     const { sound: created } = await Audio.Sound.createAsync(
       { uri: url },
-      { shouldPlay: true, volume, isLooping: true },
+      { shouldPlay: true, volume, isLooping: false },
       onStatus
     );
     sound = created;
     currentTrackId = trackId;
   } else {
+    if (onStatus) {
+      sound.setOnPlaybackStatusUpdate(onStatus);
+    }
     await sound.playAsync();
   }
 }
@@ -49,6 +52,14 @@ export async function pauseTrack() {
 
 export async function resumeTrack() {
   await sound?.playAsync().catch(() => {});
+}
+
+export async function seekTo(millis: number) {
+  await sound?.setPositionAsync(millis).catch(() => {});
+}
+
+export function setStatusListener(onStatus: (status: AVPlaybackStatus) => void) {
+  sound?.setOnPlaybackStatusUpdate(onStatus);
 }
 
 export async function setVolume(volume: number) {

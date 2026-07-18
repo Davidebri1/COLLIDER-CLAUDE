@@ -1,5 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import {
+  ActivityIndicator,
   Animated,
   Dimensions,
   Easing,
@@ -467,7 +468,8 @@ function Shell() {
       <SafeAreaView style={styles.safe} edges={["bottom"]}>
         <KeyboardAvoidingView
           style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          behavior={Platform.OS === "ios" ? "padding" : Platform.OS === "android" ? "height" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 48}
         >
           {screen === "home" && (
             <ScreenTransition screenKey="home">
@@ -813,8 +815,8 @@ function Home({
     .map(modelById)
     .filter(Boolean) as ModelDef[];
 
-  const submit = async (attachments: Attachment[] = []) => {
-    const text = prompt.trim();
+  const submit = async (attachments: Attachment[] = [], compiledText?: string) => {
+    const text = compiledText !== undefined ? compiledText.trim() : prompt.trim();
     if ((!text && attachments.length === 0) || pending > 0 || selected.length === 0) return;
     // Free tier: 20 msgs/day on general chat (the only category free users can reach).
     if (isMessageLimitReached(state)) {
@@ -1348,7 +1350,7 @@ function ModelSelectorDrawer({
         <View style={[styles.editSheet, { width: Math.min(SCREEN_W - 64, 340), alignSelf: "center", marginTop: 0, maxHeight: "70%", padding: 0, overflow: "hidden" }]} onStartShouldSetResponder={() => true}>
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
-            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Select Models ({cat.toUpperCase()})</Text>
+            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Select Models {cat.toUpperCase()}</Text>
             <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
@@ -1390,9 +1392,20 @@ function CategoryTabs() {
 
 
 //  Media Components for Chat Renders 
-function AudioPlayerControls() {
+// Plays the actual generated audio (a data:audio/... URI from
+// callOpenRouterMusic) via expo-av's Audio.Sound. This replaced a
+// component that just spun a vinyl-disc animation on tap — no sound ever
+// played, regardless of what was "generated". Play state now comes from
+// the real sound object's status, not a local boolean toggled on a timer.
+function AudioPlayerControls({ uri }: { uri: string }) {
   const [playing, setPlaying] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const soundRef = useRef<Audio.Sound | null>(null);
   const rotation = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    return () => { soundRef.current?.unloadAsync().catch(() => {}); };
+  }, []);
 
   useEffect(() => {
     let anim: any;
@@ -1407,10 +1420,29 @@ function AudioPlayerControls() {
     return () => { if (anim) anim.stop(); };
   }, [playing]);
 
-  const spin = rotation.interpolate({
-    inputRange: [0, 1],
-    outputRange: ["0deg", "360deg"],
-  });
+  const spin = rotation.interpolate({ inputRange: [0, 1], outputRange: ["0deg", "360deg"] });
+
+  const toggle = async () => {
+    if (!soundRef.current) {
+      setLoading(true);
+      try {
+        const { sound } = await Audio.Sound.createAsync(
+          { uri },
+          { shouldPlay: true },
+          (status) => { if (status.isLoaded) setPlaying(status.isPlaying); },
+        );
+        soundRef.current = sound;
+      } catch {
+        setLoading(false);
+        return;
+      }
+      setLoading(false);
+      return;
+    }
+    const status = await soundRef.current.getStatusAsync();
+    if (status.isLoaded && status.isPlaying) await soundRef.current.pauseAsync();
+    else await soundRef.current.playAsync();
+  };
 
   return (
     <View style={styles.playerRow}>
@@ -1418,39 +1450,35 @@ function AudioPlayerControls() {
         <View style={styles.vinylCenter} />
       </Animated.View>
       <View style={{ flex: 1, gap: 4 }}>
-        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Synthesized Master.mp3</Text>
-        <Text style={{ color: "#6b6478", fontSize: 10 }}>Collider Composition Engine</Text>
+        <Text style={{ color: "#fff", fontSize: 12, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Generated track</Text>
+        <Text style={{ color: "#6b6478", fontSize: 10 }}>Lyria 3 (via OpenRouter)</Text>
       </View>
-      <Pressable onPress={() => setPlaying(!playing)} style={styles.playPauseBtn}>
-        <Ionicons name={playing ? "pause" : "play"} size={13} color="#000" />
+      <Pressable onPress={toggle} disabled={loading} style={styles.playPauseBtn}>
+        {loading ? <ActivityIndicator size="small" color="#000" /> : <Ionicons name={playing ? "pause" : "play"} size={13} color="#000" />}
       </Pressable>
     </View>
   );
 }
 
-function VideoPlayerSimulated({ prompt }: { prompt: string }) {
+// Plays the actual generated clip (a data:video/mp4 URI from
+// callOpenRouterVideo). This replaced a component that always played the
+// same hardcoded stock nebula clip from mixkit.co regardless of the prompt
+// or model — literally showing fake footage no matter what was asked for.
+function VideoPlayer({ uri }: { uri: string }) {
   const [playing, setPlaying] = useState(false);
   return (
     <View style={styles.videoSimContainer}>
-      {playing ? (
-        <Video
-          source={{ uri: "https://assets.mixkit.co/videos/preview/mixkit-nebula-in-outer-space-40076-large.mp4" }}
-          rate={1.0}
-          volume={0.0}
-          isMuted
-          resizeMode={ResizeMode.COVER}
-          shouldPlay
-          isLooping
-          style={StyleSheet.absoluteFill}
-        />
-      ) : (
-        <ImageBackground
-          source={{ uri: "https://image.pollinations.ai/prompt/cinematic%20video%20still%20frame?width=400&height=225&nologo=true" }}
-          style={StyleSheet.absoluteFill}
-          resizeMode="cover"
-        />
-      )}
-      <Pressable onPress={() => setPlaying(!playing)} style={styles.videoSimPlayBtn}>
+      <Video
+        source={{ uri }}
+        rate={1.0}
+        volume={1.0}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay={playing}
+        isLooping
+        useNativeControls={false}
+        style={StyleSheet.absoluteFill}
+      />
+      <Pressable onPress={() => setPlaying((p) => !p)} style={styles.videoSimPlayBtn}>
         <Ionicons name={playing ? "pause" : "play"} size={22} color="#fff" />
       </Pressable>
     </View>
@@ -2329,8 +2357,8 @@ function CardScreen({
     } finally { setSending(false); }
   };
 
-  const submit = async (attachments: Attachment[] = []) => {
-    const text = prompt.trim();
+  const submit = async (attachments: Attachment[] = [], compiledText?: string) => {
+    const text = compiledText !== undefined ? compiledText.trim() : prompt.trim();
     if ((!text && attachments.length === 0) || sending) return;
     setPrompt("");
     await runPrompt(text, attachments);
@@ -2480,21 +2508,15 @@ function CardScreen({
                           </View>
                           <Text style={[styles.bodyText, { marginTop: 6, fontSize: 12, opacity: 0.8 }]}>{message.content}</Text>
                         </View>
-                      ) : message.role === "assistant" && model.category.includes("music") && message.content ? (
+                      ) : message.role === "assistant" && model.category.includes("music") && message.content?.startsWith("data:audio") ? (
                         <View style={[styles.audioPlayerCard, { backgroundColor: "#161619" }]}>
-                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> SUNO AUDIO GENERATOR</Text>
-                          <AudioPlayerControls />
-                          <View style={{ marginTop: 8 }}>
-                            <Markdown content={message.content} color="#fff" fontSize={12} />
-                          </View>
+                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> {model.label.toUpperCase()}</Text>
+                          <AudioPlayerControls uri={message.content} />
                         </View>
-                      ) : message.role === "assistant" && model.category.includes("video") && message.content ? (
+                      ) : message.role === "assistant" && model.category.includes("video") && message.content?.startsWith("data:video") ? (
                         <View style={[styles.videoPlayerCard, { backgroundColor: "#161619" }]}>
-                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> SORA STORYBOARD PLAYER</Text>
-                          <VideoPlayerSimulated prompt={message.content} />
-                          <View style={{ marginTop: 8 }}>
-                            <Markdown content={message.content} color="#fff" fontSize={12} />
-                          </View>
+                          <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> {model.label.toUpperCase()}</Text>
+                          <VideoPlayer uri={message.content} />
                         </View>
                       ) : (
                         <Markdown content={message.content || ""} color="#fff" fontSize={14} />

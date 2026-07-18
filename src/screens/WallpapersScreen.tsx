@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,13 +14,52 @@ import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, WALLPAPERS, FREE_THEMES, PREMIUM_THEMES, withFont, fontFamilyForWeight } from "../styles/theme";
+import { styles, WALLPAPERS, FREE_THEMES, PREMIUM_THEMES, withFont, fontFamilyForWeight, SCREEN_W } from "../styles/theme";
 import { useToast } from "../components/Toast";
 import * as player from "../services/musicPlayer";
 
 export function WallpapersScreen({ goBack }: { goBack: () => void }) {
   const { state, dispatch } = useCollider();
   const { toast } = useToast();
+
+  const [position, setPosition] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  const formatTime = (ms: number) => {
+    if (isNaN(ms) || ms <= 0) return "0:00";
+    const totalSecs = Math.floor(ms / 1000);
+    const mins = Math.floor(totalSecs / 60);
+    const secs = totalSecs % 60;
+    return `${mins}:${secs < 10 ? "0" : ""}${secs}`;
+  };
+
+  const handlePlayStatusUpdateFor = useCallback((trackId: string) => (status: any) => {
+    if (status.isLoaded) {
+      setPosition(status.positionMillis || 0);
+      setDuration(status.durationMillis || 0);
+      if (status.didJustFinish) {
+        const activeTheme = PREMIUM_THEMES.find(theme => theme.tracks?.some(t => t.id === trackId));
+        if (activeTheme && activeTheme.tracks) {
+          const enabledTracks = activeTheme.tracks.filter(t => !state.musicPlayer.disabledTrackIds.includes(t.id));
+          if (enabledTracks.length > 0) {
+            const currentIndex = enabledTracks.findIndex(t => t.id === trackId);
+            const nextIndex = (currentIndex + 1) % enabledTracks.length;
+            const nextTrack = enabledTracks[nextIndex];
+            if (nextTrack) {
+              player.playTrack(nextTrack.id, nextTrack.url, state.musicPlayer.muted ? 0 : state.musicPlayer.volume, handlePlayStatusUpdateFor(nextTrack.id));
+              dispatch({ type: "playTrack", trackId: nextTrack.id });
+            }
+          }
+        }
+      }
+    }
+  }, [state.musicPlayer.volume, state.musicPlayer.muted, state.musicPlayer.disabledTrackIds, dispatch]);
+
+  useEffect(() => {
+    if (state.musicPlayer.trackId && state.musicPlayer.isPlaying) {
+      player.setStatusListener(handlePlayStatusUpdateFor(state.musicPlayer.trackId));
+    }
+  }, [state.musicPlayer.trackId, state.musicPlayer.isPlaying, handlePlayStatusUpdateFor]);
 
   const SELECTED_BORDER = "#e2e8f0"; // Silver/chrome — the app's active/selected accent, not a hue
   const LOCK_COLOR = "#6b6478"; // Locked/disabled is a legitimate desaturated case, not a soft-purple one
@@ -210,39 +249,61 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
                         const isThisPlaying = playingTrackId === track.id && isPlaying;
                         const disabled = state.musicPlayer.disabledTrackIds.includes(track.id);
                         return (
-                          <View key={track.id} style={wallStyles.trackRow}>
-                            <Pressable
-                              onPress={() => {
-                                if (disabled) return;
-                                if (isThisPlaying) {
-                                  player.pauseTrack();
-                                  dispatch({ type: "pausePlayer" });
-                                } else {
-                                  player.playTrack(track.id, track.url, state.musicPlayer.muted ? 0 : state.musicPlayer.volume);
-                                  dispatch({ type: "playTrack", trackId: track.id });
-                                }
-                              }}
-                              disabled={disabled}
-                              style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, opacity: disabled ? 0.4 : 1 }}
-                            >
-                              <Ionicons name={isThisPlaying ? "pause-circle" : "play-circle"} size={20} color="#e2e8f0" />
-                              <Text style={wallStyles.trackTitle}>{track.title}</Text>
-                            </Pressable>
-                            <Pressable
-                              onPress={() => {
-                                // Disabling a track that's currently playing
-                                // must actually stop it — otherwise "off"
-                                // only changes an icon while the audio keeps
-                                // going, which isn't what toggling it off means.
-                                if (!disabled && isThisPlaying) {
-                                  player.pauseTrack();
-                                  dispatch({ type: "pausePlayer" });
-                                }
-                                dispatch({ type: "toggleTrackEnabled", trackId: track.id });
-                              }}
-                            >
-                              <Ionicons name={disabled ? "eye-off-outline" : "checkmark-circle"} size={16} color={disabled ? "#6b6478" : "#4be6b1"} />
-                            </Pressable>
+                          <View key={track.id} style={[wallStyles.trackRow, { flexDirection: "column", alignItems: "stretch" }]}>
+                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%" }}>
+                              <Pressable
+                                onPress={() => {
+                                  if (disabled) return;
+                                  if (isThisPlaying) {
+                                    player.pauseTrack();
+                                    dispatch({ type: "pausePlayer" });
+                                  } else {
+                                    player.playTrack(track.id, track.url, state.musicPlayer.muted ? 0 : state.musicPlayer.volume, handlePlayStatusUpdateFor(track.id));
+                                    dispatch({ type: "playTrack", trackId: track.id });
+                                  }
+                                }}
+                                disabled={disabled}
+                                style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1, opacity: disabled ? 0.4 : 1 }}
+                              >
+                                <Ionicons name={isThisPlaying ? "pause-circle" : "play-circle"} size={20} color="#e2e8f0" />
+                                <Text style={wallStyles.trackTitle}>{track.title}</Text>
+                              </Pressable>
+                              <Pressable
+                                onPress={() => {
+                                  // Disabling a track that's currently playing
+                                  // must actually stop it — otherwise "off"
+                                  // only changes an icon while the audio keeps
+                                  // going, which isn't what toggling it off means.
+                                  if (!disabled && isThisPlaying) {
+                                    player.pauseTrack();
+                                    dispatch({ type: "pausePlayer" });
+                                  }
+                                  dispatch({ type: "toggleTrackEnabled", trackId: track.id });
+                                }}
+                              >
+                                <Ionicons name={disabled ? "eye-off-outline" : "checkmark-circle"} size={16} color={disabled ? "#6b6478" : "#4be6b1"} />
+                              </Pressable>
+                            </View>
+
+                            {isThisPlaying && duration > 0 && (
+                              <View style={{ marginTop: 8, width: "100%", paddingHorizontal: 4 }}>
+                                <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 4 }}>
+                                  <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 9 }}>{formatTime(position)}</Text>
+                                  <Text style={{ color: "rgba(255,255,255,0.6)", fontSize: 9 }}>{formatTime(duration)}</Text>
+                                </View>
+                                <Pressable
+                                  onPress={(e) => {
+                                    const width = SCREEN_W - 56;
+                                    const touchX = e.nativeEvent.locationX;
+                                    const pct = Math.max(0, Math.min(1, touchX / width));
+                                    player.seekTo(pct * duration);
+                                  }}
+                                  style={{ height: 4, backgroundColor: "rgba(255,255,255,0.15)", borderRadius: 2, overflow: "hidden", width: "100%" }}
+                                >
+                                  <View style={{ height: "100%", backgroundColor: "#e2e8f0", width: `${(position / duration) * 100}%` }} />
+                                </Pressable>
+                              </View>
+                            )}
                           </View>
                         );
                       })}

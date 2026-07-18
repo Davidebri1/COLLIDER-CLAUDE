@@ -62,7 +62,7 @@ export function MessageActions({
   const selectAllAction = { label: "Select All", icon: "⚄", onPress: async () => { const { copyText } = await import("./services/media"); await copyText(message.content); onClose(); } };
   const shareAction = { label: "Share", icon: "↗", onPress: () => { Share.share({ message: message.content }).catch(() => {}); onClose(); } };
   const saveFilesAction = { label: "Save", icon: "▣", onPress: () => { dispatch({ type: "file", file: { name: `message-${message.id.slice(0,6)}.txt`, kind: "generated", url: `text://${encodeURIComponent(message.content).slice(0,120)}` } }); onClose(); } };
-  const saveNotesAction = { label: "Notes", icon: "▤", onPress: () => { dispatch({ type: "memory", memory: { id: `m_${Math.random().toString(36).slice(2, 9)}`, ts: Date.now(), title: "Saved Note", content: message.content, projectId: "" } }); onClose(); } };
+  const saveNotesAction = { label: "Notes", icon: "▤", onPress: () => { dispatch({ type: "memory", id: `m_${Math.random().toString(36).slice(2, 9)}`, content: message.content, projectId: "" }); onClose(); } };
   const deleteAction = { label: "Delete", icon: "✕", onPress: () => { dispatch({ type: "deleteMessage", category, modelId, messageId: message.id }); onClose(); } };
 
   if (message.role === "user") {

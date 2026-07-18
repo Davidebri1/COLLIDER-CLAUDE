@@ -202,6 +202,7 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
                       <View style={{ flexDirection: "row", gap: 10, paddingHorizontal: 12, paddingBottom: 10, marginTop: -4 }}>
                         <Pressable onPress={() => {
                           dispatch({ type: "reminder", ...convertItem(m, "memory", "reminder"), linkFrom: { kind: "memory", id: m.id } } as any);
+                          handleDeleteMemory(m.id);
                           toast("Converted to Reminder.");
                           setConvertFor(null);
                         }}>
@@ -209,6 +210,7 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
                         </Pressable>
                         <Pressable onPress={() => {
                           dispatch({ type: "artifact", ...convertItem(m, "memory", "artifact"), linkFrom: { kind: "memory", id: m.id } } as any);
+                          handleDeleteMemory(m.id);
                           toast("Converted to Artifact.");
                           setConvertFor(null);
                         }}>

@@ -510,9 +510,22 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
     if (!publishPrompt.trim() || !publishFile) return;
 
     try {
+      let finalPrompt = publishPrompt.trim();
+      if (publishTags.trim()) {
+        const hashtags = publishTags
+          .split(",")
+          .map((t) => t.trim().toLowerCase())
+          .filter(Boolean)
+          .map((t) => (t.startsWith("#") ? t : `#${t}`))
+          .join(" ");
+        if (hashtags) {
+          finalPrompt = `${finalPrompt} ${hashtags}`;
+        }
+      }
+
       const created = await publishMarketItem({
         kind: publishCategory,
-        prompt: publishPrompt.trim(),
+        prompt: finalPrompt,
         model: publishModel,
         author: "@you",
         url: publishFile.url,
@@ -625,6 +638,35 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
               >
                 <Ionicons name={sortBy === "newest" ? "time-outline" : sortBy === "likes" ? "heart-outline" : "flame-outline"} size={13} color="#fff" />
               </Pressable>
+            </View>
+
+            <View style={{ paddingHorizontal: 12, marginBottom: 8 }}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, paddingRight: 12 }}>
+                {["all", "#cyberpunk", "#3d", "#ambient", "#lofi", "#react", "#rust", "#finance", "#legal"].map((t) => {
+                  const isSelected = (t === "all" && !searchQuery.startsWith("#")) || searchQuery === t;
+                  return (
+                    <Pressable
+                      key={t}
+                      onPress={() => {
+                        setSearchQuery(t === "all" ? "" : t);
+                        if (t !== "all") setSearchOpen(true);
+                      }}
+                      style={{
+                        paddingHorizontal: 10,
+                        paddingVertical: 5,
+                        borderRadius: 8,
+                        backgroundColor: isSelected ? "#ffffff" : "rgba(255,255,255,0.05)",
+                        borderWidth: 1,
+                        borderColor: isSelected ? "#ffffff" : "rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      <Text style={{ fontSize: 9.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: isSelected ? "#000000" : "#858091" }}>
+                        {t.toUpperCase()}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
             </View>
 
             {/* Showcase grid — edge to edge, no outer gutter, hairline gaps

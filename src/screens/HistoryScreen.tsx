@@ -154,9 +154,7 @@ export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => voi
                       onPress={() => {
                         if (selectMode) { toggleSelected(conv.id); return; }
                         if (modelId) {
-                          // Local to this model only — the shared multi-model
-                          // pointer (and every other model's card) is untouched.
-                          dispatch({ type: "loadConversationForModel", modelId, id: conv.id });
+                          dispatch({ type: "loadConversation", category: conv.tab, id: conv.id });
                           openCard(modelId);
                           return;
                         }

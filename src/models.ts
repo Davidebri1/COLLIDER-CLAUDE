@@ -79,25 +79,32 @@ export const MODELS: ModelDef[] = [
   { id: "img/gemini-3-pro-image",     label: "Gemini 3 Pro Image",     short: "G3Img",desc: "Google's flagship image model.",             tier: "elite", category: ["image"],            weight: 6, color: "#7fd8c4" },
   { id: "img/gpt-5-image",            label: "GPT-5 Image",            short: "5Img", desc: "OpenAI's flagship image model.",             tier: "elite", category: ["image"],            weight: 8, color: "#d9d3c7" },
 
-  // ── Video · Pro (3) ──────────────────────────────────────────────────────
-  { id: "vid/runway-gen2",          label: "Runway Gen-2",       short: "Runw", desc: "Sleek scene planning.",                          tier: "pro",  category: ["video"],             weight: 10, color: "#4dcaff" },
-  { id: "vid/pika-2",               label: "Pika 2.0",           short: "Pika", desc: "Fast action storyboards.",                       tier: "pro",  category: ["video"],             weight: 12, color: "#ffd166" },
-  { id: "vid/kling-ai",             label: "Kling AI",           short: "Klin", desc: "High motion synthesis.",                         tier: "pro",  category: ["video"],             weight: 12, color: "#c4b5fd" },
+  // ── Video · Pro (3) — real routes confirmed live against OpenRouter's
+  // /api/v1/videos/models pricing list (fetched directly, 2026-07-18), not
+  // guessed. The old runway-gen2/pika-2/kling-ai/luma-dream entries had zero
+  // real route and were removed rather than left as fake options — but that
+  // left the pro tier with 0 models against SPEC.md's "3 pro" requirement.
+  // These three are real, cheap-tier OpenRouter video models filling that
+  // gap instead of leaving it empty.
+  { id: "vid/veo-3-1-lite",         label: "Veo 3.1 Lite",       short: "VeoL", desc: "Fast, affordable AI video generation.",          tier: "pro",   category: ["video"],            weight: 12, color: "#ff6ba0" },
+  { id: "vid/kling-3-standard",     label: "Kling Video v3.0",   short: "Klin", desc: "AI-generated video, standard quality.",           tier: "pro",   category: ["video"],            weight: 14, color: "#c4b5fd" },
+  { id: "vid/grok-imagine-video",   label: "Grok Imagine Video", short: "Grk",  desc: "xAI's fast AI video generator.",                  tier: "pro",   category: ["video"],            weight: 10, color: "#4dcaff" },
 
-  // ── Video · Elite (3) ────────────────────────────────────────────────────
-  { id: "vid/sora-2",               label: "Sora 2",             short: "Sora", desc: "AI-written storyboard + reference frame.",       tier: "elite", category: ["video"],            weight: 30, color: "#8076ff" },
-  { id: "vid/veo-3",                label: "Veo 3",              short: "Veo",  desc: "AI-written storyboard + reference frame.",       tier: "elite", category: ["video"],            weight: 30, color: "#ff6ba0" },
-  { id: "vid/luma-dream",           label: "Luma Dreamer",       short: "Luma", desc: "Fluid camera panning.",                          tier: "elite", category: ["video"],            weight: 24, color: "#a46cff" },
+  // ── Video · Elite (2) — real video generation via OpenRouter's async
+  // /videos job API (openai/sora-2-pro, google/veo-3.1 — confirmed against
+  // OpenRouter's own model catalog, not guessed).
+  { id: "vid/sora-2",               label: "Sora 2",             short: "Sora", desc: "AI-generated video, up to 20s, synced audio.",    tier: "elite", category: ["video"],            weight: 30, color: "#8076ff" },
+  { id: "vid/veo-3",                label: "Veo 3.1",            short: "Veo",  desc: "AI-generated video, up to 1080p, native audio.",  tier: "elite", category: ["video"],            weight: 30, color: "#ff6ba0" },
+  { id: "vid/kling-3-pro",          label: "Kling Video v3.0 Pro",short:"KlinP",desc: "High-fidelity AI video, with audio.",             tier: "elite", category: ["video"],            weight: 28, color: "#c4b5fd" },
 
-  // ── Music · Pro (3) ──────────────────────────────────────────────────────
-  { id: "mus/suno",                 label: "Suno",               short: "Suno", desc: "AI lyrics + arrangement notes.",                 tier: "pro",  category: ["music"],             weight: 8,  color: "#ff69c8" },
-  { id: "mus/musiclm",              label: "MusicLM",            short: "MusL", desc: "Ambient soundscape designer.",                   tier: "pro",  category: ["music"],             weight: 6,  color: "#8ee878" },
-  { id: "mus/riffusion",            label: "Riffusion",          short: "Riff", desc: "Beat composition loop.",                         tier: "pro",  category: ["music"],             weight: 6,  color: "#5dbdff" },
-
-  // ── Music · Elite (3) ────────────────────────────────────────────────────
-  { id: "mus/udio",                 label: "Udio",               short: "Udio", desc: "AI composition + arrangement notes.",            tier: "elite", category: ["music"],            weight: 10, color: "#ff8a65" },
-  { id: "mus/jukebox",              label: "Jukebox",            short: "Juke", desc: "High-fidelity arrangement.",                     tier: "elite", category: ["music"],            weight: 12, color: "#c4b5fd" },
-  { id: "mus/suno-pro",             label: "Suno Pro",           short: "SuPr", desc: "Vocals orchestration.",                          tier: "elite", category: ["music"],            weight: 12, color: "#cc71ff" },
+  // ── Music · Pro/Elite (2) — real audio via Google's Lyria 3, the only
+  // music-generation model actually reachable through OpenRouter. Relabeled
+  // from "Suno"/"Udio" — there's no real Suno or Udio API access here, and
+  // running Lyria output under those brand names would just be a different
+  // flavor of the same "label doesn't match what it does" bug. musiclm,
+  // riffusion, jukebox, and suno-pro had no route at all — removed.
+  { id: "mus/suno",                 label: "Lyria 3 Clip",       short: "LyC",  desc: "30s AI-generated instrumental/vocal clip.",       tier: "pro",  category: ["music"],             weight: 8,  color: "#ff69c8" },
+  { id: "mus/udio",                 label: "Lyria 3 Pro",        short: "LyP",  desc: "Full AI-generated song, up to ~3 min, vocals.",   tier: "elite", category: ["music"],            weight: 10, color: "#ff8a65" },
 ];
 
 export const TIER_RANK: Record<Tier, number> = { free: 0, pro: 1, elite: 2 };

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { View, Pressable, Text, StyleSheet } from "react-native";
+import React, { useEffect, useState, useRef } from "react";
+import { View, Pressable, Text, StyleSheet, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from "react-native-svg";
 import { useCollider } from "../state";
@@ -34,7 +34,7 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
   const { state } = useCollider();
   const cat = state.activeCategory;
   const conv = state.conversations.find((c) => c.id === state.activeConversationId[cat]);
-  const selectedIds = state.selectedModelIds[cat] || [];
+  const selectedIds = (state.selectedModelIds[cat] || []).filter((id) => modelById(id));
   const replies = selectedIds
     .map((id) => ({
       id,
@@ -49,6 +49,31 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
   const repliesKey = replies.map((r) => `${r.id}:${r.last.content.length}`).join("|");
   const [result, setResult] = useState<{ verdict: string; scores: Record<string, number> } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const shimmerAnim = useRef(new Animated.Value(-1)).current;
+
+  useEffect(() => {
+    if (allIn && !disabled) {
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(1200),
+          Animated.timing(shimmerAnim, {
+            toValue: 2,
+            duration: 1800,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    } else {
+      shimmerAnim.setValue(-1);
+    }
+  }, [allIn, disabled, shimmerAnim]);
+
+  const shimmerTranslateX = shimmerAnim.interpolate({
+    inputRange: [-1, 2],
+    outputRange: [-180, 240],
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -107,23 +132,52 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
         </View>
       </View>
 
-      <Pressable onPress={disabled ? undefined : onPress} disabled={disabled} style={[styles.banner, disabled && { opacity: 0.4 }]}>
+      <Pressable
+        onPress={() => {
+          if (disabled) return;
+          if (!available) {
+            onPress();
+            return;
+          }
+          setExpanded(!expanded);
+        }}
+        disabled={disabled}
+        style={[styles.banner, disabled && { opacity: 0.4 }]}
+      >
         <LinearGradient
-          colors={["#3a0d63", "#1a0733", "#050208"]}
+          colors={["#2b074a", "#100424", "#030107"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
-        <Text style={styles.summary} numberOfLines={2}>
+
+        {/* Glossy Shimmer sweep effect */}
+        {available && !disabled && (
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                transform: [{ translateX: shimmerTranslateX }, { rotate: "25deg" }],
+                width: 60,
+                opacity: 0.14,
+              },
+            ]}
+            pointerEvents="none"
+          >
+            <LinearGradient
+              colors={["transparent", "#ffffff", "transparent"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={{ flex: 1 }}
+            />
+          </Animated.View>
+        )}
+
+        <Text style={styles.summary} numberOfLines={expanded ? undefined : 2}>
           <Text style={styles.summaryLead}>Consensus: </Text>
           {available ? result!.verdict : "Incomplete"}
         </Text>
-        {/* A fraction on its own is an assertion you have to take on faith —
-            "2/3" reads as a guess unless you can see the 3 and check the 2.
-            One dot per replying model, lit in that model's own color when
-            it agreed and left as a hollow ring when it dissented, turns the
-            score into a tally you can audit at a glance instead of a number
-            someone typed in. */}
+        
         {available && (
           <View style={{ flexDirection: "row", gap: 4, marginTop: 5 }}>
             {replies.map((r) => {
@@ -145,14 +199,21 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
             })}
           </View>
         )}
-        {/* Tapping this bar opens the full Consensus drawer (map, dissent,
-            per-model detail) — this is what actually surfaces that there's
-            more behind the two-line preview, instead of the preview
-            silently being the whole feature. */}
-        {available && (
-          <View style={{ marginTop: 4 }}>
-            <ScrollCueArrow />
-          </View>
+        
+        {available && !expanded && (
+          <ScrollCueArrow />
+        )}
+
+        {available && expanded && (
+          <Pressable
+            onPress={(e) => {
+              e.stopPropagation();
+              onPress();
+            }}
+            style={styles.galaxyBtn}
+          >
+            <Text style={styles.galaxyBtnText}>EXPLORE DISSENT GALAXY ➔</Text>
+          </Pressable>
         )}
       </Pressable>
     </View>
@@ -199,5 +260,25 @@ const styles = StyleSheet.create({
   summaryLead: {
     fontWeight: "900",
     letterSpacing: 0.3,
+  },
+  galaxyBtn: {
+    marginTop: 10,
+    backgroundColor: "#ffffff",
+    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#ffffff",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  galaxyBtnText: {
+    color: "#000000",
+    fontSize: 9.5,
+    fontWeight: "900",
+    letterSpacing: 1.5,
   },
 });
