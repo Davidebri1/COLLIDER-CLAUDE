@@ -975,8 +975,12 @@ function Home({
             );
           })()}
         </ScrollView>
-        <Pressable onPress={openRightDrawer} style={{ width: 32, height: 32, borderRadius: 16, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
-          <GlossButton borderRadius={16} />
+        {/* Rounded square, not a circle: the sparkle mark is a 4-pointed
+            star (an angular glyph), and a perfect circle leaves dead,
+            unbalanced space at its points. A squircle backing matches the
+            glyph's own shape instead of fighting it. */}
+        <Pressable onPress={openRightDrawer} style={{ width: 32, height: 32, borderRadius: 10, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+          <GlossButton borderRadius={10} />
           <SmartGenMark size={24} />
         </Pressable>
       </View>
@@ -3169,8 +3173,10 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                   style={{ flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 13, paddingHorizontal: 14, borderRadius: 16, overflow: "hidden" }}
                 >
                   <GlossButton borderRadius={16} />
-                  <View style={{ width: 32, height: 32, borderRadius: 16, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
-                    <GlossButton borderRadius={16} />
+                  {/* Rounded square, not a circle — see the header trigger's
+                      comment: the sparkle's 4 points don't fill a circle. */}
+                  <View style={{ width: 32, height: 32, borderRadius: 10, overflow: "hidden", alignItems: "center", justifyContent: "center" }}>
+                    <GlossButton borderRadius={10} />
                     <SmartGenMark size={18} />
                   </View>
                   <Text style={[styles.bodyText, { flex: 1, fontSize: 13.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }]}>{row.label}</Text>

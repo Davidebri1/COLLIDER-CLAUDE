@@ -118,12 +118,39 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           <Text style={styles.summaryLead}>Consensus: </Text>
           {available ? result!.verdict : "Incomplete"}
         </Text>
+        {/* A fraction on its own is an assertion you have to take on faith —
+            "2/3" reads as a guess unless you can see the 3 and check the 2.
+            One dot per replying model, lit in that model's own color when
+            it agreed and left as a hollow ring when it dissented, turns the
+            score into a tally you can audit at a glance instead of a number
+            someone typed in. */}
+        {available && (
+          <View style={{ flexDirection: "row", gap: 4, marginTop: 5 }}>
+            {replies.map((r) => {
+              const agree = (scores[r.id] ?? 0) >= DISSENT_THRESHOLD;
+              const m = modelById(r.id);
+              return (
+                <View
+                  key={r.id}
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: 3,
+                    backgroundColor: agree ? (m?.color || SILVER) : "transparent",
+                    borderWidth: agree ? 0 : 1,
+                    borderColor: "rgba(255,255,255,0.4)",
+                  }}
+                />
+              );
+            })}
+          </View>
+        )}
         {/* Tapping this bar opens the full Consensus drawer (map, dissent,
             per-model detail) — this is what actually surfaces that there's
             more behind the two-line preview, instead of the preview
             silently being the whole feature. */}
         {available && (
-          <View style={{ marginTop: 2 }}>
+          <View style={{ marginTop: 4 }}>
             <ScrollCueArrow />
           </View>
         )}
