@@ -120,6 +120,20 @@ Artifacts.**
   permission first ("I have X, do you want it?"). If the model can think to
   ask, it can provide it — the user was going to say yes anyway, and can
   ignore it if not.
+- **List views are full tables, not partial ones.** A form's fields
+  naturally become a table's columns — every field the item type defines
+  gets a column, sortable (tap header, toggles direction) and filterable,
+  not a curated subset. Concretely, per type (`state.tsx`'s field
+  definitions):
+  - Reminders: title, due, priority, status/progress, tags, project.
+  - Memories: content, source model, priority, tags, project.
+  - Projects: name, task count/completion, linked items.
+  - Artifacts: title, kind, source model, project, last updated.
+  **Current gap**: only `RemindersScreen.tsx` has any sortable table
+  header, and even it only covers 4 of the type's fields (title/due/
+  priority/status) — tags and project aren't columns. Memories, Projects,
+  and Artifacts have no table/sort/filter treatment at all, just a plain
+  card list.
 
 ## Search
 - Global search (`InlineSearch.tsx`, docked inline below the grid header,
