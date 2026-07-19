@@ -1,78 +1,48 @@
-import React, { useEffect, useRef } from "react";
-import { View, StyleSheet, Animated } from "react-native";
+import React from "react";
+import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 
-// Animated "there's more" cue with horizontal gradient tail dashes fading upwards
+// Static "tap to open the full page" affordance — not a scroll/expand cue.
+// Two things this got wrong before, twice: (1) a bounce/loop animation —
+// a janky, low-framerate-looking motion cue reads as urgency this feature
+// doesn't have, so it stays stationary; (2) a downward chevron, which is
+// the correct glyph for "scroll down, more of this same content is below"
+// but the wrong one here — tapping this navigates to an entirely separate
+// full-screen destination, it doesn't reveal more of the preview in place.
+// A forward chevron matches "go to another screen," not "expand downward."
 export function ScrollCueArrow() {
-  const animValue = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(animValue, {
-          toValue: 1,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-        Animated.timing(animValue, {
-          toValue: 0,
-          duration: 1500,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [animValue]);
-
-  const translateY = animValue.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 3],
-  });
-
-  const opacity1 = animValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.1, 0.25, 0.1],
-  });
-
-  const opacity2 = animValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.2, 0.45, 0.2],
-  });
-
-  const opacity3 = animValue.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.35, 0.7, 0.3],
-  });
-
   return (
     <View style={styles.wrap} pointerEvents="none">
-      <Animated.View style={[styles.dash, styles.dash1, { opacity: opacity1 }]} />
-      <Animated.View style={[styles.dash, styles.dash2, { opacity: opacity2 }]} />
-      <Animated.View style={[styles.dash, styles.dash3, { opacity: opacity3 }]} />
-      <Animated.View style={{ transform: [{ translateY }] }}>
-        <Ionicons name="chevron-down" size={11} color="rgba(255, 255, 255, 0.9)" />
-      </Animated.View>
+      <View style={[styles.dash, styles.dash1]} />
+      <View style={[styles.dash, styles.dash2]} />
+      <View style={[styles.dash, styles.dash3]} />
+      <Ionicons name="chevron-forward" size={11} color="rgba(255, 255, 255, 0.75)" />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   wrap: {
+    flexDirection: "row",
     alignItems: "center",
     gap: 1.5,
     marginTop: 2,
   },
+  // Trail runs left-to-right, growing into the forward chevron — same
+  // "leading into the arrow" shape as before, just rotated 90° to match
+  // the glyph now pointing right instead of down.
   dash: {
-    height: 1,
+    width: 1,
     borderRadius: 0.5,
-    backgroundColor: "#ffffff",
+    backgroundColor: "rgba(255,255,255,0.6)",
   },
   dash1: {
-    width: 6,
+    height: 4,
   },
   dash2: {
-    width: 10,
+    height: 7,
   },
   dash3: {
-    width: 14,
+    height: 10,
   },
 });

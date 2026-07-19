@@ -120,6 +120,20 @@ Artifacts.**
   permission first ("I have X, do you want it?"). If the model can think to
   ask, it can provide it — the user was going to say yes anyway, and can
   ignore it if not.
+- **List views are full tables, not partial ones.** A form's fields
+  naturally become a table's columns — every field the item type defines
+  gets a column, sortable (tap header, toggles direction) and filterable,
+  not a curated subset. Concretely, per type (`state.tsx`'s field
+  definitions):
+  - Reminders: title, due, priority, status/progress, tags, project.
+  - Memories: content, source model, priority, tags, project.
+  - Projects: name, task count/completion, linked items.
+  - Artifacts: title, kind, source model, project, last updated.
+  **Current gap**: only `RemindersScreen.tsx` has any sortable table
+  header, and even it only covers 4 of the type's fields (title/due/
+  priority/status) — tags and project aren't columns. Memories, Projects,
+  and Artifacts have no table/sort/filter treatment at all, just a plain
+  card list.
 
 ## Search
 - Global search (`InlineSearch.tsx`, docked inline below the grid header,
@@ -151,6 +165,37 @@ top to bottom:
 - Built from plain View/LinearGradient, not `react-native-svg` — SVG
   primitives (Circle/Line/SvgText/RadialGradient) render blank on web in
   this project's environment.
+
+## Collide preview bar (`CollideBanner.tsx`)
+Sits above the composer, always rendered — the synthesis is surfaced before
+the user has to ask for it, not locked behind opening the full Consensus
+drawer. Tapping it opens that drawer.
+
+- Same two-state rule as the full Consensus drawer: **complete** (every
+  selected model has replied — a real reply or an error both count, nothing
+  left pending) or **incomplete**. No partial/in-progress wording ("waiting
+  on 2 of 5") — the reason the scope isn't complete doesn't change what's
+  true, so it collapses to one word.
+- The `"Consensus: "` prefix and the score badge are the bar's permanent
+  identity — they never disappear, in either state.
+- Score badge: a trapezoid tab sitting above the bar (touching, not
+  overlapping into it), showing the fraction (e.g. `2/3`), colored
+  red→green by alignment strength. Renders `–/–` when incomplete.
+- When complete, one small dot renders per replying model below the verdict
+  line — filled in that model's own color if it agreed (≥0.5 alignment
+  score) with the consensus, left as a hollow ring if it dissented. The
+  fraction is checkable against a literal per-model tally, not asserted on
+  its own — a bare "2/3" with no way to see which 2 reads as a guess.
+- Static forward chevron (`›`, not `⌄`) below the dot row — no bounce/loop
+  animation. A janky, low-framerate-looking motion cue reads as urgency the
+  feature doesn't have, so it's stationary; a downward chevron would read
+  as "scroll for more of this," so it points forward instead. Visible only
+  when complete. This is a "tap to open the full page" affordance, not a
+  scroll/expand cue — the preview never grows, reveals hidden lines, or
+  gains more text in place. It is already the complete preview. The
+  chevron points to a separate destination (the full-screen Consensus
+  drawer), not to more of itself; a longer preview would not be a more
+  useful one.
 
 ## Collide button (the trigger itself)
 - Built from View/Animated/LinearGradient, not Skia — `@shopify/react-native-
