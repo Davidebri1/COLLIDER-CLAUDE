@@ -10,6 +10,20 @@ Status values: `done`, `in-progress`, `blocked`, `not-started`, `deferred
 
 ## Submission blockers (must resolve before shipping)
 
+- **[blocked] Live API keys hardcoded as plaintext in client source**
+  ([chat.ts:28-35](src/services/chat.ts#L28)): OpenRouter key, 2 Groq keys,
+  Exa key, Tavily key. These ship inside the built app binary and are
+  trivially extractable from any Expo/RN build (unzip + grep), giving anyone
+  who downloads the app unlimited use of these keys on the developer's
+  account/billing — including the paid video/image/music generation routes.
+  This is a financial-exposure bug, not a feature gap, and is more urgent
+  than anything else in this list. Fix requires moving all model calls
+  behind a server-side proxy (the app calls your own backend, your backend
+  holds the keys) — this is a real architecture change, not a config
+  tweak, so it needs to be scoped and scheduled explicitly, not silently
+  attempted inline. Flagging here rather than starting it unprompted since
+  it touches every route in chat.ts.
+
 - **[done] Video category now matches SPEC.md's "3 pro, 3 elite."** Added 3
   real pro-tier routes (Veo 3.1 Lite, Kling Video v3.0 Standard, Grok Imagine
   Video) and 1 real elite route (Kling Video v3.0 Pro) to fill the gap left
