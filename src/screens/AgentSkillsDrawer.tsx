@@ -412,14 +412,17 @@ export function AgentSkillsDrawer({
               <Pressable style={localStyles.lockedOverlay} onPress={onClose}>
                 <BlurView intensity={24} tint="dark" style={StyleSheet.absoluteFill} />
                 <View style={localStyles.lockedContent}>
-                  <Ionicons name="lock-closed" size={32} color="#ffb74d" style={{ marginBottom: 12 }} />
-                  <Text style={[localStyles.lockHeader, { color: "#ffb74d" }]}>ELITE CONSOLE REQUIRED</Text>
+                  {/* Was orange/gold — banned accent per SPEC.md. True yellow
+                      matches the Elite tier color everywhere else (models.ts
+                      TIER_INFO). */}
+                  <Ionicons name="lock-closed" size={32} color="#f5e000" style={{ marginBottom: 12 }} />
+                  <Text style={[localStyles.lockHeader, { color: "#f5e000" }]}>ELITE CONSOLE REQUIRED</Text>
                   <Text style={localStyles.lockDesc}>
                     Injecting advanced compiled developer skills (dbt, ML, GCP diagnostics) requires an Elite subscription.
                   </Text>
                   <Pressable
                     onPress={() => { onClose(); openUpgrade(); }}
-                    style={[localStyles.lockUpgradeBtn, { backgroundColor: "#ffb74d" }]}
+                    style={[localStyles.lockUpgradeBtn, { backgroundColor: "#f5e000" }]}
                   >
                     <Text style={localStyles.lockUpgradeText}>UNLOCK ELITE ENG</Text>
                   </Pressable>

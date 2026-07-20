@@ -112,11 +112,11 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
         <View style={{ width: 1, height: 18, backgroundColor: "rgba(255,255,255,0.14)" }} />
         <Pressable onPress={() => setTypePickerOpen(true)} hitSlop={6} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
           <Ionicons name="list-outline" size={14} color={typeFilter !== "all" ? "#ffffff" : "rgba(255,255,255,0.5)"} />
-          {typeFilter !== "all" && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: "#ffb74d" }} />}
+          {typeFilter !== "all" && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: "#e2e8f0" }} />}
         </Pressable>
         <Pressable onPress={() => setModelPickerOpen(true)} hitSlop={6} style={{ flexDirection: "row", alignItems: "center", gap: 2 }}>
           <Ionicons name="filter-outline" size={14} color={modelFilter !== "all" ? "#ffffff" : "rgba(255,255,255,0.5)"} />
-          {modelFilter !== "all" && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: "#ffb74d" }} />}
+          {modelFilter !== "all" && <View style={{ width: 5, height: 5, borderRadius: 3, backgroundColor: "#e2e8f0" }} />}
         </Pressable>
       </View>
 

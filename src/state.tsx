@@ -362,7 +362,7 @@ function initialState(): AppState {
   const chatMode = Object.fromEntries(CATEGORIES.map(({ id }) => [id, "default" as ChatMode])) as Record<Category, ChatMode>;
   const webSearch = Object.fromEntries(CATEGORIES.map(({ id }) => [id, false])) as Record<Category, boolean>;
   return {
-    tier: "elite", credits: TIER_INFO.elite.pool,
+    tier: "free", credits: TIER_INFO.free.pool,
     dailyMessagesSent: 0,
     lastMessageResetDate: new Date().toISOString().split("T")[0],
     monthlyMessagesSent: 0,
@@ -579,6 +579,7 @@ function reducer(state: AppState, action: Action): AppState {
         activeConversationId: { ...state.activeConversationId, [action.category]: newConvId() },
         cardPrompts: { ...state.cardPrompts, [action.category]: {} },
         conversations: state.conversations.map((c) => c.id === oldId ? { ...c, archived: true } : c),
+        chatMode: { ...state.chatMode, [action.category]: state.globalDefaultChatMode },
       };
     }
     case "loadConversation": return { ...state, activeCategory: action.category, activeConversationId: { ...state.activeConversationId, [action.category]: action.id } };

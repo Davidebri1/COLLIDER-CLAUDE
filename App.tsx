@@ -1932,9 +1932,13 @@ export function ProjectEditModal({
                       <Text style={{ color: "#fff", fontSize: 14 }}>{t.done ? "✓" : "○"}</Text>
                     </Pressable>
                     <Text style={[{ flex: 1, color: "#fff", fontSize: 13 }, t.done && styles.done]}>{t.title}</Text>
+                    {/* med was amber/gold (#ffb74d) — SPEC.md bans gold as an
+                        accent outright. True yellow is the spec-approved
+                        substitute for a third priority tier (high=crimson,
+                        low=blue, med=true yellow — not orange/gold). */}
                     {t.priority && t.priority !== "none" && (
-                      <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: t.priority === "high" ? "rgba(239,68,68,0.2)" : t.priority === "med" ? "rgba(255,183,77,0.2)" : "rgba(93,189,255,0.2)", marginRight: 6 }}>
-                        <Text style={{ fontSize: 7, color: t.priority === "high" ? "#ef4444" : t.priority === "med" ? "#ffb74d" : "#5dbdff", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{t.priority.toUpperCase()}</Text>
+                      <View style={{ paddingHorizontal: 4, paddingVertical: 1, borderRadius: 3, backgroundColor: t.priority === "high" ? "rgba(239,68,68,0.2)" : t.priority === "med" ? "rgba(245,224,0,0.2)" : "rgba(93,189,255,0.2)", marginRight: 6 }}>
+                        <Text style={{ fontSize: 7, color: t.priority === "high" ? "#ef4444" : t.priority === "med" ? "#f5e000" : "#5dbdff", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{t.priority.toUpperCase()}</Text>
                       </View>
                     )}
                     <Pressable onPress={() => dispatch({ type: "removeTask", projectId: item.id, taskId: t.id })} style={{ paddingHorizontal: 6 }}>
@@ -2000,7 +2004,7 @@ const ARTIFACT_KINDS: Artifact["kind"][] = ["timeline", "statement", "document",
 function kindColor(kind: Artifact["kind"]): string {
   switch (kind) {
     case "timeline": return "#5dbdff";
-    case "statement": return "#ffb74d";
+    case "statement": return "#ffffff"; // was gold — banned accent per SPEC.md
     case "document": return "#ffffff";
     default: return "#6b6478";
   }
@@ -2919,8 +2923,8 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
             </Text>
           </Pressable>
           <Pressable onPress={() => handleNav("upgrade")} style={localDrawerStyles.upgradeBtn}>
-            <Ionicons name="rocket-outline" size={12} color="#ffb74d" />
-            <Text style={{ color: "#ffb74d", fontSize: 10.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Upgrade</Text>
+            <Ionicons name="rocket-outline" size={12} color="#ffffff" />
+            <Text style={{ color: "#ffffff", fontSize: 10.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Upgrade</Text>
           </Pressable>
           <Pressable onPress={() => handleNav("settings")} style={localDrawerStyles.utilIcon}>
             <Ionicons name="settings-outline" size={16} color="rgba(255,255,255,0.5)" />
@@ -2991,15 +2995,15 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 8, gap: 10 }}>
             <Pressable onPress={() => handleSort("title")} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Text style={localDrawerStyles.colHeader}>TITLE</Text>
-              {sortBy === "title" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#ffb74d" />}
+              {sortBy === "title" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#e2e8f0" />}
             </Pressable>
             <Pressable onPress={() => handleSort("created")} style={{ width: 46, flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Text style={localDrawerStyles.colHeader}>MADE</Text>
-              {sortBy === "created" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#ffb74d" />}
+              {sortBy === "created" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#e2e8f0" />}
             </Pressable>
             <Pressable onPress={() => handleSort("last")} style={{ width: 46, flexDirection: "row", alignItems: "center", gap: 2 }}>
               <Text style={localDrawerStyles.colHeader}>LAST</Text>
-              {sortBy === "last" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#ffb74d" />}
+              {sortBy === "last" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#e2e8f0" />}
             </Pressable>
             <View style={{ width: 1, height: 14, backgroundColor: "rgba(255,255,255,0.1)" }} />
             <Picker value={modelFilter} onChange={setModelFilter} options={modelOptions} textStyle={{ fontSize: 9, color: "#6b6478" }} />

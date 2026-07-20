@@ -251,7 +251,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
 
   const getPriorityColor = (p?: string) => {
     if (p === "high") return "#ef4444";
-    if (p === "med") return "#ffb74d";
+    if (p === "med") return "#f5e000"; // was orange/gold — banned accent per SPEC.md; true yellow instead
     if (p === "low") return "#5dbdff";
     return "#6b6478";
   };
@@ -297,7 +297,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                 >
                   <Text style={[
                     localStyles.dayCellText,
-                    isToday && { color: "#ffb74d" },
+                    isToday && { color: "#e2e8f0" }, // was gold — banned accent per SPEC.md; fixed chrome accent instead
                     isSelected && { color: "#000", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }
                   ]}>
                     {d.getDate()}
@@ -805,7 +805,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   dayCellToday: {
     borderWidth: 1.5,
-    borderColor: "#ffb74d",
+    borderColor: "#e2e8f0", // was gold — banned accent per SPEC.md; fixed chrome accent instead
   },
   dayCellSelected: {
     backgroundColor: "#ffffff",

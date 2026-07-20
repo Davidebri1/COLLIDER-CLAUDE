@@ -361,9 +361,10 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
       const nextOffset = reset ? 0 : marketOffset;
       const sliced = sorted.slice(nextOffset, nextOffset + MARKET_PAGE_SIZE);
 
-      if (reset && reset === true) {
-        toast("Showing offline sample data");
-      }
+      // Fires on every failed load, not just the initial/reset one — a
+      // pagination failure mid-scroll used to fail this same way with zero
+      // visible signal (usingFallback was set but never rendered anywhere).
+      toast(reset ? "Showing offline sample data" : "Live feed unavailable — showing cached results");
 
       // Same infinite top-up once the local sample set itself runs dry.
       let page = sliced;
@@ -673,6 +674,14 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 between tiles only. This is what made it read "cartoony"
                 before: a 12px gutter on every side plus 12px between tiles
                 made images feel like stickers instead of a photo grid. */}
+            {usingFallback && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 14, paddingVertical: 10 }}>
+                <Ionicons name="cloud-offline-outline" size={14} color="#ef4444" />
+                <Text style={{ color: "#ef4444", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>
+                  Live feed unavailable — showing cached results
+                </Text>
+              </View>
+            )}
             <ScrollView
               onScroll={handleScroll}
               scrollEventThrottle={16}

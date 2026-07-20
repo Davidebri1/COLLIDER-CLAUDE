@@ -87,15 +87,15 @@ export const MODELS: ModelDef[] = [
   // These three are real, cheap-tier OpenRouter video models filling that
   // gap instead of leaving it empty.
   { id: "vid/veo-3-1-lite",         label: "Veo 3.1 Lite",       short: "VeoL", desc: "Fast, affordable AI video generation.",          tier: "pro",   category: ["video"],            weight: 12, color: "#ff6ba0" },
-  { id: "vid/kling-3-standard",     label: "Kling Video v3.0",   short: "Klin", desc: "AI-generated video, standard quality.",           tier: "pro",   category: ["video"],            weight: 14, color: "#c4b5fd" },
+  { id: "vid/kling-3-standard",     label: "Kling Video v3.0",   short: "Klin", desc: "AI-generated video, standard quality.",           tier: "pro",   category: ["video"],            weight: 14, color: "#84cc16" },
   { id: "vid/grok-imagine-video",   label: "Grok Imagine Video", short: "Grk",  desc: "xAI's fast AI video generator.",                  tier: "pro",   category: ["video"],            weight: 10, color: "#4dcaff" },
 
   // ── Video · Elite (2) — real video generation via OpenRouter's async
   // /videos job API (openai/sora-2-pro, google/veo-3.1 — confirmed against
   // OpenRouter's own model catalog, not guessed).
-  { id: "vid/sora-2",               label: "Sora 2",             short: "Sora", desc: "AI-generated video, up to 20s, synced audio.",    tier: "elite", category: ["video"],            weight: 30, color: "#8076ff" },
+  { id: "vid/sora-2",               label: "Sora 2",             short: "Sora", desc: "AI-generated video, up to 20s, synced audio.",    tier: "elite", category: ["video"],            weight: 30, color: "#3b82f6" },
   { id: "vid/veo-3",                label: "Veo 3.1",            short: "Veo",  desc: "AI-generated video, up to 1080p, native audio.",  tier: "elite", category: ["video"],            weight: 30, color: "#ff6ba0" },
-  { id: "vid/kling-3-pro",          label: "Kling Video v3.0 Pro",short:"KlinP",desc: "High-fidelity AI video, with audio.",             tier: "elite", category: ["video"],            weight: 28, color: "#c4b5fd" },
+  { id: "vid/kling-3-pro",          label: "Kling Video v3.0 Pro",short:"KlinP",desc: "High-fidelity AI video, with audio.",             tier: "elite", category: ["video"],            weight: 28, color: "#84cc16" },
 
   // ── Music · Pro/Elite (2) — real audio via Google's Lyria 3, the only
   // music-generation model actually reachable through OpenRouter. Relabeled
@@ -113,13 +113,19 @@ export const TIER_INFO: Record<Tier, { label: string; pool: number; price: strin
   // coding — see SPEC.md tiers section), so a nonzero pool here was showing
   // users a "300 credits" number they could never actually spend on anything.
   // Colors match the spec-approved palette: silver/chrome (the app's fixed
-  // accent), crimson (an approved bold exception), and orange (the app's
-  // established second accent, already used for Deep mode/Upgrade CTAs).
+  // accent), crimson (an approved bold exception), and true yellow (the
+  // other approved bold exception — NOT orange/gold, which SPEC.md bans
+  // outright regardless of shade). Elite was previously orange/gold
+  // (#ffb74d) — that was a mistake carried over from an earlier session,
+  // not actually spec-compliant; fixed here along with its other call
+  // sites (PromptComposer Deep mode, the drawer Upgrade button, sort
+  // chevrons, priority "med", artifact "statement" kind, agreement-score
+  // mid-tier).
   // Previously free was green (#4be6b1) and pro was literal purple
   // (#a46cff) — both explicitly banned by the palette rule.
   free:  { label: "Free",  pool: 0,    price: "$0",       color: "#e2e8f0" },
   pro:   { label: "Pro",   pool: 3000, price: "$19.99/mo", color: "#dc2626" },
-  elite: { label: "Elite", pool: 9000, price: "$49.99/mo", color: "#ffb74d" },
+  elite: { label: "Elite", pool: 9000, price: "$49.99/mo", color: "#f5e000" },
 };
 
 // SPEC.md: "Free: ... No access to media gen (image/video/audio) or coding

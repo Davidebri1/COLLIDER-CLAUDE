@@ -115,7 +115,7 @@ export function PromptComposer({
   };
 
   const canSend = (value.trim().length > 0 || attachments.length > 0) && !sending;
-  const modeColor = mode === "deep" ? "#ffb74d" : mode === "research" ? "#5dbdff" : "#6b6478";
+  const modeColor = mode === "deep" ? "#f5e000" : mode === "research" ? "#5dbdff" : "#6b6478"; // deep was orange/gold — banned accent per SPEC.md; true yellow instead
 
   return (
     <View style={styles.composer}>
@@ -190,15 +190,21 @@ export function PromptComposer({
           <Ionicons name={incognito ? "eye-off" : "eye-off-outline"} size={14} color={incognito ? "#5dbdff" : "#6b6478"} />
         </Pressable>
 
-        {/* Web Search Globe Toggle — was #10b981 green, a decorative color
-            outside the black/white/crimson/orange palette; orange matches
-            the app's established second accent instead. */}
-        <Pressable
-          onPress={() => dispatch({ type: "webSearch", category: cat, enabled: !webSearch })}
-          style={[styles.toolBtn, webSearch && { backgroundColor: "rgba(255,183,77,0.15)", borderWidth: 1, borderColor: "rgba(255,183,77,0.3)" }]}
-        >
-          <Ionicons name={webSearch ? "globe" : "globe-outline"} size={14} color={webSearch ? "#ffb74d" : "#6b6478"} />
-        </Pressable>
+        {/* Web Search Globe Toggle — was orange/gold, which SPEC.md bans
+            outright as an accent (not actually on the approved list —
+            "orange as second accent" was a mistaken assumption from an
+            earlier session). True yellow instead, matching Deep mode.
+            General/Coding only — chat.ts's media-generation routes (image/
+            video/music) return before ever checking webSearch, so showing
+            this on those tabs was a silent no-op. */}
+        {(cat === "general" || cat === "coding") && (
+          <Pressable
+            onPress={() => dispatch({ type: "webSearch", category: cat, enabled: !webSearch })}
+            style={[styles.toolBtn, webSearch && { backgroundColor: "rgba(245,224,0,0.15)", borderWidth: 1, borderColor: "rgba(245,224,0,0.3)" }]}
+          >
+            <Ionicons name={webSearch ? "globe" : "globe-outline"} size={14} color={webSearch ? "#f5e000" : "#6b6478"} />
+          </Pressable>
+        )}
 
         {/* Media Generation Options Button */}
         {(cat === "image" || cat === "video" || cat === "music") && (

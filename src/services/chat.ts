@@ -25,14 +25,18 @@ export function friendlyErrorMessage(error: unknown): string {
   return "Something went wrong generating a response. Try again.";
 }
 
-const GROQ_KEYS = [
-  "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",
-  "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",
-];
-const OPENROUTER_KEY =
-  "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";
-const EXA_KEY = "324b68a6-2633-4b9e-b3b4-f5cd960d595b";
-const TAVILY_KEY = "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";
+// Expo/Metro only inlines env vars into the client bundle when prefixed
+// EXPO_PUBLIC_ — a bare process.env.FOO here would silently resolve to
+// undefined at runtime with no build error, since there's no babel/dotenv
+// plugin in this project doing the inlining for unprefixed names.
+// NOTE: EXPO_PUBLIC_ vars are still bundled into the shipped JS and are
+// extractable by anyone who unpacks the app — this keeps keys out of git
+// source, it does not make them a real secret. A server-side proxy (see
+// TASKS.md B1) is the only fix for that; out of scope for this pass.
+const GROQ_KEYS = (process.env.EXPO_PUBLIC_GROQ_API_KEYS || "").split(",").filter(Boolean);
+const OPENROUTER_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || "";
+const EXA_KEY = process.env.EXPO_PUBLIC_EXA_API_KEY || "";
+const TAVILY_KEY = process.env.EXPO_PUBLIC_TAVILY_API_KEY || "";
 
 // ── Exa search (primary) ─────────────────────────────────────────────────────
 // Exa free tier: 1,000 queries/month, no credits system.
