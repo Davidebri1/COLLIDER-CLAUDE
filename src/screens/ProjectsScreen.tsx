@@ -59,7 +59,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
 
   const getPriorityColor = (p?: string) => {
     if (p === "high") return "#ef4444";
-    if (p === "med") return "#ffb74d";
+    if (p === "med") return "#f5e000"; // was orange/gold — banned accent per SPEC.md; true yellow instead
     if (p === "low") return "#5dbdff";
     return "#6b6478";
   };

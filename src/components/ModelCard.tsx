@@ -202,8 +202,12 @@ export function ModelCard({
           <View style={[StyleSheet.absoluteFill, styles.fogContainer, { overflow: "hidden" }]}>
             <BlurView intensity={45} tint="dark" style={StyleSheet.absoluteFill} />
             <View style={[styles.lockedContainer, { width: "100%", height: "100%", justifyContent: "center", alignItems: "center", backgroundColor: "rgba(22, 14, 35, 0.4)" }]}>
-              <Ionicons name="lock-closed" size={16} color="#ffd166" style={{ marginBottom: 4 }} />
-              <Text style={{ color: "#ffd166", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 2, borderWidth: 1, borderColor: "#ffd166", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginBottom: 4 }}>LOCKED</Text>
+              {/* Was gold (#ffd166) — banned accent per SPEC.md. Muted gray is
+                  also the spec-correct call here regardless: "a muted/
+                  desaturated look is reserved for genuinely disabled/locked
+                  states" — this is exactly that, not decoration. */}
+              <Ionicons name="lock-closed" size={16} color="rgba(255,255,255,0.55)" style={{ marginBottom: 4 }} />
+              <Text style={{ color: "rgba(255,255,255,0.55)", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.55)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, marginBottom: 4 }}>LOCKED</Text>
               <Text style={[styles.lockText, { fontSize: 9.5 }]}>Locked ({model.tier.toUpperCase()})</Text>
             </View>
           </View>

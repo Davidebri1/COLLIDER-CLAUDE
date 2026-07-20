@@ -22,7 +22,7 @@ const KIND_OPTIONS: Artifact["kind"][] = ["timeline", "statement", "document", "
 
 function kindColor(kind: Artifact["kind"]) {
   if (kind === "timeline") return "#5dbdff";
-  if (kind === "statement") return "#ffb74d";
+  if (kind === "statement") return "#ffffff"; // was gold — banned accent per SPEC.md
   if (kind === "document") return "#e2e8f0";
   return "#6b6478";
 }

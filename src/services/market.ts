@@ -100,8 +100,14 @@ export async function fetchMarketItems(opts: FetchMarketItemsOpts): Promise<{ it
     query = query.eq("author", authorOnly);
   }
   if (search && search.trim()) {
-    const term = search.trim();
-    query = query.or(`prompt.ilike.%${term}%,author.ilike.%${term}%`);
+    // PostgREST's filter-tree grammar treats comma/parens/period as
+    // structurally significant — an unescaped search term containing any of
+    // those (e.g. "cool, right") breaks the .or() expression with a 400
+    // ("failed to parse logic tree"). Double-quoting the value per
+    // PostgREST's own escaping rule (with embedded quotes backslash-escaped)
+    // makes the whole term literal.
+    const term = search.trim().replace(/"/g, '\\"');
+    query = query.or(`prompt.ilike."%${term}%",author.ilike."%${term}%"`);
   }
 
   if (sortBy === "newest") {

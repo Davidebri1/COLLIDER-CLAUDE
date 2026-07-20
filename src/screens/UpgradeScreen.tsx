@@ -52,7 +52,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
     // #d39e00 (gold) was here for elite — explicitly banned by the palette
     // rule, no tier-specific exception carved out. Matches TIER_INFO's
     // established orange accent instead.
-    if (tier === "elite") return ["#ffb74d", "#e2e8f0"];
+    if (tier === "elite") return ["#f5e000", "#e2e8f0"]; // was orange/gold — banned accent per SPEC.md
     if (tier === "pro") return ["#dc2626", "#e2e8f0"];
     return ["#3b3846", "#8d8398"]; // free
   };

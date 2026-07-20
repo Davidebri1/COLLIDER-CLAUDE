@@ -94,7 +94,7 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
   const totalCount = replies.length;
   const ratio = totalCount ? agreeCount / totalCount : 0;
   const hasScore = !!result;
-  const scoreColor = !hasScore ? SILVER : ratio >= 0.66 ? "#10b981" : ratio >= 0.4 ? "#ffb74d" : "#ef4444";
+  const scoreColor = !hasScore ? SILVER : ratio >= 0.66 ? "#10b981" : ratio >= 0.4 ? "#f5e000" : "#ef4444"; // mid-tier was orange/gold — banned accent per SPEC.md; true yellow instead
   const available = state.autoConsensusSummary && hasScore;
 
   const gradId = "collideBadgeGrad";

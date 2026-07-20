@@ -191,7 +191,7 @@ export function ConsensusModal({
   // Removed panResponder and pulse animation
 
   const agreementPct = Math.round((ratioN / ratioM) * 100);
-  const scoreColor = agreementPct >= 66 ? "#10b981" : agreementPct >= 40 ? "#ffb74d" : "#ef4444"; 
+  const scoreColor = agreementPct >= 66 ? "#10b981" : agreementPct >= 40 ? "#f5e000" : "#ef4444"; // mid-tier was orange/gold — banned accent per SPEC.md; true yellow instead
 
   // Galaxy map: vertical position = alignment with consensus (higher = nearer
   // top), horizontal position = force-directed layout from pairwise affinity.
@@ -354,8 +354,21 @@ export function ConsensusModal({
                   {/* Center node — binary agree/disagree is what this whole
                       feature measures, so blue/red duality lives here, not
                       on the Collide button itself. */}
-                  <View style={{ position: "absolute", left: centerX - 10, top: anchorY - 10, width: 20, height: 20, borderRadius: 10, overflow: "hidden" }}>
-                    <LinearGradient colors={["#93c5fd", "#2563eb", "#0f172a"]} start={{ x: 0.3, y: 0.3 }} end={{ x: 1, y: 1 }} style={{ width: "100%", height: "100%" }} />
+                  {/* Was a bare gradient fill with no edge definition — every
+                      other glossy sphere/button in the app gets a border +
+                      shadow to read as a dimensional object, not a flat
+                      circle; this was missed. Shadow lives on this outer
+                      wrapper (not the inner clipped View) for the same
+                      reason noted in ModelCard.tsx: overflow:hidden (needed
+                      to clip the gradient to a circle) would clip a shadow
+                      applied on the same node to nothing. */}
+                  <View style={{
+                    position: "absolute", left: centerX - 10, top: anchorY - 10, width: 20, height: 20, borderRadius: 10,
+                    shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4,
+                  }}>
+                    <View style={{ width: 20, height: 20, borderRadius: 10, overflow: "hidden", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)" }}>
+                      <LinearGradient colors={["#93c5fd", "#2563eb", "#0f172a"]} start={{ x: 0.3, y: 0.3 }} end={{ x: 1, y: 1 }} style={{ width: "100%", height: "100%" }} />
+                    </View>
                   </View>
 
                   {/* Dissenter stars — model-colored glossy sphere + the
