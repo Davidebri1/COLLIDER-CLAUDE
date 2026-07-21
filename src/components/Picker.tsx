@@ -47,7 +47,7 @@ export function Picker({
           style={[{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 8, paddingVertical: 4 }, style]}
         >
           <Text style={[{ color: "#fff", fontSize: 12, fontWeight: "700" }, textStyle]} numberOfLines={1}>{current?.label || value}</Text>
-          <Ionicons name="chevron-down" size={11} color="#6b6478" />
+          <Ionicons name="chevron-down" size={11} color="rgba(238,241,246,0.45)" />
         </Pressable>
       )}
       <Modal transparent visible={open} animationType="fade" onRequestClose={close}>

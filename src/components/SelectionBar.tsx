@@ -75,14 +75,14 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 14,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
   iconBtn: {
     width: 26, height: 26, borderRadius: 13,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   count: { color: "#fff", fontSize: 12, fontWeight: "700", fontFamily: fontFamilyForWeight(700), flex: 1 },
   textBtn: { paddingHorizontal: 6 },
@@ -96,7 +96,7 @@ const localStyles = StyleSheet.create(withFont({
   toggle: {
     flexDirection: "row", alignItems: "center", gap: 5,
     paddingHorizontal: 12, paddingVertical: 7, borderRadius: 10,
-    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
   },
   toggleActive: {
     backgroundColor: "rgba(255,255,255,0.16)", borderColor: "rgba(255,255,255,0.45)",

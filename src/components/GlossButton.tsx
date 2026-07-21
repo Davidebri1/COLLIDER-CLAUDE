@@ -18,7 +18,7 @@ export function GlossButton({ borderRadius = 14, active = false }: { borderRadiu
         {
           borderRadius,
           overflow: "hidden",
-          backgroundColor: active ? "#141416" : "#0a0a0c",
+          backgroundColor: active ? "#141416" : "rgba(255,255,255,0.04)",
           borderWidth: 1,
           borderTopColor: "rgba(255,255,255,0.22)",
           borderLeftColor: "rgba(255,255,255,0.14)",

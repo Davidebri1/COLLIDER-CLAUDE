@@ -76,7 +76,7 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
 
   return (
     <Page title="Context Memory" goBack={goBack}>
-      <View style={{ flex: 1, backgroundColor: "#06040a" }}>
+      <View style={{ flex: 1, backgroundColor: "#07080b" }}>
 
         {/* Select-mode toggle + bulk action bar */}
         <View style={{ paddingHorizontal: 12, marginTop: 8, flexDirection: "row", justifyContent: "flex-end" }}>
@@ -257,7 +257,7 @@ const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -273,7 +273,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   addBox: {
     flexDirection: "row",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -352,7 +352,7 @@ const localStyles = StyleSheet.create(withFont({
     fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   dateText: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 9.5,
   },
   deleteButton: {

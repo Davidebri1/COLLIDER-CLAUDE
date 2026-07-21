@@ -8,7 +8,7 @@ import { useCollider, ConsensusRun, ChatMessage } from "../state";
 import { Glass } from "./Glass";
 import { GlossSurface } from "./GlossSurface";
 import { SearchBar, useSearch } from "../features";
-import { styles, SCREEN_W, SCREEN_H, fontFamilyForWeight } from "../styles/theme";
+import { styles, SCREEN_W, SCREEN_H, fontFamilyForWeight, FONT_MONO, FONT_MONO_SEMIBOLD, GLASS_CARD } from "../styles/theme";
 import { modelById, ModelDef } from "../models";
 import { scoreConsensus } from "../services/chat";
 import { useToast } from "./Toast";
@@ -191,7 +191,7 @@ export function ConsensusModal({
   // Removed panResponder and pulse animation
 
   const agreementPct = Math.round((ratioN / ratioM) * 100);
-  const scoreColor = agreementPct >= 66 ? "#10b981" : agreementPct >= 40 ? "#f5e000" : "#ef4444"; // mid-tier was orange/gold — banned accent per SPEC.md; true yellow instead
+  const scoreColor = agreementPct >= 66 ? "#7ee2a8" : agreementPct >= 40 ? "#f5e000" : "#ff6a5c"; // mid-tier was orange/gold — banned accent per SPEC.md; true yellow instead
 
   // Galaxy map: vertical position = alignment with consensus (higher = nearer
   // top), horizontal position = force-directed layout from pairwise affinity.
@@ -250,8 +250,8 @@ export function ConsensusModal({
         <View style={[StyleSheet.absoluteFillObject, { paddingTop: insets.top, borderRadius: 0 }]} onStartShouldSetResponder={() => true}>
           <GlossSurface />
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
-            <Text style={{ color: "#fff", fontSize: 15, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.5 }}>CONSENSUS</Text>
-            <Pressable onPress={() => { saveConsensusRun(); onClose(); }} style={{ padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
+            <Text style={{ color: "rgba(238,241,246,0.6)", fontSize: 10, fontFamily: FONT_MONO, letterSpacing: 3 }}>CONSENSUS</Text>
+            <Pressable onPress={() => { saveConsensusRun(); onClose(); }} style={{ padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 16 }}>
               <Text style={{ color: "#fff", fontSize: 18, fontWeight: "300" }}>×</Text>
             </Pressable>
           </View>
@@ -265,10 +265,10 @@ export function ConsensusModal({
               onPress={() => setActiveTab(tab)}
               style={[
                 { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 8 },
-                activeTab === tab && { backgroundColor: "#0a0a0c" },
+                activeTab === tab && { backgroundColor: "rgba(255,255,255,0.04)" },
               ]}
             >
-              <Text style={{ fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700), color: activeTab === tab ? "#fff" : "#6b6478", letterSpacing: 0.5 }}>
+              <Text style={{ fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700), color: activeTab === tab ? "#fff" : "rgba(238,241,246,0.45)", letterSpacing: 0.5 }}>
                 {tab.toUpperCase()}
               </Text>
             </Pressable>
@@ -282,31 +282,31 @@ export function ConsensusModal({
                   squeezed to one side of a row (that's what was wrong: it
                   read as left-aligned because it was sharing a row with the
                   summary instead of being the primary, centered element). */}
-              <View style={{ alignItems: "center" }}>
+              <View style={{ alignItems: "center", marginTop: 4 }}>
                 <Text
                   style={{
-                    color: scoreColor, fontSize: 34, fontWeight: "900", fontFamily: fontFamilyForWeight(900),
-                    textShadowColor: scoreColor, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 12,
+                    color: scoreColor, fontSize: 52, fontFamily: FONT_MONO_SEMIBOLD, lineHeight: 56,
+                    textShadowColor: scoreColor, textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 40,
                   }}
                 >
                   {ratioN}/{ratioM}
                 </Text>
-                <Text style={{ color: "#6b6478", fontSize: 10.5, fontFamily: fontFamilyForWeight(600), fontWeight: "600", textAlign: "center", marginTop: 1 }}>models aligned</Text>
+                <Text style={{ color: "rgba(238,241,246,0.4)", fontSize: 8, fontFamily: FONT_MONO, letterSpacing: 3, textAlign: "center", marginTop: 6 }}>MODELS ALIGNED</Text>
               </View>
 
-              {/* Summary sits in its own narrower, centered box below the
-                  score — centered under the map's own center column, same
-                  alignment as the center node the dashed lines fan out
-                  from, so the sphere visually reads as belonging to it. */}
+              {/* Verdict sits in a centered glass panel below the score,
+                  aligned under the map's own center column. */}
               <View style={{ alignItems: "center" }}>
-                <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.2, marginBottom: 3 }}>SUMMARY</Text>
-                <View style={{ width: fieldW * 0.72, backgroundColor: "rgba(147,197,253,0.07)", borderRadius: 10, borderWidth: 1, borderColor: "rgba(147,197,253,0.2)", padding: 10, maxHeight: 64, overflow: "hidden" }}>
-                  <Text
-                    style={{ color: "#dbeafe", fontSize: 12, lineHeight: 16, fontFamily: fontFamilyForWeight(400), textAlign: "center" }}
-                    numberOfLines={3}
-                  >
-                    {synthesizing ? "Synthesizing consensus…" : verdict.slice(0, 260)}
-                  </Text>
+                <View style={{ width: fieldW * 0.78, borderRadius: 14, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.11)", maxHeight: 72 }}>
+                  <LinearGradient colors={GLASS_CARD} start={{ x: 0.1, y: 0 }} end={{ x: 0.7, y: 1 }} style={StyleSheet.absoluteFill} />
+                  <View style={{ padding: 12 }}>
+                    <Text
+                      style={{ color: "rgba(238,241,246,0.9)", fontSize: 12, lineHeight: 17, fontFamily: fontFamilyForWeight(400), textAlign: "center" }}
+                      numberOfLines={3}
+                    >
+                      {synthesizing ? "Synthesizing consensus…" : verdict.slice(0, 260)}
+                    </Text>
+                  </View>
                 </View>
               </View>
 
@@ -320,7 +320,7 @@ export function ConsensusModal({
                   <Text style={[styles.kicker, { marginBottom: 0 }]}>Deviation Map</Text>
                   {dissenters.length > 0 && (
                     <Pressable onPress={() => setShowMapLabels((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8, backgroundColor: showMapLabels ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)" }}>
-                      <Text style={{ color: showMapLabels ? "#e2e8f0" : "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>
+                      <Text style={{ color: showMapLabels ? "#e2e8f0" : "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>
                         {showMapLabels ? "LABELS ON" : "LABELS OFF"}
                       </Text>
                     </Pressable>
@@ -345,7 +345,7 @@ export function ConsensusModal({
                         style={{ position: "absolute", left: centerX, top: anchorY, width: length, height: 1.5, transform: [{ translateX: 0 }, { translateY: 0 }, { rotate: `${angle}deg` }], transformOrigin: "0 0" } as any}
                       >
                         {Array.from({ length: segCount }).map((_, i) => (
-                          <View key={i} style={{ position: "absolute", left: i * (segLen + gapLen), width: segLen, height: 1.5, backgroundColor: "rgba(239,68,68,0.45)" }} />
+                          <View key={i} style={{ position: "absolute", left: i * (segLen + gapLen), width: segLen, height: 1.5, backgroundColor: "rgba(255,106,92,0.5)" }} />
                         ))}
                       </View>
                     );
@@ -400,14 +400,18 @@ export function ConsensusModal({
               <View>
                 <Text style={[styles.kicker, { marginBottom: 4 }]}>Dissenting Views ({dissenters.length})</Text>
                 {dissenters.length === 0 ? (
-                  <Text style={{ color: "#6b6478", fontSize: 11, fontFamily: fontFamilyForWeight(400) }}>No deviations. Full consensus achieved.</Text>
+                  <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, fontFamily: fontFamilyForWeight(400) }}>No deviations. Full consensus achieved.</Text>
                 ) : (
                   dissenters.map((d) => (
-                    <View key={d.modelId} style={{ backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1, borderRadius: 10, padding: 8, marginBottom: 6 }}>
-                      <Text style={{ color: modelById(d.modelId)?.color || "#fff", fontWeight: "800", fontFamily: fontFamilyForWeight(800), fontSize: 11.5 }}>
-                        {modelById(d.modelId)?.label}
-                      </Text>
-                      <Text style={{ color: "#c9c4d1", marginTop: 3, fontSize: 12, lineHeight: 16, fontFamily: fontFamilyForWeight(400) }}>{d.point}</Text>
+                    <View key={d.modelId} style={{ backgroundColor: "rgba(12,14,19,0.6)", borderColor: "rgba(255,255,255,0.08)", borderWidth: 1, borderRadius: 12, padding: 10, marginBottom: 6 }}>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 7, marginBottom: 3 }}>
+                        <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: modelById(d.modelId)?.color || "#fff" }} />
+                        <Text style={{ color: "#f4f7fb", fontWeight: "700", fontFamily: fontFamilyForWeight(700), fontSize: 10, letterSpacing: 1 }}>
+                          {modelById(d.modelId)?.label?.toUpperCase()}
+                        </Text>
+                        <Text style={{ marginLeft: "auto", color: "#ff6a5c", fontFamily: FONT_MONO, fontSize: 8, letterSpacing: 1 }}>DISSENT</Text>
+                      </View>
+                      <Text style={{ color: "rgba(238,241,246,0.65)", fontSize: 11, lineHeight: 16, fontFamily: fontFamilyForWeight(400) }}>{d.point}</Text>
                     </View>
                   ))
                 )}
@@ -433,7 +437,7 @@ export function ConsensusModal({
                             {run.ratioN}/{run.ratioM}
                           </Text>
                         </View>
-                        <Text style={{ color: "#6b6478", fontSize: 11, marginTop: 4 }} numberOfLines={1}>
+                        <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, marginTop: 4 }} numberOfLines={1}>
                           {run.verdict}
                         </Text>
                       </Glass>
@@ -448,15 +452,15 @@ export function ConsensusModal({
             <View style={{ gap: 16 }}>
               <View style={{ borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)", paddingBottom: 8 }}>
                 <Text style={{ color: "#fff", fontWeight: "700", fontFamily: fontFamilyForWeight(700), fontSize: 14, marginBottom: 4 }}>Consensus Summary Auto-Generated</Text>
-                <Text style={{ color: "#6b6478", fontSize: 11, marginBottom: 12 }}>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, marginBottom: 12 }}>
                   Fill the Collide bar with a live synthesis as soon as 2+ models reply — no need to open this drawer to see whether they agree.
                 </Text>
                 <Pressable
                   onPress={() => dispatch({ type: "setAutoConsensusSummary", value: !state.autoConsensusSummary })}
-                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "#0a0a0c", borderRadius: 10 }}
+                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10 }}
                 >
                   <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>Auto-fill Collide bar</Text>
-                  <Text style={{ color: state.autoConsensusSummary ? "rgba(255,255,255,0.6)" : "#6b6478", fontSize: 18, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
+                  <Text style={{ color: state.autoConsensusSummary ? "rgba(255,255,255,0.6)" : "rgba(238,241,246,0.45)", fontSize: 18, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
                     {state.autoConsensusSummary ? "✓" : "○"}
                   </Text>
                 </Pressable>
@@ -464,15 +468,15 @@ export function ConsensusModal({
 
               <View style={{ borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.06)", paddingBottom: 8 }}>
                 <Text style={{ color: "#fff", fontWeight: "700", fontFamily: fontFamilyForWeight(700), fontSize: 14, marginBottom: 4 }}>Auto-Wipe Conversations</Text>
-                <Text style={{ color: "#6b6478", fontSize: 11, marginBottom: 12 }}>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, marginBottom: 12 }}>
                   Automatically archive active grid conversations when a new consensus is generated.
                 </Text>
                 <Pressable
                   onPress={() => dispatch({ type: "setAutoWipeOnConsensus", value: !state.autoWipeOnConsensus })}
-                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "#0a0a0c", borderRadius: 10 }}
+                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10 }}
                 >
                   <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>Wipe grid on consensus save</Text>
-                  <Text style={{ color: state.autoWipeOnConsensus ? "rgba(255,255,255,0.6)" : "#6b6478", fontSize: 18, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
+                  <Text style={{ color: state.autoWipeOnConsensus ? "rgba(255,255,255,0.6)" : "rgba(238,241,246,0.45)", fontSize: 18, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
                     {state.autoWipeOnConsensus ? "✓" : "○"}
                   </Text>
                 </Pressable>
@@ -480,15 +484,15 @@ export function ConsensusModal({
 
               <View>
                 <Text style={{ color: "#fff", fontWeight: "700", fontFamily: fontFamilyForWeight(700), fontSize: 14, marginBottom: 4 }}>Auto-Archive on New Chat</Text>
-                <Text style={{ color: "#6b6478", fontSize: 11, marginBottom: 12 }}>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, marginBottom: 12 }}>
                   Automatically save and archive previous models' threads on conversation resets.
                 </Text>
                 <Pressable
                   onPress={() => dispatch({ type: "setAutoArchiveOnNew", value: !state.autoArchiveOnNew })}
-                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "#0a0a0c", borderRadius: 10 }}
+                  style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 10, paddingHorizontal: 14, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10 }}
                 >
                   <Text style={{ color: "#fff", fontSize: 13, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>Archive threads on reset</Text>
-                  <Text style={{ color: state.autoArchiveOnNew ? "rgba(255,255,255,0.6)" : "#6b6478", fontSize: 18, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
+                  <Text style={{ color: state.autoArchiveOnNew ? "rgba(255,255,255,0.6)" : "rgba(238,241,246,0.45)", fontSize: 18, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
                     {state.autoArchiveOnNew ? "✓" : "○"}
                   </Text>
                 </Pressable>
@@ -508,7 +512,7 @@ export function ConsensusModal({
             <GlossSurface borderRadius={22} />
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)", paddingBottom: 10, marginBottom: 12 }}>
               <Text style={{ color: "#fff", fontSize: 15, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>Historical Consensus Detail</Text>
-              <Pressable onPress={() => setSelectedRun(null)} style={{ padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
+              <Pressable onPress={() => setSelectedRun(null)} style={{ padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 16 }}>
                 <Text style={{ color: "#fff", fontSize: 18, fontWeight: "300" }}></Text>
               </Pressable>
             </View>
@@ -516,28 +520,28 @@ export function ConsensusModal({
               {selectedRun && (
                 <View style={{ gap: 14 }}>
                   <View>
-                    <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>PROMPT</Text>
+                    <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>PROMPT</Text>
                     <Text style={{ color: "#fff", fontSize: 13, marginTop: 4, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>{selectedRun.prompt}</Text>
                   </View>
 
                   <View>
-                    <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>CONSENSUS VERDICT ({selectedRun.ratioN}/{selectedRun.ratioM} aligned)</Text>
-                    <View style={{ backgroundColor: "#0a0a0c", borderRadius: 10, padding: 12, marginTop: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" }}>
+                    <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>CONSENSUS VERDICT ({selectedRun.ratioN}/{selectedRun.ratioM} aligned)</Text>
+                    <View style={{ backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 12, marginTop: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" }}>
                       <Text style={{ color: "#e8e6eb", fontSize: 12, lineHeight: 18 }}>{selectedRun.verdict}</Text>
                     </View>
                   </View>
 
                   <View>
-                    <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>DISSENTERS</Text>
+                    <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>DISSENTERS</Text>
                     {selectedRun.dissenters.length === 0 ? (
-                      <Text style={{ color: "#6b6478", fontSize: 11, fontStyle: "italic", marginTop: 4 }}>No dissenters in this run.</Text>
+                      <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, fontStyle: "italic", marginTop: 4 }}>No dissenters in this run.</Text>
                     ) : (
                       selectedRun.dissenters.map((d, i) => (
-                        <View key={i} style={{ backgroundColor: "#0a0a0c", borderRadius: 10, padding: 10, marginTop: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" }}>
+                        <View key={i} style={{ backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 10, marginTop: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" }}>
                           <Text style={{ color: modelById(d.modelId)?.color || "#fff", fontWeight: "700", fontFamily: fontFamilyForWeight(700), fontSize: 11 }}>
                             {modelById(d.modelId)?.label || d.modelId}
                           </Text>
-                          <Text style={{ color: "#6b6478", fontSize: 11, marginTop: 2 }}>{d.point}</Text>
+                          <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, marginTop: 2 }}>{d.point}</Text>
                         </View>
                       ))
                     )}

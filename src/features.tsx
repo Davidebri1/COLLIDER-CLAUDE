@@ -23,7 +23,7 @@ export function SearchBar({ value, onChange, placeholder }: { value: string; onC
         value={value}
         onChangeText={onChange}
         placeholder={placeholder}
-        placeholderTextColor="#8f849c"
+        placeholderTextColor="rgba(238,241,246,0.5)"
         style={styles.searchInput}
       />
       {value ? (
@@ -400,7 +400,7 @@ export function AuthScreen({ goBack }: { goBack: () => void }) {
             value={email}
             onChangeText={(v) => { setEmail(v); if (emailError) setEmailError(null); }}
             placeholder="you@collider.app"
-            placeholderTextColor="#8f849c"
+            placeholderTextColor="rgba(238,241,246,0.5)"
             style={[styles.authInput, emailError && { borderColor: "rgba(239,68,68,0.5)" }]}
             autoCapitalize="none"
             keyboardType="email-address"
@@ -463,31 +463,31 @@ export function ConsensusRunCard({ run, onOpen, onDelete }: { run: ConsensusRun;
 const styles = StyleSheet.create(withFont({
   flex: { flex: 1 },
   header: { height: 56, flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 14 },
-  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)" },
+  iconBtn: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)" },
   iconText: { color: "#fff", fontSize: 20, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
   pageTitle: { color: "#fff", fontSize: 17, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 },
   page: { padding: 14, gap: 14, paddingBottom: 120 },
 
-  searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: "#161619", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)", height: 40 },
-  searchIcon: { color: "#8a8496", fontSize: 15 },
+  searchWrap: { flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.16)", height: 40 },
+  searchIcon: { color: "rgba(238,241,246,0.5)", fontSize: 15 },
   searchInput: { flex: 1, color: "#fff", fontSize: 14 },
 
   modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" },
-  sheet: { padding: 18, borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 12, backgroundColor: "#161619", borderTopWidth: 1.5, borderColor: "rgba(255,255,255,0.15)" },
-  sheetKicker: { color: "#8a8496", fontSize: 10, letterSpacing: 2, textTransform: "uppercase" },
+  sheet: { padding: 18, borderTopLeftRadius: 24, borderTopRightRadius: 24, gap: 12, backgroundColor: "rgba(255,255,255,0.05)", borderTopWidth: 1.5, borderColor: "rgba(255,255,255,0.15)" },
+  sheetKicker: { color: "rgba(238,241,246,0.5)", fontSize: 10, letterSpacing: 2, textTransform: "uppercase" },
   sheetPreview: { color: "#ffffff", fontSize: 13, lineHeight: 18 },
   sheetGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 6 },
-  sheetBtn: { width: "22%", aspectRatio: 1, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", gap: 4 },
+  sheetBtn: { width: "22%", aspectRatio: 1, borderRadius: 16, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", gap: 4 },
   sheetIcon: { color: "#e2e8f0", fontSize: 20 },
   sheetLabel: { color: "#f4edf9", fontSize: 11, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
 
   section: { gap: 8 },
-  sectionKicker: { color: "#6b6478", fontSize: 9.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 2, textTransform: "uppercase", paddingHorizontal: 4 },
-  sectionBody: { borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", overflow: "hidden", backgroundColor: "#0a0a0c" },
+  sectionKicker: { color: "rgba(238,241,246,0.45)", fontSize: 9.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 2, textTransform: "uppercase", paddingHorizontal: 4 },
+  sectionBody: { borderRadius: 20, borderWidth: 1, borderColor: "rgba(255,255,255,0.12)", overflow: "hidden", backgroundColor: "rgba(255,255,255,0.04)" },
   settingsRow: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, gap: 12, borderBottomWidth: 1, borderColor: "rgba(255,255,255,0.05)" },
   settingsLabel: { color: "#fff", fontSize: 14, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
-  settingsHint: { color: "#858091", fontSize: 11, marginTop: 2 },
-  settingsChev: { color: "#6b6478", fontSize: 20 },
+  settingsHint: { color: "rgba(238,241,246,0.5)", fontSize: 11, marginTop: 2 },
+  settingsChev: { color: "rgba(238,241,246,0.45)", fontSize: 20 },
 
   accentRow: { flexDirection: "row", gap: 10, padding: 16, flexWrap: "wrap" },
   swatch: { width: 34, height: 34, borderRadius: 17, borderWidth: 2, borderColor: "transparent" },
@@ -499,8 +499,8 @@ const styles = StyleSheet.create(withFont({
   swatchActive: { borderColor: "#fff7d7" },
 
   authIntro: { color: "rgba(255,255,255,0.6)", fontSize: 13, lineHeight: 19, paddingHorizontal: 4 },
-  authCard: { padding: 18, borderRadius: 20, gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "#0a0a0c" },
-  authInput: { color: "#fff", fontSize: 14, backgroundColor: "#0a0a0c", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  authCard: { padding: 18, borderRadius: 20, gap: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.04)" },
+  authInput: { color: "#fff", fontSize: 14, backgroundColor: "rgba(255,255,255,0.04)", padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
   authError: { color: "#ef4444", fontSize: 11.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600), marginTop: -4 },
   authPrimary: {
     backgroundColor: "rgba(255,255,255,0.18)",
@@ -517,14 +517,14 @@ const styles = StyleSheet.create(withFont({
   },
   authPrimaryText: { color: "#e2e8f0", fontWeight: "800", fontFamily: fontFamilyForWeight(800) },
   divider: { flexDirection: "row", alignItems: "center", justifyContent: "center", marginVertical: 4 },
-  dividerText: { color: "#8d8398", fontSize: 11, letterSpacing: 2 },
-  authProvider: { padding: 13, borderRadius: 14, alignItems: "center", backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  dividerText: { color: "rgba(238,241,246,0.5)", fontSize: 11, letterSpacing: 2 },
+  authProvider: { padding: 13, borderRadius: 14, alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   authProviderText: { color: "#fff", fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
   authGuest: { padding: 13, alignItems: "center" },
-  authGuestText: { color: "#858091", fontSize: 13, textDecorationLine: "underline" },
-  authFine: { color: "#6b6478", fontSize: 11, textAlign: "center", paddingHorizontal: 12 },
+  authGuestText: { color: "rgba(238,241,246,0.5)", fontSize: 13, textDecorationLine: "underline" },
+  authFine: { color: "rgba(238,241,246,0.45)", fontSize: 11, textAlign: "center", paddingHorizontal: 12 },
 
-  consensusItem: { padding: 14, borderRadius: 18, gap: 8, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", backgroundColor: "#0a0a0c" },
+  consensusItem: { padding: 14, borderRadius: 18, gap: 8, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", backgroundColor: "rgba(255,255,255,0.04)" },
   consensusRow: { flexDirection: "row", alignItems: "center", gap: 12 },
   consensusScore: { fontSize: 22, fontWeight: "900", fontFamily: fontFamilyForWeight(900), minWidth: 60 },
   consensusVerdict: { color: "#fff", fontSize: 13, lineHeight: 18 },
@@ -534,12 +534,12 @@ const styles = StyleSheet.create(withFont({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
   },
   segChipText: {
-    color: "#8a8496",
+    color: "rgba(238,241,246,0.5)",
     fontSize: 11,
     fontWeight: "600", fontFamily: fontFamilyForWeight(600),
   },

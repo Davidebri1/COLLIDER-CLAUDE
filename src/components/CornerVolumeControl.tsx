@@ -49,7 +49,7 @@ export function CornerVolumeControl() {
           onLongPress={() => setExpanded((v) => !v)}
           style={{ width: 26, height: 26, alignItems: "center", justifyContent: "center" }}
         >
-          <Ionicons name={icon as any} size={16} color={muted ? "#6b6478" : "#fff"} />
+          <Ionicons name={icon as any} size={16} color={muted ? "rgba(238,241,246,0.45)" : "#fff"} />
         </Pressable>
       </View>
     </View>

@@ -24,18 +24,23 @@ import {
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from "react-native-svg";
+import Svg, { Defs, LinearGradient as SvgGradient, RadialGradient as SvgRadial, Stop, Path, Ellipse, Rect } from "react-native-svg";
 import * as Haptics from "expo-haptics";
 import React, { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Video, ResizeMode, Audio } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
+import { useFonts } from "@expo-google-fonts/manrope";
 import {
-  useFonts,
-  Manrope_400Regular,
-  Manrope_600SemiBold,
-  Manrope_700Bold,
-  Manrope_800ExtraBold,
-} from "@expo-google-fonts/manrope";
+  InstrumentSans_400Regular,
+  InstrumentSans_500Medium,
+  InstrumentSans_600SemiBold,
+  InstrumentSans_700Bold,
+} from "@expo-google-fonts/instrument-sans";
+import {
+  IBMPlexMono_400Regular,
+  IBMPlexMono_500Medium,
+  IBMPlexMono_600SemiBold,
+} from "@expo-google-fonts/ibm-plex-mono";
 
 import {
   AppProvider,
@@ -101,7 +106,7 @@ import { transcribeAudio } from "./src/services/chat";
 import { SearchBar, useSearch, MessageActions, SettingsScreen, AuthScreen, ConsensusRunCard } from "./src/features";
 
 // New modular styles & components imports
-import { styles, SCREEN_W, SCREEN_H, FREE_THEMES, PREMIUM_THEMES, WALLPAPERS, FONT_FAMILY, fontFamilyForWeight, type DynamicTheme } from "./src/styles/theme";
+import { styles, SCREEN_W, SCREEN_H, FREE_THEMES, PREMIUM_THEMES, WALLPAPERS, FONT_FAMILY, FONT_MONO, fontFamilyForWeight, T, GLASS_CARD, GLASS_PANEL, type DynamicTheme } from "./src/styles/theme";
 import { Glass } from "./src/components/Glass";
 import { ExpandableTrayText } from "./src/components/ExpandableTray";
 import { Markdown } from "./src/components/Markdown";
@@ -225,14 +230,15 @@ type Screen =
 
 
 
-const bg = require("./assets/bg-default.jpg");
-
 export default function App() {
   useFonts({
-    Manrope_400Regular,
-    Manrope_600SemiBold,
-    Manrope_700Bold,
-    Manrope_800ExtraBold,
+    InstrumentSans_400Regular,
+    InstrumentSans_500Medium,
+    InstrumentSans_600SemiBold,
+    InstrumentSans_700Bold,
+    IBMPlexMono_400Regular,
+    IBMPlexMono_500Medium,
+    IBMPlexMono_600SemiBold,
   });
   return (
     <SafeAreaProvider>
@@ -246,41 +252,88 @@ export default function App() {
   );
 }
 
-//  2.5D Parallax Scene  three ambient orbs, native-driver = 60fps 
-function ParallaxScene({ tint, accent }: { tint: string; accent: string }) {
-  const a = useRef(new Animated.Value(0)).current;
-  const b = useRef(new Animated.Value(0)).current;
-  const c = useRef(new Animated.Value(0)).current;
+//  Aurora blob — a soft radial glow (transparent falloff) that slowly drifts
+//  and breathes. Uses an SVG radial gradient so the edge dissolves instead of
+//  reading as a hard disc (the old parallax orbs were solid circles).
+function AuroraBlob({
+  gid, size, color, x, y, dx, dy, dur, peak = 1,
+}: { gid: string; size: number; color: string; x: number; y: number; dx: number; dy: number; dur: number; peak?: number }) {
+  const v = useRef(new Animated.Value(0)).current;
   useEffect(() => {
-    const loop = (v: Animated.Value, dur: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(v, { toValue: 1, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-          Animated.timing(v, { toValue: 0, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
-        ]),
-      ).start();
-    loop(a, 9000); loop(b, 13000); loop(c, 17000);
-  }, [a, b, c]);
-  const orb = (v: Animated.Value, size: number, color: string, x: number | string, y: number | string, dx: number, dy: number) => (
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(v, { toValue: 1, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(v, { toValue: 0, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    ).start();
+  }, [v, dur]);
+  return (
     <Animated.View
       pointerEvents="none"
       style={{
-        position: "absolute", left: x, top: y,
-        width: size, height: size, borderRadius: size / 2,
-        backgroundColor: color, opacity: 0.34,
+        position: "absolute", left: x, top: y, width: size, height: size,
         transform: [
           { translateX: v.interpolate({ inputRange: [0, 1], outputRange: [0, dx] }) },
           { translateY: v.interpolate({ inputRange: [0, 1], outputRange: [0, dy] }) },
-          { scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.08] }) },
+          { scale: v.interpolate({ inputRange: [0, 1], outputRange: [1, 1.16] }) },
         ],
       } as any}
+    >
+      <Svg width={size} height={size}>
+        <Defs>
+          <SvgRadial id={gid} cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor={color} stopOpacity={peak} />
+            <Stop offset="65%" stopColor={color} stopOpacity={peak * 0.32} />
+            <Stop offset="100%" stopColor={color} stopOpacity={0} />
+          </SvgRadial>
+        </Defs>
+        <Ellipse cx={size / 2} cy={size / 2} rx={size / 2} ry={size / 2} fill={`url(#${gid})`} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+//  A single twinkling star — small dot that fades in/out on its own clock.
+function Star({ x, y, dur, delay, size }: { x: number; y: number; dur: number; delay: number; size: number }) {
+  const v = useRef(new Animated.Value(0.15)).current;
+  useEffect(() => {
+    const run = () =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(v, { toValue: 0.7, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(v, { toValue: 0.15, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+      ).start();
+    const t = setTimeout(run, delay);
+    return () => clearTimeout(t);
+  }, [v, dur, delay]);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: "absolute", left: x, top: y, width: size, height: size, borderRadius: size, backgroundColor: "#dfe7f2", opacity: v }}
     />
   );
+}
+
+// Deterministic pseudo-random so the starfield is stable across renders
+// (matches the redesign's seeded star placement rather than reshuffling).
+const seed = (n: number) => { const s = Math.sin(n * 999) * 10000; return s - Math.floor(s); };
+const STARS = Array.from({ length: 22 }, (_, i) => ({
+  x: seed(i) * SCREEN_W,
+  y: seed(i + 40) * SCREEN_H,
+  dur: 2600 + seed(i + 80) * 4200,
+  delay: seed(i + 120) * 3400,
+  size: seed(i + 160) > 0.85 ? 2.5 : 1.6,
+}));
+
+//  Ambient aurora field — drifting blue + accent glows over a twinkling
+//  starfield. Replaces the old solid-disc parallax scene.
+function AuroraField({ tint, accent }: { tint: string; accent: string }) {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      {orb(a, 260, accent, -60, 120, 40, 30)}
-      {orb(b, 200, tint, 220, 380, -30, 50)}
-      {orb(c, 320, accent, -80, 620, 60, -40)}
+      <AuroraBlob gid="aur-blue" size={SCREEN_W * 1.15} color="#3c508c" peak={0.5} x={-SCREEN_W * 0.15} y={-SCREEN_H * 0.08} dx={SCREEN_W * 0.14} dy={SCREEN_H * 0.05} dur={26000} />
+      <AuroraBlob gid="aur-accent" size={SCREEN_W * 1.05} color={accent} peak={0.34} x={SCREEN_W * 0.3} y={SCREEN_H * 0.5} dx={-SCREEN_W * 0.1} dy={-SCREEN_H * 0.06} dur={34000} />
+      {STARS.map((s, i) => <Star key={i} {...s} />)}
     </View>
   );
 }
@@ -322,18 +375,27 @@ function ThemeBackground({ wallpaperId }: { wallpaperId: string }) {
     );
   }
 
+  // Default ("Graphite") is a pure aurora field over a graphite radial base —
+  // no photo. Other presets keep their gradient, with the aurora accent drawn
+  // from the wallpaper's mid color. A bottom vignette grounds the scene.
+  const isDefault = wallpaperId === "default";
+  const accent = isDefault ? "#3d6bd8" : preset.colors[1];
   return (
     <View style={StyleSheet.absoluteFill}>
-      {wallpaperId === "default" && (
-        <ImageBackground
-          source={bg}
-          style={StyleSheet.absoluteFill}
-          resizeMode="stretch"
-          imageStyle={{ width: "100%", height: "100%" }}
-        />
-      )}
-      <LinearGradient colors={preset.colors} style={StyleSheet.absoluteFill} />
-      <ParallaxScene tint={preset.colors[0]} accent={preset.colors[1]} />
+      <LinearGradient
+        colors={isDefault ? ["#14161d", "#0b0c10", "#07080b"] : (preset.colors as any)}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      />
+      <AuroraField tint={preset.colors[0]} accent={accent} />
+      <LinearGradient
+        colors={["transparent", "rgba(0,0,0,0.55)"]}
+        style={StyleSheet.absoluteFill}
+        start={{ x: 0.5, y: 0.45 }}
+        end={{ x: 0.5, y: 1 }}
+        pointerEvents="none"
+      />
     </View>
   );
 }
@@ -621,31 +683,89 @@ function Shell() {
 }
 
 //  Collide Button (surging gold/orange console track button) 
+// COLLIDE button (redesign) — a dark obsidian pill with a specular orb and a
+// spaced "COLLIDE" label, wrapped in a breathing inner glow and an expanding
+// pulse ring, so the primary action reads as alive rather than a flat bar.
 function CollideButton({ onPress }: { onPress: () => void }) {
-  const pulse = useRef(new Animated.Value(1)).current;
+  const pulse = useRef(new Animated.Value(1)).current;   // subtle press-scale breathing
+  const glow = useRef(new Animated.Value(0)).current;    // inner radial glow breathe
+  const ring = useRef(new Animated.Value(0)).current;    // expanding halo ring
   useEffect(() => {
     Animated.loop(
       Animated.sequence([
-        Animated.timing(pulse, { toValue: 1.025, duration: 1100, useEasing: true, useNativeDriver: true } as any),
-        Animated.timing(pulse, { toValue: 1, duration: 1100, useEasing: true, useNativeDriver: true } as any),
-      ])
+        Animated.timing(pulse, { toValue: 1.03, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(pulse, { toValue: 1, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
     ).start();
-  }, [pulse]);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glow, { toValue: 1, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        Animated.timing(glow, { toValue: 0, duration: 1600, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+      ]),
+    ).start();
+    Animated.loop(
+      Animated.timing(ring, { toValue: 1, duration: 3200, easing: Easing.out(Easing.ease), useNativeDriver: true }),
+    ).start();
+  }, [pulse, glow, ring]);
 
   return (
-    <Animated.View style={{ transform: [{ scale: pulse }], marginHorizontal: 14, marginBottom: 8 }}>
-      <Pressable onPress={onPress} style={styles.collideTrackBtn}>
-        {/* Glossy white-to-light-gray sweep, not the old warm-orange
-            gradient — black & white, high contrast, depth via gloss
-            instead of color. */}
-        <LinearGradient
-          colors={["#ffffff", "#d8d8dc"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={StyleSheet.absoluteFill}
+    <View style={{ alignItems: "center", marginBottom: 8, marginTop: 2 }}>
+      <Animated.View style={{ transform: [{ scale: pulse }] }}>
+        {/* Expanding pulse ring behind the pill */}
+        <Animated.View
+          pointerEvents="none"
+          style={{
+            position: "absolute", left: 0, right: 0, top: 0, bottom: 0,
+            borderRadius: 23, borderWidth: 1, borderColor: "rgba(230,236,244,0.35)",
+            opacity: ring.interpolate({ inputRange: [0, 1], outputRange: [0.5, 0] }),
+            transform: [{ scale: ring.interpolate({ inputRange: [0, 1], outputRange: [0.95, 1.35] }) }],
+          }}
         />
-      </Pressable>
-    </Animated.View>
+        <Pressable
+          onPress={onPress}
+          style={{
+            height: 46, width: 210, borderRadius: 23,
+            flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+            borderWidth: 1, borderColor: "rgba(255,255,255,0.18)", overflow: "hidden",
+            shadowColor: "rgba(230,236,244,0.4)", shadowOpacity: 0.5, shadowRadius: 24, shadowOffset: { width: 0, height: 0 }, elevation: 8,
+          }}
+        >
+          <LinearGradient
+            colors={["#16181f", "#0a0b10"]}
+            start={{ x: 0.5, y: 0 }}
+            end={{ x: 0.5, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Breathing inner glow */}
+          <Animated.View
+            pointerEvents="none"
+            style={{ ...StyleSheet.absoluteFillObject, opacity: glow.interpolate({ inputRange: [0, 1], outputRange: [0.25, 0.6] }) }}
+          >
+            <Svg width="100%" height="100%">
+              <Defs>
+                <SvgRadial id="collide-glow" cx="50%" cy="50%" r="60%">
+                  <Stop offset="0" stopColor="#ffffff" stopOpacity={0.32} />
+                  <Stop offset="1" stopColor="#ffffff" stopOpacity={0} />
+                </SvgRadial>
+              </Defs>
+              <Rect x="0" y="0" width="100%" height="100%" fill="url(#collide-glow)" />
+            </Svg>
+          </Animated.View>
+          {/* Specular orb */}
+          <Svg width={14} height={14}>
+            <Defs>
+              <SvgRadial id="collide-orb" cx="40%" cy="35%" r="65%">
+                <Stop offset="0" stopColor="#ffffff" />
+                <Stop offset="0.6" stopColor="#aab6c9" />
+                <Stop offset="1" stopColor="#5c6778" />
+              </SvgRadial>
+            </Defs>
+            <Ellipse cx={7} cy={7} rx={7} ry={7} fill="url(#collide-orb)" />
+          </Svg>
+          <Text style={{ fontSize: 12, fontWeight: "700", letterSpacing: 4, color: "#f4f7fb" }}>COLLIDE</Text>
+        </Pressable>
+      </Animated.View>
+    </View>
   );
 }
 
@@ -654,7 +774,7 @@ function CollideButton({ onPress }: { onPress: () => void }) {
 const localToolbarStyles = StyleSheet.create({
   pill: {
     paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6,
-    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   pillText: { color: "#fff", fontSize: 9, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900), textShadowColor: "rgba(0,0,0,0.9)", textShadowOffset: { width: 0, height: 1 }, textShadowRadius: 14 },
@@ -669,7 +789,7 @@ const localToolbarStyles = StyleSheet.create({
   pillTextActive: { color: "#e2e8f0" },
   iconBtn: {
     width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center",
-    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   // Small paired chip for Category/Models, right above the grid — glowing
@@ -678,7 +798,7 @@ const localToolbarStyles = StyleSheet.create({
   glowChip: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 8, height: 24, borderRadius: 11,
-    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 3,
   },
   glowChipText: {
@@ -689,7 +809,7 @@ const localToolbarStyles = StyleSheet.create({
   // toolbar follows the same conventions instead of inventing its own.
   toolbarIconBtn: {
     width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
-    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
+    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
     shadowColor: "#000", shadowOpacity: 0.8, shadowRadius: 10, shadowOffset: { width: 0, height: 3 }, elevation: 5,
   },
 });
@@ -697,14 +817,14 @@ const localToolbarStyles = StyleSheet.create({
 const localDrawerStyles = StyleSheet.create({
   utilIcon: {
     width: 32, height: 32, borderRadius: 16, alignItems: "center", justifyContent: "center",
-    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
   },
   upgradeBtn: {
     flexDirection: "row", alignItems: "center", gap: 4,
     paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10,
     backgroundColor: "rgba(255,255,255,0.12)", borderWidth: 1, borderColor: "rgba(255,255,255,0.35)",
   },
-  colHeader: { color: "#6b6478", fontSize: 9, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900) },
+  colHeader: { color: "rgba(238,241,246,0.45)", fontSize: 9, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900) },
 });
 
 //  Home / Grid
@@ -931,17 +1051,11 @@ function Home({
           wrong for the same reason each time: a title bar's one job is the
           title. Utility icons belong with the other interactive controls,
           not stacked into the one row that isn't supposed to have any. */}
-      <View style={{ paddingTop: insets.top + 6, paddingBottom: 4, overflow: "hidden" }}>
-        <GlossSurface />
-        <View style={{ height: 18, alignItems: "center", justifyContent: "center" }}>
-          <Text style={{ color: "#fff", fontSize: 13, fontWeight: "900", letterSpacing: 3, fontFamily: fontFamilyForWeight(900) }}>COLLIDER</Text>
-        </View>
+      {/* Transparent brand line — the gradient wordmark floats over the
+          aurora field (redesign) rather than sitting on an opaque bar. */}
+      <View style={{ paddingTop: insets.top + 8, paddingBottom: 4, alignItems: "center", justifyContent: "center" }}>
+        <Wordmark />
       </View>
-      <LinearGradient
-        colors={["#040404", "rgba(4,4,4,0)"]}
-        style={{ height: 10, marginTop: -1 }}
-        pointerEvents="none"
-      />
 
       {/* Utility + grid-scoped row: menu and Smart Gen are fixed bookends;
           category/model/rows/agents pills scroll horizontally between them
@@ -1102,7 +1216,7 @@ function CategoryDropdownTrigger({ onPress }: { onPress: () => void }) {
         paddingHorizontal: 8,
         height: 24,
         borderRadius: 11,
-        backgroundColor: "#0a0a0c",
+        backgroundColor: "rgba(255,255,255,0.04)",
         borderWidth: 1,
         borderColor: "rgba(255,255,255,0.08)",
         shadowColor: "#000",
@@ -1148,7 +1262,7 @@ function CategorySelectorModal({ visible, onClose }: { visible: boolean; onClose
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Select Category</Text>
-            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
+            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
           </View>
@@ -1221,7 +1335,7 @@ function RowSelectorModal({
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Grid Rows</Text>
-            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
+            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
           </View>
@@ -1318,11 +1432,11 @@ function ModelSelectorDrawer({
             >
               {model.label}
             </Text>
-            <View style={{ backgroundColor: "#0a0a0c", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
-              <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{model.short}</Text>
+            <View style={{ backgroundColor: "rgba(255,255,255,0.04)", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+              <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{model.short}</Text>
             </View>
           </View>
-          <Text style={{ color: "#6b6478", fontSize: 11 }}>{model.desc || "High-quality model for general tasks."}</Text>
+          <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11 }}>{model.desc || "High-quality model for general tasks."}</Text>
         </View>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
           {!usable ? (
@@ -1351,26 +1465,26 @@ function ModelSelectorDrawer({
           <GlossSurface borderRadius={22} />
           <View style={{ flexDirection: "row", justifyContent: "center", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.08)" }}>
             <Text style={{ color: "#fff", fontSize: 15, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textAlign: "center" }}>Select Models {cat.toUpperCase()}</Text>
-            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 16 }}>
+            <Pressable onPress={onClose} style={{ position: "absolute", right: 16, padding: 4, width: 32, height: 32, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 16 }}>
               <Ionicons name="close" size={18} color="#fff" />
             </Pressable>
           </View>
           <ScrollView showsVerticalScrollIndicator={false}>
             {freeModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>FREE MODELS</Text>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "rgba(255,255,255,0.04)" }}>FREE MODELS</Text>
                 {freeModels.map(renderModelRow)}
               </View>
             )}
             {proModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>PRO MODELS</Text>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "rgba(255,255,255,0.04)" }}>PRO MODELS</Text>
                 {proModels.map(renderModelRow)}
               </View>
             )}
             {eliteModels.length > 0 && (
               <View>
-                <Text style={{ color: "#6b6478", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "#0a0a0c" }}>ELITE MODELS</Text>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, letterSpacing: 1.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), paddingHorizontal: 16, paddingVertical: 8, backgroundColor: "rgba(255,255,255,0.04)" }}>ELITE MODELS</Text>
                 {eliteModels.map(renderModelRow)}
               </View>
             )}
@@ -1451,7 +1565,7 @@ function AudioPlayerControls({ uri }: { uri: string }) {
       </Animated.View>
       <View style={{ flex: 1, gap: 4 }}>
         <Text style={{ color: "#fff", fontSize: 12, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>Generated track</Text>
-        <Text style={{ color: "#6b6478", fontSize: 10 }}>Lyria 3 (via OpenRouter)</Text>
+        <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10 }}>Lyria 3 (via OpenRouter)</Text>
       </View>
       <Pressable onPress={toggle} disabled={loading} style={styles.playPauseBtn}>
         {loading ? <ActivityIndicator size="small" color="#000" /> : <Ionicons name={playing ? "pause" : "play"} size={13} color="#000" />}
@@ -1491,7 +1605,7 @@ function ModelSelectorRow({ selected, onSelect }: { selected?: string; onSelect:
       <View style={{ flexDirection: "row", gap: 6, paddingVertical: 2 }}>
         <Pressable
           onPress={() => onSelect("global")}
-          style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === "global" && { backgroundColor: "rgba(255,255,255,0.15)", borderColor: "#fff" }]}
+          style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === "global" && { backgroundColor: "rgba(255,255,255,0.15)", borderColor: "#fff" }]}
         >
           <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>GLOBAL</Text>
         </Pressable>
@@ -1499,9 +1613,9 @@ function ModelSelectorRow({ selected, onSelect }: { selected?: string; onSelect:
           <Pressable
             key={m.id}
             onPress={() => onSelect(m.id)}
-            style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === m.id && { backgroundColor: `${m.color}25`, borderColor: m.color }]}
+            style={[{ paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, selected === m.id && { backgroundColor: `${m.color}25`, borderColor: m.color }]}
           >
-            <Text style={{ color: selected === m.id ? m.color : "#6b6478", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{m.label}</Text>
+            <Text style={{ color: selected === m.id ? m.color : "rgba(238,241,246,0.45)", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{m.label}</Text>
           </Pressable>
         ))}
       </View>
@@ -1577,9 +1691,9 @@ function LinkedItemsBlock({
       ) : (
         <View style={{ marginTop: 6, gap: 6 }}>
           {allLinked.map((l) => (
-            <View key={`${l.kind}_${l.id}`} style={{ flexDirection: "row", alignItems: "center", backgroundColor: "#0a0a0c", borderRadius: 8, padding: 8, gap: 8 }}>
+            <View key={`${l.kind}_${l.id}`} style={{ flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 8, gap: 8 }}>
               <Text style={{ color: "#fff", fontSize: 11, flex: 1 }}>
-                <Text style={{ color: "#6b6478", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{l.kind.toUpperCase()}  </Text>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{l.kind.toUpperCase()}  </Text>
                 {titleFor(l.kind, l.id)}
               </Text>
               <Pressable
@@ -1592,7 +1706,7 @@ function LinkedItemsBlock({
           ))}
         </View>
       )}
-      <Pressable onPress={() => setAttaching(true)} style={{ marginTop: 8, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+      <Pressable onPress={() => setAttaching(true)} style={{ marginTop: 8, alignSelf: "flex-start", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
         <Text style={{ color: "#5dbdff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>+ Attach existing item</Text>
       </Pressable>
 
@@ -1612,7 +1726,7 @@ function LinkedItemsBlock({
                   }}
                   style={{ paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)" }}
                 >
-                  <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{c.kind.toUpperCase()}</Text>
+                  <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{c.kind.toUpperCase()}</Text>
                   <ExpandableTrayText style={{ color: "#fff", fontSize: 12 }} text={c.title} />
                 </Pressable>
               ))}
@@ -1686,18 +1800,18 @@ export function ReminderEditModal({
         <Glass isCard style={[styles.editSheet, { width: SCREEN_W - 32, marginTop: 40, maxHeight: "90%", borderColor: `${accent}40` }]}>
           <ScrollView showsVerticalScrollIndicator={false} onStartShouldSetResponder={() => true}>
             <Text style={[styles.sheetKicker, { color: accent }]}>Smart Reminder & Calendar</Text>
-            <TextInput style={styles.editInput} value={title} onChangeText={setTitle} placeholder="Reminder Title" placeholderTextColor="#8f849c" />
+            <TextInput style={styles.editInput} value={title} onChangeText={setTitle} placeholder="Reminder Title" placeholderTextColor="rgba(238,241,246,0.5)" />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>CALENDAR & SCHEDULE</Text>
-            <TextInput style={styles.editInput} value={calendarTitle} onChangeText={setCalendarTitle} placeholder="Calendar e.g. Work, Family" placeholderTextColor="#8f849c" />
+            <TextInput style={styles.editInput} value={calendarTitle} onChangeText={setCalendarTitle} placeholder="Calendar e.g. Work, Family" placeholderTextColor="rgba(238,241,246,0.5)" />
             <View style={{ flexDirection: "row", gap: 10, marginTop: 6 }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.kicker, { fontSize: 9 }]}>Date (MM/DD/YYYY)</Text>
-                <TextInput style={[styles.editInput, { marginTop: 3 }]} value={dueText} onChangeText={setDueText} placeholder="e.g. 07/15/2026" placeholderTextColor="#8f849c" />
+                <TextInput style={[styles.editInput, { marginTop: 3 }]} value={dueText} onChangeText={setDueText} placeholder="e.g. 07/15/2026" placeholderTextColor="rgba(238,241,246,0.5)" />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.kicker, { fontSize: 9 }]}>Time (HH:MM AM/PM)</Text>
-                <TextInput style={[styles.editInput, { marginTop: 3 }]} value={timeText} onChangeText={setTimeText} placeholder="e.g. 10:30 AM" placeholderTextColor="#8f849c" />
+                <TextInput style={[styles.editInput, { marginTop: 3 }]} value={timeText} onChangeText={setTimeText} placeholder="e.g. 10:30 AM" placeholderTextColor="rgba(238,241,246,0.5)" />
               </View>
             </View>
 
@@ -1735,7 +1849,7 @@ export function ReminderEditModal({
             <SourceModelBadge modelId={modelId} />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>TAGS (comma separated)</Text>
-            <TextInput style={styles.editInput} value={tags} onChangeText={setTags} placeholder="e.g. work, urgent" placeholderTextColor="#8f849c" />
+            <TextInput style={styles.editInput} value={tags} onChangeText={setTags} placeholder="e.g. work, urgent" placeholderTextColor="rgba(238,241,246,0.5)" />
 
             {linkDispatch && linkState && item && (
               <LinkedItemsBlock item={item} kind="reminder" dispatch={linkDispatch} state={linkState} />
@@ -1814,7 +1928,7 @@ export function MemoryEditModal({
               onChangeText={setContent}
               multiline
               placeholder="What should Collider remember?"
-              placeholderTextColor="#8f849c"
+              placeholderTextColor="rgba(238,241,246,0.5)"
             />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>PRIORITY</Text>
@@ -1842,7 +1956,7 @@ export function MemoryEditModal({
             <SourceModelBadge modelId={modelId} />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>TAGS (comma separated)</Text>
-            <TextInput style={styles.editInput} value={tags} onChangeText={setTags} placeholder="e.g. preference, context" placeholderTextColor="#8f849c" />
+            <TextInput style={styles.editInput} value={tags} onChangeText={setTags} placeholder="e.g. preference, context" placeholderTextColor="rgba(238,241,246,0.5)" />
 
             {linkDispatch && linkState && item && (
               <LinkedItemsBlock item={item} kind="memory" dispatch={linkDispatch} state={linkState} />
@@ -1916,13 +2030,13 @@ export function ProjectEditModal({
         <Glass isCard style={[styles.editSheet, { width: SCREEN_W - 32, marginTop: 40, maxHeight: "90%", borderColor: `${accent}40` }]}>
           <ScrollView showsVerticalScrollIndicator={false} onStartShouldSetResponder={() => true}>
             <Text style={[styles.sheetKicker, { color: accent }]}>Smart Project detail</Text>
-            <TextInput style={styles.editInput} value={name} onChangeText={setName} placeholder="Project Name" placeholderTextColor="#8f849c" />
+            <TextInput style={styles.editInput} value={name} onChangeText={setName} placeholder="Project Name" placeholderTextColor="rgba(238,241,246,0.5)" />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>SOURCE MODEL</Text>
             <SourceModelBadge modelId={modelId} />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>TASKS BOARD ({item?.tasks?.length || 0})</Text>
-            <View style={{ backgroundColor: "#0a0a0c", borderRadius: 12, padding: 8, marginVertical: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+            <View style={{ backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 8, marginVertical: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
               {item?.tasks?.length === 0 ? (
                 <Text style={[styles.muted, { padding: 8 }]}>No tasks added yet.</Text>
               ) : (
@@ -1957,7 +2071,7 @@ export function ProjectEditModal({
                 value={newTaskTitle}
                 onChangeText={setNewTaskTitle}
                 placeholder="Task title..."
-                placeholderTextColor="#8f849c"
+                placeholderTextColor="rgba(238,241,246,0.5)"
               />
               <Pressable onPress={handleAddTask} style={[styles.primaryBtn, { marginTop: 0, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: `${accent}22`, borderColor: `${accent}80`, shadowColor: accent }]}>
                 <Text style={[styles.primaryText, { color: accent }]}></Text>
@@ -2006,7 +2120,7 @@ function kindColor(kind: Artifact["kind"]): string {
     case "timeline": return "#5dbdff";
     case "statement": return "#ffffff"; // was gold — banned accent per SPEC.md
     case "document": return "#ffffff";
-    default: return "#6b6478";
+    default: return "rgba(238,241,246,0.45)";
   }
 }
 
@@ -2061,7 +2175,7 @@ export function ArtifactEditModal({
             <Text style={[styles.sheetKicker, { color: accent }]}>Smart Artifact detail</Text>
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 6 }]}>TITLE</Text>
-            <TextInput style={styles.editInput} value={title} onChangeText={setTitle} placeholder="Artifact title" placeholderTextColor="#8f849c" />
+            <TextInput style={styles.editInput} value={title} onChangeText={setTitle} placeholder="Artifact title" placeholderTextColor="rgba(238,241,246,0.5)" />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>KIND (tap to swap type)</Text>
             <View style={{ flexDirection: "row", gap: 6, marginVertical: 4, flexWrap: "wrap" }}>
@@ -2081,24 +2195,24 @@ export function ArtifactEditModal({
 
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
               <Text style={styles.kicker}>CONTENT</Text>
-              <View style={{ flexDirection: "row", backgroundColor: "#0a0a0c", borderRadius: 8, padding: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
+              <View style={{ flexDirection: "row", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 8, padding: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
                 {(["edit", "preview"] as const).map((m) => (
                   <Pressable
                     key={m}
                     onPress={() => setPreviewMode(m === "preview")}
                     style={{ paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, backgroundColor: (m === "preview") === previewMode ? "rgba(255,255,255,0.12)" : "transparent" }}
                   >
-                    <Text style={{ fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: (m === "preview") === previewMode ? "#fff" : "#6b6478" }}>{m.toUpperCase()}</Text>
+                    <Text style={{ fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: (m === "preview") === previewMode ? "#fff" : "rgba(238,241,246,0.45)" }}>{m.toUpperCase()}</Text>
                   </Pressable>
                 ))}
               </View>
             </View>
             {previewMode ? (
-              <View style={{ minHeight: 140, padding: 10, borderRadius: 12, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", marginTop: 4 }}>
+              <View style={{ minHeight: 140, padding: 10, borderRadius: 12, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", marginTop: 4 }}>
                 {content.trim() ? (
                   <Markdown content={content} color="#fff" fontSize={13} />
                 ) : (
-                  <Text style={{ color: "#6b6478", fontSize: 12, fontStyle: "italic" }}>Nothing to preview yet.</Text>
+                  <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 12, fontStyle: "italic" }}>Nothing to preview yet.</Text>
                 )}
               </View>
             ) : (
@@ -2108,7 +2222,7 @@ export function ArtifactEditModal({
                 onChangeText={setContent}
                 multiline
                 placeholder="Artifact content..."
-                placeholderTextColor="#8f849c"
+                placeholderTextColor="rgba(238,241,246,0.5)"
               />
             )}
 
@@ -2125,7 +2239,7 @@ export function ArtifactEditModal({
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
               <Pressable onPress={handleSave} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: `${accent}22`, borderColor: `${accent}80`, shadowColor: accent }]}><Text style={[styles.primaryText, { color: accent }]}>Save</Text></Pressable>
-              <Pressable onPress={handleExport} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.25)", shadowColor: "#fff" }]}><Text style={[styles.primaryText, { color: "#e2e8f0" }]}>Export</Text></Pressable>
+              <Pressable onPress={handleExport} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.25)", shadowColor: "#fff" }]}><Text style={[styles.primaryText, { color: "#e2e8f0" }]}>Export</Text></Pressable>
               <Pressable onPress={() => onDelete(item.id)} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(239,68,68,0.15)", borderColor: "rgba(239,68,68,0.5)", shadowColor: "#ef4444" }]}><Text style={[styles.primaryText, { color: "#ef4444" }]}>Delete</Text></Pressable>
             </View>
           </ScrollView>
@@ -2202,7 +2316,7 @@ export function FileEditModal({
             <Text style={[styles.sheetKicker, { color: accent }]}>Smart File detail</Text>
             
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 6 }]}>FILE NAME</Text>
-            <TextInput style={styles.editInput} value={name} onChangeText={setName} placeholder="File Name" placeholderTextColor="#8f849c" />
+            <TextInput style={styles.editInput} value={name} onChangeText={setName} placeholder="File Name" placeholderTextColor="rgba(238,241,246,0.5)" />
 
             <Text style={[styles.kicker, { fontSize: 10, marginTop: 12 }]}>AI MODEL CONTEXT</Text>
             <ModelSelectorRow selected={modelId} onSelect={setModelId} />
@@ -2219,16 +2333,16 @@ export function FileEditModal({
                 onChangeText={setTextContent}
                 multiline
                 placeholder="File contents..."
-                placeholderTextColor="#8f849c"
+                placeholderTextColor="rgba(238,241,246,0.5)"
               />
             ) : (
-              <View style={{ backgroundColor: "#0a0a0c", borderRadius: 12, padding: 12, marginVertical: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
-                <Text style={{ color: "#6b6478", fontSize: 11, fontFamily: "monospace" }}>{item?.url || "No content url available."}</Text>
+              <View style={{ backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 12, marginVertical: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, fontFamily: "monospace" }}>{item?.url || "No content url available."}</Text>
               </View>
             )}
 
             <View style={{ flexDirection: "row", gap: 10, marginTop: 20 }}>
-              <Pressable onPress={handleShare} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.25)" }]}>
+              <Pressable onPress={handleShare} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.25)" }]}>
                 <Text style={[styles.primaryText, { color: "#fff" }]}>Share</Text>
               </Pressable>
               <Pressable onPress={handleSave} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: `${accent}22`, borderColor: `${accent}80`, shadowColor: accent }]}><Text style={[styles.primaryText, { color: accent }]}>Save</Text></Pressable>
@@ -2513,12 +2627,12 @@ function CardScreen({
                           <Text style={[styles.bodyText, { marginTop: 6, fontSize: 12, opacity: 0.8 }]}>{message.content}</Text>
                         </View>
                       ) : message.role === "assistant" && model.category.includes("music") && message.content?.startsWith("data:audio") ? (
-                        <View style={[styles.audioPlayerCard, { backgroundColor: "#161619" }]}>
+                        <View style={[styles.audioPlayerCard, { backgroundColor: "rgba(255,255,255,0.05)" }]}>
                           <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> {model.label.toUpperCase()}</Text>
                           <AudioPlayerControls uri={message.content} />
                         </View>
                       ) : message.role === "assistant" && model.category.includes("video") && message.content?.startsWith("data:video") ? (
-                        <View style={[styles.videoPlayerCard, { backgroundColor: "#161619" }]}>
+                        <View style={[styles.videoPlayerCard, { backgroundColor: "rgba(255,255,255,0.05)" }]}>
                           <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> {model.label.toUpperCase()}</Text>
                           <VideoPlayer uri={message.content} />
                         </View>
@@ -2543,23 +2657,23 @@ function CardScreen({
             {/* Scroll FABs */}
             {thread.length > 2 && (
               <View style={{ position: "absolute", right: 16, bottom: 24, gap: 12, pointerEvents: "box-none", alignItems: "center" }}>
-                <Pressable onPress={() => chatScrollRef.current?.scrollTo({ y: 0, animated: true })} style={[styles.iconBtnLg, { width: 36, height: 36, borderRadius: 18, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.2)", borderWidth: StyleSheet.hairlineWidth }]}>
+                <Pressable onPress={() => chatScrollRef.current?.scrollTo({ y: 0, animated: true })} style={[styles.iconBtnLg, { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.2)", borderWidth: StyleSheet.hairlineWidth }]}>
                   <Ionicons name="chevron-up" size={16} color="#fff" />
                 </Pressable>
-                <Pressable onPress={() => chatScrollRef.current?.scrollToEnd({ animated: true })} style={[styles.iconBtnLg, { width: 36, height: 36, borderRadius: 18, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.2)", borderWidth: StyleSheet.hairlineWidth }]}>
+                <Pressable onPress={() => chatScrollRef.current?.scrollToEnd({ animated: true })} style={[styles.iconBtnLg, { width: 36, height: 36, borderRadius: 18, backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.2)", borderWidth: StyleSheet.hairlineWidth }]}>
                   <Ionicons name="chevron-down" size={16} color="#fff" />
                 </Pressable>
               </View>
             )}
             {/* Top Depth Fade */}
             <LinearGradient
-              colors={["#0a0a0c", "rgba(10, 10, 12, 0)"]}
+              colors={["rgba(255,255,255,0.04)", "rgba(10, 10, 12, 0)"]}
               style={{ position: "absolute", top: 0, left: 0, right: 0, height: 16, zIndex: 10 }}
               pointerEvents="none"
             />
             {/* Bottom Depth Fade */}
             <LinearGradient
-              colors={["rgba(10, 10, 12, 0)", "#0a0a0c"]}
+              colors={["rgba(10, 10, 12, 0)", "rgba(255,255,255,0.04)"]}
               style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 28, zIndex: 10 }}
               pointerEvents="none"
             />
@@ -2588,7 +2702,7 @@ function CardScreen({
                 Start a fresh conversation thread for {model.label}? This will sync globally across all active cards in this category.
               </Text>
               <View style={{ flexDirection: "row", gap: 10, marginTop: 16 }}>
-                <Pressable onPress={() => setConfirmingNewConvo(false)} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "#0a0a0c", borderColor: "rgba(255,255,255,0.2)" }]}>
+                <Pressable onPress={() => setConfirmingNewConvo(false)} style={[styles.primaryBtn, { flex: 1, marginTop: 0, backgroundColor: "rgba(255,255,255,0.04)", borderColor: "rgba(255,255,255,0.2)" }]}>
                   <Text style={[styles.primaryText, { color: "#fff" }]}>Cancel</Text>
                 </Pressable>
                 <Pressable
@@ -2614,7 +2728,7 @@ function CardScreen({
             <Text style={styles.muted}>No memories captured for this model yet.</Text>
           ) : (
             state.memories.filter((m) => m.modelId === model.id).map((m) => (
-              <View key={m.id} style={[styles.dissentCard, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
+              <View key={m.id} style={[styles.dissentCard, { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
                 <Text style={styles.bodyText}>{m.content}</Text>
                 <Pressable style={{ marginTop: 8 }} onPress={() => dispatch({ type: "removeMemory", id: m.id })}>
                   <Text style={{ color: "#ef4444", fontSize: 11 }}>Delete memory</Text>
@@ -2622,13 +2736,13 @@ function CardScreen({
               </View>
             ))
           )}
-          <View style={[styles.inlineAdd, { backgroundColor: "#161619", marginTop: 14 }]}>
+          <View style={[styles.inlineAdd, { backgroundColor: "rgba(255,255,255,0.05)", marginTop: 14 }]}>
             <TextInput
               style={styles.inlineInput}
               value={newMemory}
               onChangeText={setNewMemory}
               placeholder="Add new memory..."
-              placeholderTextColor="#8f849c"
+              placeholderTextColor="rgba(238,241,246,0.5)"
             />
             <Pressable
               onPress={() => {
@@ -2654,7 +2768,7 @@ function CardScreen({
               it, so every model's card showed the full global project list
               regardless of which model you were looking at. */}
           {state.projects.filter((p) => p.modelId === model.id).map((proj) => (
-            <View key={proj.id} style={[styles.dissentCard, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
+            <View key={proj.id} style={[styles.dissentCard, { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
               <Text style={[styles.textStrong, { color: model.color }]}>{proj.name}</Text>
               {proj.tasks.map((task) => (
                 <Pressable
@@ -2666,11 +2780,11 @@ function CardScreen({
                   <Text style={[styles.bodyText, task.done && styles.done]}>{task.title}</Text>
                 </Pressable>
               ))}
-              <View style={[styles.inlineAdd, { backgroundColor: "#161619", marginTop: 10, minHeight: 38, borderRadius: 10 }]}>
+              <View style={[styles.inlineAdd, { backgroundColor: "rgba(255,255,255,0.05)", marginTop: 10, minHeight: 38, borderRadius: 10 }]}>
                 <TextInput
                   style={[styles.inlineInput, { fontSize: 12 }]}
                   placeholder="New task title..."
-                  placeholderTextColor="#8f849c"
+                  placeholderTextColor="rgba(238,241,246,0.5)"
                   value={selectedProjId === proj.id ? newTaskTitle : ""}
                   onChangeText={(val) => {
                     setSelectedProjId(proj.id);
@@ -2702,7 +2816,7 @@ function CardScreen({
           ) : (
             <View style={styles.grid}>
               {state.files.filter((f) => f.name.includes(model.id) || f.name.includes(model.label.replace(/\s+/g, ""))).map((f) => (
-                <View key={f.id} style={[styles.fileTile, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
+                <View key={f.id} style={[styles.fileTile, { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}>
                   <Text style={styles.fileIcon}></Text>
                   <ExpandableTrayText style={[styles.bodyText, { fontSize: 10 }]} text={f.name} />
                 </View>
@@ -2734,12 +2848,12 @@ function CardScreen({
                 key={r.id}
                 onPress={() => setEditingCardReminder(r)}
                 onLongPress={() => dispatch({ type: "toggleReminder", id: r.id })}
-                style={[styles.rowItem, { backgroundColor: "#161619", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}
+                style={[styles.rowItem, { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.06)", borderWidth: 1 }]}
               >
                 <Text style={{ fontSize: 16, color: model.color }}>{r.done ? "✓" : "○"}</Text>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.bodyText, r.done && styles.done]}>{r.title}</Text>
-                  {r.due && <Text style={{ fontSize: 10, color: "#6b6478" }}>Due: {new Date(r.due).toLocaleString()}</Text>}
+                  {r.due && <Text style={{ fontSize: 10, color: "rgba(238,241,246,0.45)" }}>Due: {new Date(r.due).toLocaleString()}</Text>}
                 </View>
               </Pressable>
             ))
@@ -2751,13 +2865,13 @@ function CardScreen({
               key) to tag the owning model, which meant every reminder
               created from this tab shared one fingerprint and all but the
               first got silently dropped as a "duplicate". */}
-          <View style={[styles.inlineAdd, { backgroundColor: "#161619", marginTop: 14 }]}>
+          <View style={[styles.inlineAdd, { backgroundColor: "rgba(255,255,255,0.05)", marginTop: 14 }]}>
             <TextInput
               style={styles.inlineInput}
               value={newReminder}
               onChangeText={setNewReminder}
               placeholder="Add reminder..."
-              placeholderTextColor="#8f849c"
+              placeholderTextColor="rgba(238,241,246,0.5)"
             />
             <Pressable
               onPress={() => {
@@ -2929,7 +3043,7 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
           <Pressable onPress={() => handleNav("settings")} style={localDrawerStyles.utilIcon}>
             <Ionicons name="settings-outline" size={16} color="rgba(255,255,255,0.5)" />
           </Pressable>
-          <Pressable onPress={handleClose} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
+          <Pressable onPress={handleClose} style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", alignItems: "center", justifyContent: "center" }}>
             <Ionicons name="close" size={16} color="#fff" />
           </Pressable>
         </View>
@@ -2973,14 +3087,14 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
         {/* History — same sortable-table pattern as Reminders: tap a header
             to sort by it, tap again to flip direction. Consensus is a tab
             lip alongside Conversations, not a separate screen. */}
-        <View style={{ flexDirection: "row", marginBottom: 8, backgroundColor: "#0a0a0c", borderRadius: 10, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+        <View style={{ flexDirection: "row", marginBottom: 8, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 10, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
           {(["convos", "consensus"] as const).map((t) => (
             <Pressable
               key={t}
               onPress={() => setHistoryTab(t)}
               style={{ flex: 1, paddingVertical: 6, borderRadius: 8, alignItems: "center", backgroundColor: historyTab === t ? "rgba(255,255,255,0.08)" : "transparent" }}
             >
-              <Text style={{ color: historyTab === t ? "#fff" : "#6b6478", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
+              <Text style={{ color: historyTab === t ? "#fff" : "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
                 {t === "convos" ? `CONVERSATIONS (${state.conversations.length})` : `CONSENSUS (${state.consensusRuns.length})`}
               </Text>
             </Pressable>
@@ -3006,7 +3120,7 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
               {sortBy === "last" && <Ionicons name={sortDir === 1 ? "chevron-up" : "chevron-down"} size={9} color="#e2e8f0" />}
             </Pressable>
             <View style={{ width: 1, height: 14, backgroundColor: "rgba(255,255,255,0.1)" }} />
-            <Picker value={modelFilter} onChange={setModelFilter} options={modelOptions} textStyle={{ fontSize: 9, color: "#6b6478" }} />
+            <Picker value={modelFilter} onChange={setModelFilter} options={modelOptions} textStyle={{ fontSize: 9, color: "rgba(238,241,246,0.45)" }} />
           </View>
         )}
 
@@ -3026,8 +3140,8 @@ function Drawer({ close, nav }: { close: () => void; nav: (s: Screen) => void })
                     style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "rgba(255,255,255,0.05)", gap: 4 }}
                   >
                     <ExpandableTrayText style={[styles.bodyText, { flex: 1, fontSize: 12 }]} text={conv.title || "Untitled"} />
-                    <Text style={{ width: 54, color: "#6b6478", fontSize: 9.5, fontFamily: FONT_FAMILY }}>{new Date(conv.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</Text>
-                    <Text style={{ width: 54, color: "#6b6478", fontSize: 9.5, fontFamily: FONT_FAMILY }}>{new Date(lastActivity(conv)).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</Text>
+                    <Text style={{ width: 54, color: "rgba(238,241,246,0.45)", fontSize: 9.5, fontFamily: FONT_FAMILY }}>{new Date(conv.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</Text>
+                    <Text style={{ width: 54, color: "rgba(238,241,246,0.45)", fontSize: 9.5, fontFamily: FONT_FAMILY }}>{new Date(lastActivity(conv)).toLocaleDateString(undefined, { month: "short", day: "numeric" })}</Text>
                   </Pressable>
                 ))
               )
@@ -3172,7 +3286,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
               style={{ flex: 1, paddingVertical: 7, borderRadius: 9, alignItems: "center", overflow: "hidden" }}
             >
               {panel === p && <GlossButton borderRadius={9} active />}
-              <Text style={{ color: panel === p ? "#fff" : "#6b6478", fontSize: 10.5, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900) }}>
+              <Text style={{ color: panel === p ? "#fff" : "rgba(238,241,246,0.45)", fontSize: 10.5, fontWeight: "900", letterSpacing: 0.5, fontFamily: fontFamilyForWeight(900) }}>
                 {p === "tools" ? "SMART GEN TOOLS" : "GENERATIONS"}
               </Text>
             </Pressable>
@@ -3206,8 +3320,8 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                     <SmartGenMark size={18} />
                   </View>
                   <Text style={[styles.bodyText, { flex: 1, fontSize: 13.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }]}>{row.label}</Text>
-                  <Text style={{ color: "#6b6478", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{row.count}</Text>
-                  <Ionicons name="chevron-forward" size={14} color="#6b6478" />
+                  <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{row.count}</Text>
+                  <Ionicons name="chevron-forward" size={14} color="rgba(238,241,246,0.45)" />
                 </Pressable>
               ))}
 
@@ -3216,7 +3330,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                   Account/Usage either). Not auto-generated Smart Gen content
                   like the four above, so a distinct icon each rather than
                   the Smart Gen mark repeated. */}
-              <View style={{ height: 1, backgroundColor: "#0a0a0c", marginVertical: 2 }} />
+              <View style={{ height: 1, backgroundColor: "rgba(255,255,255,0.04)", marginVertical: 2 }} />
               {([
                 { screen: "files" as Screen, label: "Files", count: state.files.length, icon: "document-text-outline" as const },
                 { screen: "market" as Screen, label: "Discover Market", count: undefined, icon: "storefront-outline" as const },
@@ -3233,9 +3347,9 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                   </View>
                   <Text style={[styles.bodyText, { flex: 1, fontSize: 13.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }]}>{row.label}</Text>
                   {row.count !== undefined && (
-                    <Text style={{ color: "#6b6478", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{row.count}</Text>
+                    <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{row.count}</Text>
                   )}
-                  <Ionicons name="chevron-forward" size={14} color="#6b6478" />
+                  <Ionicons name="chevron-forward" size={14} color="rgba(238,241,246,0.45)" />
                 </Pressable>
               ))}
             </View>
@@ -3251,8 +3365,8 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
               <View style={{ marginTop: 1 }}>
                 <SmartGenMark size={16} />
               </View>
-              <Text style={{ flex: 1, color: "#858091", fontSize: 10.5, lineHeight: 15, fontFamily: FONT_FAMILY }}>
-                These are auto-generated from your conversations as you chat. Tap here to turn it off in Settings.
+              <Text style={{ flex: 1, color: "rgba(238,241,246,0.5)", fontSize: 10.5, lineHeight: 15, fontFamily: FONT_FAMILY }}>
+                Smart Gen auto-creates projects, reminders and artifacts from your conversations — no permission prompts, just delivered. Tap to turn it off in Settings.
               </Text>
             </Pressable>
           </>
@@ -3265,7 +3379,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                 key={t}
                 onPress={() => setTab(t)}
                 style={[
-                  { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6, backgroundColor: "#0a0a0c" },
+                  { paddingHorizontal: 8, paddingVertical: 5, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.04)" },
                   tab === t && { backgroundColor: "rgba(255,255,255,0.6)" },
                 ]}
               >
@@ -3275,13 +3389,13 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
               </Pressable>
             ))}
           </View>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "#0a0a0c", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
-            <Ionicons name="filter-outline" size={11} color="#6b6478" />
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 4 }}>
+            <Ionicons name="filter-outline" size={11} color="rgba(238,241,246,0.45)" />
             <Picker
               value={modelFilter}
               onChange={setModelFilter}
               options={modelFilterOptions}
-              textStyle={{ fontSize: 11, color: "#6b6478" }}
+              textStyle={{ fontSize: 11, color: "rgba(238,241,246,0.45)" }}
             />
           </View>
         </View>
@@ -3303,7 +3417,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                       </ImageBackground>
                     </Pressable>
                   ) : (
-                    <View style={{ width: 44, height: 44, borderRadius: 6, backgroundColor: "#0a0a0c", alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 6, backgroundColor: "rgba(255,255,255,0.04)", alignItems: "center", justifyContent: "center" }}>
                       <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>DOC</Text>
                     </View>
                   )}

@@ -11,6 +11,8 @@
     "zip": "cd .. && rm -f /mnt/documents/collider-expo-native.zip && zip -r /mnt/documents/collider-expo-native.zip collider-expo -x 'collider-expo/node_modules/*' 'collider-expo/.expo/*' 'collider-expo/ios/*' 'collider-expo/android/*'"
   },
   "dependencies": {
+    "@expo-google-fonts/ibm-plex-mono": "^0.4.1",
+    "@expo-google-fonts/instrument-sans": "^0.4.2",
     "@expo-google-fonts/manrope": "^0.4.2",
     "@expo/vector-icons": "^15.1.1",
     "@react-native-async-storage/async-storage": "^2.2.0",

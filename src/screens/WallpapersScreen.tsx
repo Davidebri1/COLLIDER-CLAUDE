@@ -62,7 +62,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
   }, [state.musicPlayer.trackId, state.musicPlayer.isPlaying, handlePlayStatusUpdateFor]);
 
   const SELECTED_BORDER = "#e2e8f0"; // Silver/chrome — the app's active/selected accent, not a hue
-  const LOCK_COLOR = "#6b6478"; // Locked/disabled is a legitimate desaturated case, not a soft-purple one
+  const LOCK_COLOR = "rgba(238,241,246,0.45)"; // Locked/disabled is a legitimate desaturated case, not a soft-purple one
   // Preset gradient colorscapes: a plain Pro/Elite tier perk (unrelated to
   // the per-item purchase model below, which is specifically for live video
   // wallpapers — a static gradient isn't the thing SPEC.md's individual
@@ -281,7 +281,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
                                   dispatch({ type: "toggleTrackEnabled", trackId: track.id });
                                 }}
                               >
-                                <Ionicons name={disabled ? "eye-off-outline" : "checkmark-circle"} size={16} color={disabled ? "#6b6478" : "#4be6b1"} />
+                                <Ionicons name={disabled ? "eye-off-outline" : "checkmark-circle"} size={16} color={disabled ? "rgba(238,241,246,0.45)" : "#4be6b1"} />
                               </Pressable>
                             </View>
 
@@ -321,7 +321,7 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
 
 const localStyles = StyleSheet.create({
   mutedHint: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 10.5,
     textAlign: "center",
     marginVertical: 14,
@@ -341,13 +341,13 @@ const wallStyles = StyleSheet.create(withFont({
     paddingHorizontal: 2,
   },
   sectionLabel: {
-    color: "#858091",
+    color: "rgba(238,241,246,0.5)",
     fontSize: 9.5,
     letterSpacing: 2,
     fontWeight: "900", fontFamily: fontFamilyForWeight(900),
   },
   sectionHint: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 10.5,
   },
   liveBadge: {
@@ -383,7 +383,7 @@ const wallStyles = StyleSheet.create(withFont({
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),
   },
   trackList: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
     borderRadius: 10,

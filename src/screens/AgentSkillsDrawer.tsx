@@ -194,7 +194,7 @@ export function AgentSkillsDrawer({
                           <Ionicons
                             name={active ? "checkbox" : "square-outline"}
                             size={18}
-                            color={active ? "#e2e8f0" : "#6b6478"}
+                            color={active ? "#e2e8f0" : "rgba(238,241,246,0.45)"}
                           />
                         </Pressable>
                       );
@@ -211,7 +211,7 @@ export function AgentSkillsDrawer({
                       <Text style={localStyles.infoBoxTitle}>{editingAgentId ? "EDIT AGENT" : "SYNTHESIZE SPECIAL AGENT"}</Text>
                       {editingAgentId && (
                         <Pressable onPress={resetAgentForm}>
-                          <Text style={{ color: "#858091", fontSize: 9.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 0.5 }}>CANCEL</Text>
+                          <Text style={{ color: "rgba(238,241,246,0.5)", fontSize: 9.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 0.5 }}>CANCEL</Text>
                         </Pressable>
                       )}
                     </View>
@@ -304,9 +304,9 @@ export function AgentSkillsDrawer({
                               </View>
                               <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
                                 <View style={[localStyles.modelDot, { backgroundColor: mColor, width: 4, height: 4 }]} />
-                                <Text style={{ color: "#858091", fontSize: 9.5 }}>{modelById(ag.modelId)?.label || ag.modelId}</Text>
+                                <Text style={{ color: "rgba(238,241,246,0.5)", fontSize: 9.5 }}>{modelById(ag.modelId)?.label || ag.modelId}</Text>
                               </View>
-                              <Text style={{ color: "#6b6478", fontSize: 10.5 }} numberOfLines={1}>{ag.instructions}</Text>
+                              <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10.5 }} numberOfLines={1}>{ag.instructions}</Text>
                             </Pressable>
                             <View style={{ flexDirection: "row", gap: 6 }}>
                               <Pressable
@@ -454,14 +454,14 @@ const localStyles = StyleSheet.create(withFont({
     height: 26,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 13,
   },
   tabContainer: {
     flexDirection: "row",
     paddingHorizontal: 12,
     marginVertical: 10,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     padding: 3,
     marginHorizontal: 12,
@@ -476,13 +476,13 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center"
   },
   navTabActive: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)"
   },
   navTabText: {
     fontSize: 9,
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
@@ -505,14 +505,14 @@ const localStyles = StyleSheet.create(withFont({
     marginBottom: 3,
   },
   infoBoxDesc: {
-    color: "#858091",
+    color: "rgba(238,241,246,0.5)",
     fontSize: 10.5,
     lineHeight: 15,
   },
   skillCard: {
     padding: 12,
     borderRadius: 14,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
     flexDirection: "row",
@@ -529,18 +529,18 @@ const localStyles = StyleSheet.create(withFont({
     fontSize: 12,
   },
   skillDesc: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 10.5,
     lineHeight: 14,
   },
   formLabel: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 8.5,
     fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1.2,
   },
   formInput: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -550,7 +550,7 @@ const localStyles = StyleSheet.create(withFont({
     fontSize: 12,
   },
   modelScroller: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -564,7 +564,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 8,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderColor: "transparent",
     borderWidth: 1,
   },
@@ -575,11 +575,11 @@ const localStyles = StyleSheet.create(withFont({
   },
   modelBtnText: {
     fontSize: 10,
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   formTextarea: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -591,7 +591,7 @@ const localStyles = StyleSheet.create(withFont({
     textAlignVertical: "top",
   },
   formTextareaBig: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -621,7 +621,7 @@ const localStyles = StyleSheet.create(withFont({
   activeAgentCard: {
     padding: 10,
     borderRadius: 12,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.05)",
     flexDirection: "row",
@@ -649,7 +649,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   useBtnOn: {
     backgroundColor: "#e2e8f0",
@@ -688,7 +688,7 @@ const localStyles = StyleSheet.create(withFont({
     textAlign: "center",
   },
   lockDesc: {
-    color: "#858091",
+    color: "rgba(238,241,246,0.5)",
     fontSize: 11,
     textAlign: "center",
     marginTop: 4,

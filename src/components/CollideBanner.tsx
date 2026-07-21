@@ -1,18 +1,13 @@
 import React, { useEffect, useState, useRef } from "react";
 import { View, Pressable, Text, StyleSheet, Animated } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import Svg, { Defs, LinearGradient as SvgGradient, Stop, Path } from "react-native-svg";
 import { useCollider } from "../state";
 import { modelById } from "../models";
 import { scoreConsensus } from "../services/chat";
-import { ScrollCueArrow } from "./ScrollCueArrow";
+import { GLASS_CARD, FONT_MONO, FONT_MONO_SEMIBOLD } from "../styles/theme";
 
 const DISSENT_THRESHOLD = 0.5;
-const SILVER = "#e2e8f0";
-// A border you can barely see reads as noise (was it intentional? is it a
-// rendering glitch?), not as a boundary. Same width/color on the badge and
-// the bar below it, opaque enough to read as one deliberate frame.
-const BORDER = "rgba(226,232,240,0.65)";
+const SILVER = "#e6ecf4";
 
 // Proactive-value bar: the user types a prompt, gets replies from every
 // selected model, and the synthesis of what they said is sitting right
@@ -94,44 +89,11 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
   const totalCount = replies.length;
   const ratio = totalCount ? agreeCount / totalCount : 0;
   const hasScore = !!result;
-  const scoreColor = !hasScore ? SILVER : ratio >= 0.66 ? "#10b981" : ratio >= 0.4 ? "#f5e000" : "#ef4444"; // mid-tier was orange/gold — banned accent per SPEC.md; true yellow instead
+  const scoreColor = !hasScore ? SILVER : ratio >= 0.66 ? "#7ee2a8" : ratio >= 0.4 ? "#f5e000" : "#ff6a5c";
   const available = state.autoConsensusSummary && hasScore;
 
-  const gradId = "collideBadgeGrad";
-
   return (
-    <View style={{ marginHorizontal: 14, marginTop: 2, alignItems: "center" }}>
-      {/* The score tab — sits fully ABOVE the bar (touching, not overlapping
-          into it) so the bar keeps its full interior height for text
-          instead of losing space to a badge dug into its top. A trapezoid,
-          not a circle: an angled shape holds a 2-3 character fraction more
-          efficiently than a circle/semicircle does. Always rendered —
-          "Consensus:" and the score are this bar's identity, not a state
-          that comes and goes.
-          The badge's Path is drawn with the bottom edge OPEN (no L back to
-          the start, no Z) so only the two slanted sides + top are stroked —
-          the bar's own top border below is what visually closes the shape,
-          at the exact same width/color, so it reads as one continuous
-          outline instead of two mismatched borders with a seam between
-          them (badge stroke was 1.25px, bar border was 1px, with a visible
-          gap line where they met). */}
-      <View style={{ marginBottom: 0 }}>
-        <Svg width={60} height={24} viewBox="0 0 60 24">
-          <Defs>
-            <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0" stopColor="#5a1f9e" />
-              <Stop offset="1" stopColor="#170a2e" />
-            </SvgGradient>
-          </Defs>
-          <Path d="M2,24 L10,1 L50,1 L58,24" fill={`url(#${gradId})`} stroke={BORDER} strokeWidth={1.5} strokeLinejoin="round" />
-        </Svg>
-        <View style={[StyleSheet.absoluteFill, { alignItems: "center", justifyContent: "center", paddingBottom: 2 }]}>
-          <Text style={[styles.badgeScore, { color: scoreColor, textShadowColor: scoreColor }]}>
-            {available ? `${agreeCount}/${totalCount}` : "–/–"}
-          </Text>
-        </View>
-      </View>
-
+    <View style={{ marginHorizontal: 16, marginTop: 2 }}>
       <Pressable
         onPress={() => {
           if (disabled) return;
@@ -142,25 +104,21 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           setExpanded(!expanded);
         }}
         disabled={disabled}
-        style={[styles.banner, disabled && { opacity: 0.4 }]}
+        style={[styles.bar, disabled && { opacity: 0.5 }]}
       >
         <LinearGradient
-          colors={["#2b074a", "#100424", "#030107"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          colors={GLASS_CARD}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.7, y: 1 }}
           style={StyleSheet.absoluteFill}
         />
 
-        {/* Glossy Shimmer sweep effect */}
+        {/* Glossy shimmer sweep — only once a real consensus is available. */}
         {available && !disabled && (
           <Animated.View
             style={[
               StyleSheet.absoluteFill,
-              {
-                transform: [{ translateX: shimmerTranslateX }, { rotate: "25deg" }],
-                width: 60,
-                opacity: 0.14,
-              },
+              { transform: [{ translateX: shimmerTranslateX }, { rotate: "18deg" }], width: 70, opacity: 0.16 },
             ]}
             pointerEvents="none"
           >
@@ -173,112 +131,132 @@ export function CollideBanner({ onPress, disabled }: { onPress: () => void; disa
           </Animated.View>
         )}
 
-        <Text style={styles.summary} numberOfLines={expanded ? undefined : 2}>
-          <Text style={styles.summaryLead}>Consensus: </Text>
-          {available ? result!.verdict : "Incomplete"}
-        </Text>
-        
-        {available && (
-          <View style={{ flexDirection: "row", gap: 4, marginTop: 5 }}>
-            {replies.map((r) => {
-              const agree = (scores[r.id] ?? 0) >= DISSENT_THRESHOLD;
-              const m = modelById(r.id);
-              return (
-                <View
-                  key={r.id}
-                  style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: 3,
-                    backgroundColor: agree ? (m?.color || SILVER) : "transparent",
-                    borderWidth: agree ? 0 : 1,
-                    borderColor: "rgba(255,255,255,0.4)",
-                  }}
-                />
-              );
-            })}
-          </View>
-        )}
-        
-        {available && !expanded && (
-          <ScrollCueArrow />
-        )}
+        {/* Score cell — the mono "instrument readout": alignment fraction + a
+            small ALIGN label, divided from the verdict by a hairline. */}
+        <View style={styles.scoreCell}>
+          <Text style={[styles.scoreNum, { color: scoreColor, textShadowColor: scoreColor }]}>
+            {available ? `${agreeCount}/${totalCount}` : "–/–"}
+          </Text>
+          <Text style={styles.scoreLabel}>ALIGN</Text>
+        </View>
 
-        {available && expanded && (
-          <Pressable
-            onPress={(e) => {
-              e.stopPropagation();
-              onPress();
-            }}
-            style={styles.galaxyBtn}
-          >
-            <Text style={styles.galaxyBtnText}>EXPLORE DISSENT GALAXY ➔</Text>
-          </Pressable>
-        )}
+        <View style={styles.body}>
+          <Text style={styles.kicker}>CONSENSUS</Text>
+          <Text style={styles.verdict} numberOfLines={expanded ? undefined : 2}>
+            {available ? result!.verdict : "Waiting for all selected models to reply."}
+          </Text>
+
+          {available && (
+            <View style={{ flexDirection: "row", gap: 4, marginTop: 6 }}>
+              {replies.map((r) => {
+                const agree = (scores[r.id] ?? 0) >= DISSENT_THRESHOLD;
+                const m = modelById(r.id);
+                return (
+                  <View
+                    key={r.id}
+                    style={{
+                      width: 6, height: 6, borderRadius: 3,
+                      backgroundColor: agree ? (m?.color || SILVER) : "transparent",
+                      borderWidth: agree ? 0 : 1,
+                      borderColor: "rgba(255,255,255,0.4)",
+                    }}
+                  />
+                );
+              })}
+            </View>
+          )}
+
+          {available && expanded && (
+            <Pressable
+              onPress={(e) => { e.stopPropagation(); onPress(); }}
+              style={styles.exploreBtn}
+            >
+              <Text style={styles.exploreText}>EXPLORE DISSENT MAP ›</Text>
+            </Pressable>
+          )}
+        </View>
+
+        {!expanded && <Text style={styles.chev}>›</Text>}
       </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  banner: {
-    width: "100%",
-    minHeight: 38,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    // No top border — the badge's own Path already draws that edge (its
-    // stroke covers the two slanted sides + top). Giving the bar a top
-    // border too would draw the same edge twice, which is exactly the
-    // visible double-line seam this was meant to fix.
-    borderTopWidth: 0,
+  bar: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    minHeight: 56,
+    borderRadius: 15,
     overflow: "hidden",
-    shadowColor: "#1a0733",
-    shadowOpacity: 0.7,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 5 },
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.13)",
+    backgroundColor: "rgba(10,12,18,0.4)",
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 10 },
     elevation: 6,
   },
-  badgeScore: {
-    fontSize: 12.5,
-    fontWeight: "900",
-    letterSpacing: 0.2,
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 10,
-  },
-  summary: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-    lineHeight: 16,
-    textAlign: "center",
-  },
-  summaryLead: {
-    fontWeight: "900",
-    letterSpacing: 0.3,
-  },
-  galaxyBtn: {
-    marginTop: 10,
-    backgroundColor: "#ffffff",
-    borderRadius: 8,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+  scoreCell: {
+    width: 64,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: "#ffffff",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 4,
-    elevation: 3,
+    gap: 2,
+    borderRightWidth: 1,
+    borderRightColor: "rgba(255,255,255,0.09)",
+    backgroundColor: "rgba(255,255,255,0.03)",
   },
-  galaxyBtnText: {
-    color: "#000000",
-    fontSize: 9.5,
-    fontWeight: "900",
-    letterSpacing: 1.5,
+  scoreNum: {
+    fontFamily: FONT_MONO_SEMIBOLD,
+    fontSize: 17,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 14,
+  },
+  scoreLabel: {
+    fontFamily: FONT_MONO,
+    fontSize: 7,
+    letterSpacing: 1.6,
+    color: "rgba(238,241,246,0.4)",
+  },
+  body: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    justifyContent: "center",
+    gap: 3,
+  },
+  kicker: {
+    fontFamily: FONT_MONO,
+    fontSize: 8,
+    letterSpacing: 2,
+    color: "rgba(238,241,246,0.45)",
+  },
+  verdict: {
+    color: "rgba(238,241,246,0.9)",
+    fontSize: 11.5,
+    lineHeight: 16,
+  },
+  chev: {
+    alignSelf: "center",
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: "rgba(238,241,246,0.5)",
+  },
+  exploreBtn: {
+    marginTop: 8,
+    alignSelf: "flex-start",
+    borderRadius: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.16)",
+  },
+  exploreText: {
+    color: "#f4f7fb",
+    fontSize: 9,
+    letterSpacing: 1.2,
+    fontFamily: FONT_MONO,
   },
 });

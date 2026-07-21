@@ -115,7 +115,7 @@ export function PromptComposer({
   };
 
   const canSend = (value.trim().length > 0 || attachments.length > 0) && !sending;
-  const modeColor = mode === "deep" ? "#f5e000" : mode === "research" ? "#5dbdff" : "#6b6478"; // deep was orange/gold — banned accent per SPEC.md; true yellow instead
+  const modeColor = mode === "deep" ? "#f5e000" : mode === "research" ? "#5dbdff" : "rgba(238,241,246,0.55)"; // deep was orange/gold — banned accent per SPEC.md; true yellow instead
 
   return (
     <View style={styles.composer}>
@@ -129,7 +129,7 @@ export function PromptComposer({
                 paddingHorizontal: 8,
                 paddingVertical: 5,
                 borderRadius: 10,
-                backgroundColor: "#0a0a0c",
+                backgroundColor: "rgba(255,255,255,0.04)",
                 flexDirection: "row",
                 alignItems: "center",
                 gap: 6,
@@ -149,7 +149,7 @@ export function PromptComposer({
         value={value}
         onChangeText={setValue}
         placeholder={transcribing ? "Transcribing voice..." : recording ? "Listening..." : "Ask anything or collide minds..."}
-        placeholderTextColor="#4a4554"
+        placeholderTextColor="rgba(238,241,246,0.3)"
         multiline
         style={styles.input}
       />
@@ -159,13 +159,13 @@ export function PromptComposer({
             what the composer is about to send into. */}
         {onNewConversation && (
           <Pressable onPress={onNewConversation} style={styles.toolBtn}>
-            <Ionicons name="add" size={15} color="#6b6478" />
+            <Ionicons name="add" size={15} color="rgba(238,241,246,0.55)" />
           </Pressable>
         )}
 
         {/* Attachment Paperclip Button */}
         <Pressable onPress={attach} style={styles.toolBtn}>
-          <Ionicons name="attach-outline" size={15} color="#6b6478" />
+          <Ionicons name="attach-outline" size={15} color="rgba(238,241,246,0.55)" />
         </Pressable>
 
         {/* Voice Recorder Mic Button */}
@@ -174,11 +174,11 @@ export function PromptComposer({
           style={[styles.toolBtn, recording && { backgroundColor: "rgba(239,68,68,0.15)", borderWidth: 1, borderColor: "rgba(239,68,68,0.3)" }]}
         >
           {transcribing ? (
-            <ActivityIndicator size="small" color="#6b6478" />
+            <ActivityIndicator size="small" color="rgba(238,241,246,0.55)" />
           ) : recording ? (
             <Ionicons name="mic" size={14} color="#ef4444" />
           ) : (
-            <Ionicons name="mic-outline" size={14} color="#6b6478" />
+            <Ionicons name="mic-outline" size={14} color="rgba(238,241,246,0.55)" />
           )}
         </Pressable>
 
@@ -187,7 +187,7 @@ export function PromptComposer({
           onPress={() => dispatch({ type: "incognito", category: cat, enabled: !incognito })}
           style={[styles.toolBtn, incognito && { backgroundColor: "rgba(93,189,255,0.15)", borderWidth: 1, borderColor: "rgba(93,189,255,0.3)" }]}
         >
-          <Ionicons name={incognito ? "eye-off" : "eye-off-outline"} size={14} color={incognito ? "#5dbdff" : "#6b6478"} />
+          <Ionicons name={incognito ? "eye-off" : "eye-off-outline"} size={14} color={incognito ? "#5dbdff" : "rgba(238,241,246,0.55)"} />
         </Pressable>
 
         {/* Web Search Globe Toggle — was orange/gold, which SPEC.md bans
@@ -202,7 +202,7 @@ export function PromptComposer({
             onPress={() => dispatch({ type: "webSearch", category: cat, enabled: !webSearch })}
             style={[styles.toolBtn, webSearch && { backgroundColor: "rgba(245,224,0,0.15)", borderWidth: 1, borderColor: "rgba(245,224,0,0.3)" }]}
           >
-            <Ionicons name={webSearch ? "globe" : "globe-outline"} size={14} color={webSearch ? "#f5e000" : "#6b6478"} />
+            <Ionicons name={webSearch ? "globe" : "globe-outline"} size={14} color={webSearch ? "#f5e000" : "rgba(238,241,246,0.55)"} />
           </Pressable>
         )}
 
@@ -234,7 +234,7 @@ export function PromptComposer({
             an explicit value like "auto" instead. */}
         <Pressable
           onPress={nextMode}
-          style={[styles.toolBtn, { width: "auto", minWidth: 28, height: 28, borderRadius: 14, paddingHorizontal: 8, flexDirection: "row", gap: 3, alignItems: "center", backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }]}
+          style={[styles.toolBtn, { width: "auto", minWidth: 28, height: 28, borderRadius: 14, paddingHorizontal: 8, flexDirection: "row", gap: 3, alignItems: "center", backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }]}
         >
           <Text style={{ color: modeColor, fontSize: 9, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>
             {mode === "default" ? "Default" : mode === "research" ? "Research" : "Deep"}
@@ -249,13 +249,12 @@ export function PromptComposer({
           style={[
             styles.send,
             !canSend && { opacity: 0.35 },
-            canSend && { backgroundColor: "rgba(255,255,255,0.22)", borderColor: "rgba(255,255,255,0.38)" },
           ]}
         >
           {sending ? (
-            <ActivityIndicator size="small" color="#fff" />
+            <ActivityIndicator size="small" color="#0a0c11" />
           ) : (
-            <Ionicons name="arrow-up" size={15} color="#fff" />
+            <Ionicons name="arrow-up" size={15} color="#0a0c11" />
           )}
         </Pressable>
       </View>
@@ -338,7 +337,7 @@ export function PromptComposer({
                     value={imageSettings.negative}
                     onChangeText={(v) => setImageSettings(s => ({ ...s, negative: v }))}
                     placeholder="e.g. blurry, distorted, low quality"
-                    placeholderTextColor="#4a4554"
+                    placeholderTextColor="rgba(238,241,246,0.3)"
                     style={localStyles.textInput}
                   />
                 </>
@@ -485,7 +484,7 @@ export function PromptComposer({
                     value={musicSettings.tags}
                     onChangeText={(v) => setMusicSettings(s => ({ ...s, tags: v }))}
                     placeholder="e.g. synthwave, dark techno, lo-fi beats"
-                    placeholderTextColor="#4a4554"
+                    placeholderTextColor="rgba(238,241,246,0.3)"
                     style={localStyles.textInput}
                   />
                 </>
@@ -543,7 +542,7 @@ const localStyles = StyleSheet.create({
     borderColor: "rgba(255,255,255,0.1)",
   },
   label: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.55)",
     fontSize: 9.5,
     fontWeight: "900",
     letterSpacing: 1.5,

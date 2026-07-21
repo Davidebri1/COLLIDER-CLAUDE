@@ -24,7 +24,7 @@ function kindColor(kind: Artifact["kind"]) {
   if (kind === "timeline") return "#5dbdff";
   if (kind === "statement") return "#ffffff"; // was gold — banned accent per SPEC.md
   if (kind === "document") return "#e2e8f0";
-  return "#6b6478";
+  return "rgba(238,241,246,0.45)";
 }
 
 export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
@@ -69,7 +69,7 @@ export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
 
   return (
     <Page title="Artifacts" goBack={goBack}>
-      <View style={{ flex: 1, backgroundColor: "#06040a" }}>
+      <View style={{ flex: 1, backgroundColor: "#07080b" }}>
 
         {/* Select-mode toggle + bulk action bar */}
         <View style={{ paddingHorizontal: 12, marginTop: 8, flexDirection: "row", justifyContent: "flex-end" }}>
@@ -237,7 +237,7 @@ const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -253,7 +253,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   addBox: {
     flexDirection: "row",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 16,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -288,7 +288,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 8,
     paddingVertical: 5,
     borderRadius: 6,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "transparent",
   },
@@ -337,7 +337,7 @@ const localStyles = StyleSheet.create(withFont({
     fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   dateText: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 9.5,
   },
   deleteButton: {
