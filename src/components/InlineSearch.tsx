@@ -92,7 +92,7 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
       <View
         style={{
           flexDirection: "row", alignItems: "center", height: 34, borderRadius: 12,
-          backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
+          backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
           paddingHorizontal: 10, gap: 8,
         }}
       >
@@ -154,7 +154,7 @@ export function InlineSearch({ onNavigate }: { onNavigate: (screen: Result["scre
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={{ color: "#fff", fontSize: 12, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }} numberOfLines={1}>{r.title}</Text>
-                      <Text style={{ color: "#6b6478", fontSize: 10, marginTop: 1 }} numberOfLines={1}>
+                      <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, marginTop: 1 }} numberOfLines={1}>
                         {meta.label}{model ? ` · ${model.label}` : ""}{r.subtitle ? ` · ${r.subtitle}` : ""}
                       </Text>
                     </View>

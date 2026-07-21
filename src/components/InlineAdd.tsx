@@ -18,7 +18,7 @@ export function InlineAdd({
         value={value}
         onChangeText={setValue}
         placeholder={placeholder}
-        placeholderTextColor="#8f849c"
+        placeholderTextColor="rgba(238,241,246,0.5)"
         style={styles.inlineInput}
       />
       <Pressable onPress={onAdd} style={styles.addBtn}>

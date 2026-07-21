@@ -61,7 +61,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
     if (p === "high") return "#ef4444";
     if (p === "med") return "#f5e000"; // was orange/gold — banned accent per SPEC.md; true yellow instead
     if (p === "low") return "#5dbdff";
-    return "#6b6478";
+    return "rgba(238,241,246,0.45)";
   };
 
   const handleToggleTask = (projectId: string, taskId: string) => {
@@ -72,7 +72,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
 
   return (
     <Page title="Smart Tasks" goBack={goBack}>
-      <View style={{ flex: 1, backgroundColor: "#06040a" }}>
+      <View style={{ flex: 1, backgroundColor: "#07080b" }}>
         
         {/* Navigation Segment Tabs */}
         <View style={localStyles.tabContainer}>
@@ -292,7 +292,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                     </Pressable>
                     <Pressable onPress={() => setEditingTask({ projectId: t.projectId, task: t })} style={{ flex: 1, gap: 3 }}>
                       <Text style={{ color: "#fff", fontSize: 12.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>{t.title}</Text>
-                      <Text style={{ color: "#6b6478", fontSize: 9.5 }}>Project: {t.projectName}</Text>
+                      <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 9.5 }}>Project: {t.projectName}</Text>
                     </Pressable>
                     {t.priority && t.priority !== "none" && (
                       <View style={[
@@ -322,7 +322,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
                     </Pressable>
                     <Pressable onPress={() => setEditingTask({ projectId: t.projectId, task: t })} style={{ flex: 1, gap: 3 }}>
                       <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 12.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600), textDecorationLine: "line-through" }}>{t.title}</Text>
-                      <Text style={{ color: "#6b6478", fontSize: 9.5 }}>Project: {t.projectName}</Text>
+                      <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 9.5 }}>Project: {t.projectName}</Text>
                     </Pressable>
                   </Glass>
                 ))
@@ -390,7 +390,7 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     paddingHorizontal: 12,
     marginVertical: 10,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     padding: 3,
     marginHorizontal: 12,
@@ -405,13 +405,13 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center"
   },
   navTabActive: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)"
   },
   navTabText: {
     fontSize: 9.5,
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
@@ -421,7 +421,7 @@ const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -437,7 +437,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   addBox: {
     flexDirection: "row",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.07)",
@@ -502,7 +502,7 @@ const localStyles = StyleSheet.create(withFont({
     backgroundColor: "#e2e8f0",
   },
   modelText: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 9,
     fontWeight: "700", fontFamily: fontFamilyForWeight(700)
   },
@@ -510,7 +510,7 @@ const localStyles = StyleSheet.create(withFont({
     width: 24,
     height: 24,
     borderRadius: 8,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     alignItems: "center",
     justifyContent: "center"
   },

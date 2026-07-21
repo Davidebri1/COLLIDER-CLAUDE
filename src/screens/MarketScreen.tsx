@@ -562,14 +562,14 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
       {/* Cancels Page's own 14px scroll padding so the showcase grid below
           can run truly edge to edge — the tab bar and filters row add their
           own inset back so only the grid touches the screen edges. */}
-      <View style={{ flex: 1, backgroundColor: "#06040a", marginHorizontal: -14 }}>
+      <View style={{ flex: 1, backgroundColor: "#07080b", marginHorizontal: -14 }}>
 
         {/* Same pill/chip tab convention as every other segmented control in
             the app (History's Conversations/Consensus switcher, CardScreen's
             sub-tab tray, Files' nav tabs) — this was previously an underline
             style found nowhere else in the app. */}
         <View style={localStyles.tabContainer}>
-          <View style={{ flexDirection: "row", flex: 1, gap: 4, backgroundColor: "#0a0a0c", borderRadius: 12, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+          <View style={{ flexDirection: "row", flex: 1, gap: 4, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
             {(["discover", "published", "my-assets"] as const).map((t) => (
               <Pressable
                 key={t}
@@ -661,7 +661,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                         borderColor: isSelected ? "#ffffff" : "rgba(255,255,255,0.08)",
                       }}
                     >
-                      <Text style={{ fontSize: 9.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: isSelected ? "#000000" : "#858091" }}>
+                      <Text style={{ fontSize: 9.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: isSelected ? "#000000" : "rgba(238,241,246,0.5)" }}>
                         {t.toUpperCase()}
                       </Text>
                     </Pressable>
@@ -741,7 +741,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                                 onPress={() => toggleLike(item.id)}
                                 style={{ flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "rgba(0,0,0,0.3)", borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.05)" }}
                               >
-                                <Ionicons name={isLiked ? "heart" : "heart-outline"} size={10} color={isLiked ? "#ef4444" : "#6b6478"} />
+                                <Ionicons name={isLiked ? "heart" : "heart-outline"} size={10} color={isLiked ? "#ef4444" : "rgba(238,241,246,0.45)"} />
                                 <Text style={[styles.muted, { fontSize: 9, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }, isLiked && { color: "#ef4444" }]}>{item.likes}</Text>
                               </Pressable>
                             </View>
@@ -775,7 +775,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
             ) : (
               <>
                 <View style={{ marginVertical: 8 }}>
-                  <Text style={{ color: "#6b6478", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.5 }}>TAP FILE TO PUBLISH</Text>
+                  <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1.5 }}>TAP FILE TO PUBLISH</Text>
                 </View>
 
                 <FlatList
@@ -791,14 +791,14 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                           {isImg ? (
                             <ImageBackground source={{ uri: f.url }} style={StyleSheet.absoluteFill} resizeMode="cover" />
                           ) : (
-                            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c" }}>
+                            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.04)" }}>
                               <Ionicons name="document-text" size={32} color="rgba(255,255,255,0.3)" />
                             </View>
                           )}
                           <LinearGradient colors={["transparent", "rgba(0,0,0,0.85)"]} style={StyleSheet.absoluteFill} />
                           <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: 8 }}>
                             <Text style={{ color: "#fff", fontSize: 10, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }} numberOfLines={1}>{f.name}</Text>
-                            <Text style={{ color: "#6b6478", fontSize: 8, textTransform: "uppercase", marginTop: 2 }}>{f.kind} file</Text>
+                            <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 8, textTransform: "uppercase", marginTop: 2 }}>{f.kind} file</Text>
                           </View>
                         </Glass>
                       </Pressable>
@@ -823,7 +823,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   <Ionicons name="sparkles" size={14} color="#ffffff" />
                   <Text style={{ color: "#fff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.5 }}>MARKET PREVIEW</Text>
                 </View>
-                <Pressable onPress={() => setSelectedItem(null)} style={{ padding: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center", backgroundColor: "#0a0a0c", borderRadius: 14 }}>
+                <Pressable onPress={() => setSelectedItem(null)} style={{ padding: 4, width: 28, height: 28, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 14 }}>
                   <Ionicons name="close" size={16} color="#fff" />
                 </Pressable>
               </View>
@@ -872,7 +872,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                     </View>
                   ) : selectedItem.kind === "music" ? (
                     /* Music cassette animated visualizer */
-                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0d0a14", padding: 16 }}>
+                    <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0b0c10", padding: 16 }}>
                       {/* Cassette Plate Shell */}
                       <View style={localStyles.cassetteShell}>
                         {/* Sticker label */}
@@ -931,7 +931,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#ef4444" }} />
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#eab308" }} />
                         <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: "#22c55e" }} />
-                        <Text style={{ color: "#6b6478", fontSize: 8, fontFamily: "monospace", marginLeft: 4 }}>preset.json // System Config</Text>
+                        <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 8, fontFamily: "monospace", marginLeft: 4 }}>preset.json // System Config</Text>
                       </View>
                       <ScrollView showsVerticalScrollIndicator={false}>
                         <Text style={{ color: "#47c8a6", fontSize: 10.5, lineHeight: 15, fontFamily: Platform.OS === "ios" ? "Courier" : "monospace" }}>
@@ -959,18 +959,18 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   {/* Creator details follow card */}
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "#0a0a0c", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
+                      <View style={{ width: 28, height: 28, borderRadius: 14, backgroundColor: "rgba(255,255,255,0.04)", alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }}>
                         <Text style={{ fontSize: 12 }}>🤖</Text>
                       </View>
                       <View>
                         <Text style={[styles.textStrong, { fontSize: 12.5 }]}>{selectedItem.author}</Text>
-                        <Text style={{ color: "#6b6478", fontSize: 9 }}>AI Creator</Text>
+                        <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 9 }}>AI Creator</Text>
                       </View>
                     </View>
                     {selectedItem.author !== "@you" && (
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
                         <Pressable onPress={() => handleBlockAuthor(selectedItem.author)} hitSlop={8}>
-                          <Ionicons name="ban-outline" size={15} color="#6b6478" />
+                          <Ionicons name="ban-outline" size={15} color="rgba(238,241,246,0.45)" />
                         </Pressable>
                         <Pressable
                           onPress={() => handleFollowToggle(selectedItem.author)}
@@ -1005,8 +1005,8 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                       }}
                       style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}
                     >
-                      <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>SETTINGS & CONFIG</Text>
-                      <Ionicons name={isParamsOpen ? "chevron-up" : "chevron-down"} size={10} color="#6b6478" />
+                      <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>SETTINGS & CONFIG</Text>
+                      <Ionicons name={isParamsOpen ? "chevron-up" : "chevron-down"} size={10} color="rgba(238,241,246,0.45)" />
                     </Pressable>
 
                     {isParamsOpen && (
@@ -1042,7 +1042,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                       from the same category top up the row so it's never
                       thin, same trick real markets use for "related". */}
                   <View style={{ gap: 8 }}>
-                    <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>MORE LIKE THIS</Text>
+                    <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>MORE LIKE THIS</Text>
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
                       {moreLikeThis.map((rel) => {
                         const relFallback = `https://picsum.photos/seed/${encodeURIComponent(rel.id)}/200/200`;
@@ -1060,7 +1060,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
 
                   {/* Comment Section Panel */}
                   <View style={{ gap: 8 }}>
-                    <Text style={{ color: "#6b6478", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>COMMENTS ({ (itemComments[selectedItem.id] || []).length })</Text>
+                    <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.2 }}>COMMENTS ({ (itemComments[selectedItem.id] || []).length })</Text>
 
                     {/* Input box */}
                     <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
@@ -1083,7 +1083,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                     {/* Comments list map */}
                     <View style={{ gap: 6 }}>
                       {commentsLoading && (itemComments[selectedItem.id] || []).length === 0 && (
-                        <Text style={{ color: "#6b6478", fontSize: 10 }}>Loading comments…</Text>
+                        <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10 }}>Loading comments…</Text>
                       )}
                       {(itemComments[selectedItem.id] || []).map((c) => (
                         <View key={c.id} style={localStyles.commentBubble}>
@@ -1092,7 +1092,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                               <Text style={{ fontSize: 10 }}>{avatarFor(c.author_label)}</Text>
                               <Text style={{ color: "#fff", fontSize: 9.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>{c.author_label}</Text>
                             </View>
-                            <Text style={{ color: "#6b6478", fontSize: 8 }}>{timeAgo(c.created_at)}</Text>
+                            <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 8 }}>{timeAgo(c.created_at)}</Text>
                           </View>
                           <Text style={{ color: "rgba(255,255,255,0.7)", fontSize: 10, lineHeight: 14 }}>{c.content}</Text>
                         </View>
@@ -1148,17 +1148,17 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
               {/* Form Scroll Area */}
               <ScrollView showsVerticalScrollIndicator={false} style={{ flex: 1 }} contentContainerStyle={{ gap: 14 }}>
                 {/* File preview */}
-                <View style={{ flexDirection: "row", gap: 10, padding: 10, backgroundColor: "#0a0a0c", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.04)" }}>
+                <View style={{ flexDirection: "row", gap: 10, padding: 10, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 12, borderWidth: 1, borderColor: "rgba(255,255,255,0.04)" }}>
                   {publishFile.name.endsWith(".png") || publishFile.name.endsWith(".jpg") ? (
                     <ImageBackground source={{ uri: publishFile.url }} style={{ width: 44, height: 44, borderRadius: 8, overflow: "hidden" }} />
                   ) : (
-                    <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: "#0a0a0c", alignItems: "center", justifyContent: "center" }}>
+                    <View style={{ width: 44, height: 44, borderRadius: 8, backgroundColor: "rgba(255,255,255,0.04)", alignItems: "center", justifyContent: "center" }}>
                       <Ionicons name="document-text" size={20} color="rgba(255,255,255,0.4)" />
                     </View>
                   )}
                   <View style={{ flex: 1, justifyContent: "center" }}>
                     <Text style={{ color: "#fff", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }} numberOfLines={1}>{publishFile.name}</Text>
-                    <Text style={{ color: "#6b6478", fontSize: 8, textTransform: "uppercase", marginTop: 2 }}>{publishCategory} file</Text>
+                    <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 8, textTransform: "uppercase", marginTop: 2 }}>{publishCategory} file</Text>
                   </View>
                 </View>
 
@@ -1231,10 +1231,10 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 <Ionicons
                   name={agreedToGuidelines ? "checkbox" : "square-outline"}
                   size={16}
-                  color={agreedToGuidelines ? "#ffffff" : "#6b6478"}
+                  color={agreedToGuidelines ? "#ffffff" : "rgba(238,241,246,0.45)"}
                   style={{ marginTop: 1 }}
                 />
-                <Text style={{ color: "#8d8398", fontSize: 10.5, flex: 1, lineHeight: 14 }}>
+                <Text style={{ color: "rgba(238,241,246,0.5)", fontSize: 10.5, flex: 1, lineHeight: 14 }}>
                   I confirm this doesn't violate Collider's Community Guidelines — no illegal, hateful, sexually exploitative, or infringing content.
                 </Text>
               </Pressable>
@@ -1260,7 +1260,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
           <Pressable style={styles.modalBackdrop} onPress={() => setReportSheetFor(null)}>
             <View style={localStyles.reportSheet} onStartShouldSetResponder={() => true}>
               <Text style={{ color: "#fff", fontSize: 13, fontWeight: "800", fontFamily: fontFamilyForWeight(800), marginBottom: 4 }}>Report this content</Text>
-              <Text style={{ color: "#6b6478", fontSize: 10.5, marginBottom: 12, lineHeight: 14 }}>
+              <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 10.5, marginBottom: 12, lineHeight: 14 }}>
                 It's removed from your feed immediately and queued for review.
               </Text>
               {["Sexual or exploitative", "Violent or harmful", "Spam or scam", "Copyright infringement", "Other"].map((reason) => (
@@ -1273,7 +1273,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                 </Pressable>
               ))}
               <Pressable onPress={() => setReportSheetFor(null)} style={{ paddingVertical: 10, alignItems: "center" }}>
-                <Text style={{ color: "#6b6478", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>Cancel</Text>
+                <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>Cancel</Text>
               </Pressable>
             </View>
           </Pressable>
@@ -1304,7 +1304,7 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center",
   },
   navTabActive: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   navTabText: {
     fontSize: 11,
@@ -1326,7 +1326,7 @@ const localStyles = StyleSheet.create(withFont({
   searchInner: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.07)",
@@ -1357,11 +1357,11 @@ const localStyles = StyleSheet.create(withFont({
     borderColor: "transparent"
   },
   kindPillActive: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderColor: "rgba(255,255,255,0.12)"
   },
   kindText: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 11,
     fontWeight: "700", fontFamily: fontFamilyForWeight(700)
   },
@@ -1372,7 +1372,7 @@ const localStyles = StyleSheet.create(withFont({
     marginLeft: "auto",
     width: 28, height: 28, borderRadius: 14,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   badgeContainer: {
     position: "absolute",
@@ -1403,7 +1403,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 16,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)"
   },
@@ -1416,7 +1416,7 @@ const localStyles = StyleSheet.create(withFont({
     borderColor: "rgba(255,255,255,0.4)",
   },
   followButtonActive: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)"
   },
@@ -1427,10 +1427,10 @@ const localStyles = StyleSheet.create(withFont({
     textTransform: "uppercase"
   },
   followButtonTextActive: {
-    color: "#6b6478"
+    color: "rgba(238,241,246,0.45)"
   },
   promptCard: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     padding: 12,
     borderWidth: 1,
@@ -1452,7 +1452,7 @@ const localStyles = StyleSheet.create(withFont({
     marginBottom: 1
   },
   paramLabel: {
-    color: "#858091",
+    color: "rgba(238,241,246,0.5)",
     fontSize: 10.5,
     fontFamily: Platform.OS === "ios" ? "Courier" : "monospace"
   },
@@ -1484,7 +1484,7 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center"
   },
   commentBubble: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 10,
     padding: 8,
     borderWidth: 1,
@@ -1494,7 +1494,7 @@ const localStyles = StyleSheet.create(withFont({
     flex: 1,
     height: 38,
     borderRadius: 12,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
     alignItems: "center",
@@ -1534,7 +1534,7 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "flex-end"
   },
   publishSheet: {
-    backgroundColor: "#0d0a14",
+    backgroundColor: "#0b0c10",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 16,
@@ -1543,14 +1543,14 @@ const localStyles = StyleSheet.create(withFont({
     borderColor: "rgba(255,255,255,0.12)"
   },
   publishFormLabel: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 8.5,
     fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1,
     textTransform: "uppercase"
   },
   publishInput: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -1560,7 +1560,7 @@ const localStyles = StyleSheet.create(withFont({
     fontSize: 11.5
   },
   publishTextarea: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -1572,7 +1572,7 @@ const localStyles = StyleSheet.create(withFont({
     textAlignVertical: "top"
   },
   publishSelect: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",

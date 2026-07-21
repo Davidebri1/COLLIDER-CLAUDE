@@ -6,7 +6,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider, ChatMessage } from "../state";
 import { Glass } from "./Glass";
 import { Markdown } from "./Markdown";
-import { styles, withFont, fontFamilyForWeight } from "../styles/theme";
+import { styles, withFont, fontFamilyForWeight, FONT_MONO } from "../styles/theme";
 import { ModelDef, canUse } from "../models";
 
 export function ModelCard({
@@ -86,39 +86,38 @@ export function ModelCard({
     >
       <Glass
         isCard
-        style={[styles.modelCard, { backgroundColor: "rgba(8,7,13,0.32)" }]}
+        style={styles.modelCard}
       >
-        {/* Header strip: accent dot + name + X dismiss. Name gets up to 2
-            lines — narrow cards (dense grids) were truncating "LLAMA 3.3
-            70B" down to "LLAM…", which reads as broken, not just compact. */}
-        <View style={[localStyles.cardHeader, { alignItems: "flex-start" }]}>
-          {/* The card's own background is now a consistent dark tint (not
-              transparent), so this text always sits on the same fixed base
-              instead of whatever the wallpaper happens to show through —
-              no more patchy per-element bubbles needed. */}
+        {/* Per-model color bloom in the top-left corner (redesign) — a faint
+            wash of the model's own hue behind the glass. */}
+        <View
+          pointerEvents="none"
+          style={{
+            position: "absolute", top: -30, left: -30, width: 110, height: 110,
+            borderRadius: 60, backgroundColor: model.color, opacity: 0.11,
+          }}
+        />
+        {/* Header strip: color dot + name (left, one line) + tier badge. The
+            dismiss X sits as a subtle corner affordance so the header row
+            stays clean, matching the redesign's dot·name·tier rhythm. */}
+        <View style={localStyles.cardHeader}>
+          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: model.color, shadowColor: model.color, shadowOpacity: 0.9, shadowRadius: 6, shadowOffset: { width: 0, height: 0 } }} />
           <Text
             style={[
               styles.cardTitle,
-              {
-                color: model.color,
-                flex: 1,
-                textAlign: "center",
-                fontSize: 9.5,
-                lineHeight: 12,
-                letterSpacing: 0.5,
-              },
+              { color: "#f2f5fa", flex: 1, fontSize: 10, lineHeight: 13, letterSpacing: 1.2 },
             ]}
-            numberOfLines={2}
+            numberOfLines={1}
           >
             {model.label.toUpperCase()}
           </Text>
-          {/* X dismiss button */}
+          <Text style={localStyles.tierBadge}>{model.tier.toUpperCase()}</Text>
           <Pressable
             onPress={handleDismiss}
-            hitSlop={{ top: 8, right: 8, bottom: 8, left: 4 }}
+            hitSlop={{ top: 8, right: 8, bottom: 8, left: 6 }}
             style={localStyles.dismissBtn}
           >
-            <Ionicons name="close" size={10} color="rgba(255,255,255,0.45)" />
+            <Ionicons name="close" size={10} color="rgba(238,241,246,0.4)" />
           </Pressable>
         </View>
 
@@ -163,7 +162,7 @@ export function ModelCard({
             <Text style={[styles.placeholder, { fontSize: 11.5, lineHeight: 16 }]}>Tap to start a conversation.</Text>
           ) : (
             <>
-              {hasMore && <Text style={{ color: "#6b6478", fontSize: 9, textAlign: "center", marginBottom: 4 }}>Loading earlier…</Text>}
+              {hasMore && <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 9, textAlign: "center", marginBottom: 4 }}>Loading earlier…</Text>}
               {shown.map((m, i) => (
                 <View
                   key={m.id}
@@ -232,16 +231,23 @@ const localStyles = StyleSheet.create(withFont({
   // its border/tint) — see the render call site.
   miniBubbleUser: {
     alignSelf: "flex-end",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.04)",
-    paddingBottom: 3,
-    gap: 6,
+    borderBottomColor: "rgba(255,255,255,0.06)",
+    paddingBottom: 6,
+    gap: 7,
+  },
+  tierBadge: {
+    fontFamily: FONT_MONO,
+    fontSize: 8,
+    letterSpacing: 1,
+    color: "rgba(238,241,246,0.4)",
+    flexShrink: 0,
   },
   accentDot: {
     width: 6,
@@ -250,13 +256,11 @@ const localStyles = StyleSheet.create(withFont({
     flexShrink: 0,
   },
   dismissBtn: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: "#0a0a0c",
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     alignItems: "center",
     justifyContent: "center",
-    marginLeft: 4,
     flexShrink: 0,
   },
   descRow: {

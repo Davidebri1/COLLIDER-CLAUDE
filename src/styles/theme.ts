@@ -3,26 +3,75 @@ import { StyleSheet, Dimensions } from "react-native";
 export const SCREEN_W = Dimensions.get("window").width;
 export const SCREEN_H = Dimensions.get("window").height;
 
-// Single unified typeface for the whole app. Manrope is loaded as four
-// separate static-weight font files (see App.tsx's useFonts call), not one
-// variable font — so a style that sets fontWeight:"800" while fontFamily
-// points at the Regular file doesn't get real bold, it gets the browser's
-// synthetic/faux bold, which reads thinner and blurrier than an actual bold
-// face at small sizes. fontFamilyForWeight resolves to the correct loaded
-// static file so "bold" is a real font file, not a faux-bold render.
-export const FONT_REGULAR = "Manrope_400Regular";
-export const FONT_MEDIUM = "Manrope_600SemiBold";
-export const FONT_BOLD = "Manrope_700Bold";
-export const FONT_EXTRABOLD = "Manrope_800ExtraBold";
+// ── Type system (Collider redesign) ──────────────────────────────────────
+// Two families, loaded as separate static-weight files (see App.tsx useFonts):
+//   • Instrument Sans — the body/display face (400/500/600/700)
+//   • IBM Plex Mono   — every technical label, tier badge, score and kicker
+// Each weight is its own loaded file, so a style that sets fontWeight:"700"
+// while fontFamily points at the Regular file gets a faux/synthetic bold that
+// reads thin and blurry at small sizes. fontFamilyForWeight resolves to the
+// correct real file so "bold" is an actual bold face, not a faux render.
+export const FONT_REGULAR = "InstrumentSans_400Regular";
+export const FONT_MEDIUM = "InstrumentSans_500Medium";
+export const FONT_SEMIBOLD = "InstrumentSans_600SemiBold";
+export const FONT_BOLD = "InstrumentSans_700Bold";
+// No 800 weight ships for Instrument Sans; 700 is the heaviest real file, so
+// anything asking for 800/900 resolves to the Bold face (not a faux-heavier
+// synthetic weight).
+export const FONT_EXTRABOLD = FONT_BOLD;
 export const FONT_FAMILY = FONT_REGULAR;
+
+// IBM Plex Mono — the redesign's "instrument panel" voice: ALIGN, CONSENSUS,
+// tier badges, scores, credits, timestamps. Applied explicitly per-style via
+// fontFamily: FONT_MONO (or the `mono` helper) since withFont only fills the
+// gap for the sans default.
+export const FONT_MONO = "IBMPlexMono_500Medium";
+export const FONT_MONO_REGULAR = "IBMPlexMono_400Regular";
+export const FONT_MONO_SEMIBOLD = "IBMPlexMono_600SemiBold";
 
 export function fontFamilyForWeight(weight?: string | number): string {
   const w = weight === "bold" ? 700 : typeof weight === "string" ? parseInt(weight, 10) || 400 : weight || 400;
-  if (w >= 800) return FONT_EXTRABOLD;
   if (w >= 700) return FONT_BOLD;
+  if (w >= 600) return FONT_SEMIBOLD;
   if (w >= 500) return FONT_MEDIUM;
   return FONT_REGULAR;
 }
+
+// Convenience: an IBM Plex Mono text style at a given weight.
+export function monoFamily(weight?: string | number): string {
+  const w = weight === "bold" ? 700 : typeof weight === "string" ? parseInt(weight, 10) || 400 : weight || 400;
+  if (w >= 600) return FONT_MONO_SEMIBOLD;
+  if (w >= 500) return FONT_MONO;
+  return FONT_MONO_REGULAR;
+}
+
+// ── Design tokens (redesign) ──────────────────────────────────────────────
+// Central palette for the aurora-glass system so screens/components stop
+// hardcoding the same rgba strings. The app deliberately went neutral once;
+// this reintroduces per-model color + a cool aurora field as the redesign
+// direction (see the uploaded Collider_Redesign reference).
+export const T = {
+  bg: "#07080b",
+  bgRaise: "#0b0c10",
+  ink: "#eef1f6",
+  inkSoft: "rgba(238,241,246,0.9)",
+  inkDim: "rgba(238,241,246,0.6)",
+  inkFaint: "rgba(238,241,246,0.45)",
+  inkGhost: "rgba(238,241,246,0.32)",
+  line: "rgba(255,255,255,0.1)",
+  lineSoft: "rgba(255,255,255,0.07)",
+  lineStrong: "rgba(255,255,255,0.22)",
+  glassLo: "rgba(255,255,255,0.05)",
+  glassMid: "rgba(255,255,255,0.07)",
+  inset: "rgba(255,255,255,0.13)",
+  aurora: "rgba(60,80,140,0.28)",
+  good: "#7ee2a8",
+  dissent: "#ff6a5c",
+};
+
+// The glass card gradient used across the redesign (LinearGradient colors).
+export const GLASS_CARD = ["rgba(255,255,255,0.07)", "rgba(255,255,255,0.028)", "rgba(10,12,18,0.35)"] as [string, string, string];
+export const GLASS_PANEL = ["rgba(255,255,255,0.08)", "rgba(14,16,22,0.6)"] as [string, string];
 
 // Exported so per-screen local StyleSheets (UpgradeScreen, etc.) can opt into
 // the same base typeface instead of silently falling back to the platform
@@ -36,7 +85,7 @@ export const withFont = (raw: Record<string, any>) =>
   ]));
 
 export const styles = StyleSheet.create(withFont({
-  bg: { flex: 1, backgroundColor: "#07040d" },
+  bg: { flex: 1, backgroundColor: "#07080b" },
   safe: { flex: 1 },
   flex: { flex: 1 },
   header: {
@@ -44,16 +93,18 @@ export const styles = StyleSheet.create(withFont({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
   },
 
-  // ── Title Bar — dedicated brand line ──
+  // ── Title Bar — dedicated brand line. Transparent now: the aurora field
+  // shows straight through the chrome instead of a hard black bar sitting on
+  // top of it (redesign has no opaque header). ──
   titleBar: {
-    paddingTop: 12,
-    paddingBottom: 14,
+    paddingTop: 10,
+    paddingBottom: 6,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#060608",
+    backgroundColor: "transparent",
   },
 
   // ── Toolbar — utility controls row ──
@@ -62,22 +113,24 @@ export const styles = StyleSheet.create(withFont({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 14,
-    backgroundColor: "#060608",
+    paddingHorizontal: 16,
+    backgroundColor: "transparent",
   },
 
   // Neutral black/white chrome — no purple/blue tint. Palette rule: black +
   // white as the two base colors, one warm accent (gold/orange, used only
   // where something is genuinely interactive/branded — Collide, active
   // states), everywhere else stays neutral.
+  // Rounded-square glass tiles (redesign) instead of solid black circles —
+  // faint white fill + hairline over the aurora, not an opaque chip.
   iconBtn: {
-    width: 40, height: 40, borderRadius: 20,
+    width: 36, height: 36, borderRadius: 12,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "#0a0a0c",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
-    shadowColor: "#000", shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 7 }, elevation: 9,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
+    shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 6 }, elevation: 7,
   },
-  iconText: { color: "#ffffff", fontSize: 20, fontWeight: "600" },
+  iconText: { color: "#dfe7f2", fontSize: 19, fontWeight: "600" },
 
   // Wordmark — premium brand identity
   wordmarkWrap: {
@@ -93,45 +146,46 @@ export const styles = StyleSheet.create(withFont({
     borderRadius: 1,
   },
   wordmarkText: {
-    color: "#ffffff",
-    fontSize: 17,
-    fontWeight: "900",
-    letterSpacing: 13,
-    // Black/white, gloss high-contrast palette: no color tint on the glow,
-    // just a bright white specular halo.
-    textShadowColor: "rgba(255,255,255,0.4)",
+    color: "#f4f7fb",
+    fontSize: 15,
+    fontWeight: "700",
+    letterSpacing: 9,
+    // Cool specular halo — the redesign's wordmark is a white→slate gradient
+    // clip (approximated here with a soft luminous glow; a MaskedView gradient
+    // is layered in the Wordmark component itself).
+    textShadowColor: "rgba(230,236,244,0.28)",
     textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 12,
+    textShadowRadius: 18,
   },
 
   pill: {
-    height: 34, borderRadius: 17, borderWidth: 1,
+    height: 34, borderRadius: 17, borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
     paddingHorizontal: 12,
     flexDirection: "row", alignItems: "center",
-    backgroundColor: "#161619",
-    shadowOpacity: 0.55, shadowRadius: 10, shadowOffset: { width: 0, height: 0 }, elevation: 5,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    shadowOpacity: 0.4, shadowRadius: 10, shadowOffset: { width: 0, height: 0 }, elevation: 5,
   },
-  pillText: { fontSize: 12, fontWeight: "800", letterSpacing: 1 },
+  pillText: { fontSize: 12, fontWeight: "700", letterSpacing: 1 },
 
-  muted: { color: "#6b6478", fontSize: 12 },
-  mutedCenter: { color: "#6b6478", fontSize: 12, textAlign: "center" },
+  muted: { color: "rgba(238,241,246,0.45)", fontSize: 12 },
+  mutedCenter: { color: "rgba(238,241,246,0.45)", fontSize: 12, textAlign: "center" },
 
-  tabRow: { paddingHorizontal: 14, gap: 8, paddingBottom: 8 },
+  tabRow: { paddingHorizontal: 16, gap: 6, paddingBottom: 10 },
   tab: {
-    paddingHorizontal: 14, height: 32, borderRadius: 16,
+    paddingHorizontal: 14, height: 30, borderRadius: 15,
     justifyContent: "center",
-    backgroundColor: "#161619",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
+    backgroundColor: "rgba(255,255,255,0.035)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
     flexDirection: "row",
     alignItems: "center",
   },
   tabActive: {
     backgroundColor: "rgba(255,255,255,0.12)",
-    borderColor: "rgba(255,255,255,0.28)",
-    shadowColor: "rgba(255,255,255,0.3)", shadowOpacity: 0.4, shadowRadius: 12, shadowOffset: { width: 0, height: 0 }, elevation: 6,
+    borderColor: "rgba(255,255,255,0.3)",
+    shadowColor: "rgba(230,236,244,0.4)", shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 0 }, elevation: 6,
   },
-  tabText: { color: "#6b6478", fontSize: 11, fontWeight: "700", letterSpacing: 1 },
-  tabTextActive: { color: "#fff" },
+  tabText: { color: "rgba(238,241,246,0.45)", fontSize: 11, fontWeight: "600", letterSpacing: 1.2 },
+  tabTextActive: { color: "#f4f7fb" },
   textStrong: { color: "#fff", fontWeight: "700" },
 
   // Tray chips — small, pill, with dot + shadow when selected
@@ -150,19 +204,19 @@ export const styles = StyleSheet.create(withFont({
     gap: 5,
   },
   chipDot: { width: 6, height: 6, borderRadius: 3 },
-  chipText: { color: "#9a949f", fontSize: 11, fontWeight: "700", letterSpacing: 0.3 },
-  chipLock: { color: "#6b6478", fontSize: 9, marginLeft: 2 },
+  chipText: { color: "rgba(238,241,246,0.6)", fontSize: 11, fontWeight: "700", letterSpacing: 0.3 },
+  chipLock: { color: "rgba(238,241,246,0.45)", fontSize: 9, marginLeft: 2 },
 
   // Row selector
   rowSelector: {
     flexDirection: "row", alignItems: "center", gap: 6,
     paddingHorizontal: 16, paddingBottom: 6, justifyContent: "flex-end",
   },
-  rowLabel: { color: "#6b6478", fontSize: 9, fontWeight: "800", letterSpacing: 2, marginRight: 4 },
+  rowLabel: { color: "rgba(238,241,246,0.4)", fontFamily: FONT_MONO, fontSize: 8, letterSpacing: 2, marginRight: 4 },
   rowBtn: {
     width: 26, height: 26, borderRadius: 6,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "#161619",
+    backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.08)",
   },
   rowBtnActive: {
@@ -170,7 +224,7 @@ export const styles = StyleSheet.create(withFont({
     borderColor: "rgba(255,255,255,0.3)",
     shadowColor: "rgba(255,255,255,0.25)", shadowOpacity: 0.4, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 4,
   },
-  rowBtnText: { color: "#6b6478", fontSize: 11, fontWeight: "800" },
+  rowBtnText: { color: "rgba(238,241,246,0.45)", fontSize: 11, fontWeight: "800" },
   rowBtnTextActive: { color: "#fff" },
 
   emptyWrap: { flex: 1, paddingHorizontal: 16, justifyContent: "center" },
@@ -178,10 +232,12 @@ export const styles = StyleSheet.create(withFont({
 
   glass: {
     overflow: "hidden",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.12)",
-    backgroundColor: "rgba(18,18,20,0.45)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.1)",
+    backgroundColor: "rgba(255,255,255,0.03)",
   },
-  modelCard: { flex: 1, borderRadius: 18, padding: 7 },
+  modelCard: { flex: 1, borderRadius: 20, padding: 7 },
+  // Per-model color bloom — sits behind the card content, tinted with the
+  // model's own hue at low opacity (redesign's colored corner glow).
   glow: { position: "absolute", width: 120, height: 120, borderRadius: 60, left: -42, bottom: -42, opacity: 0.2 },
   cardTop: { flexDirection: "row", gap: 8 },
   // wordBreak + overflowWrap — RN Web's default text wrapping breaks
@@ -209,25 +265,27 @@ export const styles = StyleSheet.create(withFont({
   // 20-24px tall with small icon buttons, not a tall padded card. This was
   // eating a disproportionate share of a mobile viewport's vertical space.
   composer: {
-    marginHorizontal: 14, marginBottom: 6, borderRadius: 16, padding: 8,
-    backgroundColor: "rgba(18,18,20,0.72)",
-    borderWidth: 1.5, borderColor: "rgba(255,255,255,0.18)",
-    shadowColor: "#000", shadowOpacity: 0.4, shadowRadius: 16, shadowOffset: { width: 0, height: 6 }, elevation: 8,
+    marginHorizontal: 16, marginBottom: 6, borderRadius: 20, padding: 11,
+    backgroundColor: "rgba(16,18,24,0.6)",
+    borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
+    shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 24, shadowOffset: { width: 0, height: 12 }, elevation: 10,
   },
-  input: { color: "#fff", minHeight: 26, maxHeight: 80, fontSize: 14 },
-  toolRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingTop: 4 },
-  toolBtn: { width: 28, height: 28, borderRadius: 14, alignItems: "center", justifyContent: "center", backgroundColor: "#161619", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)", shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 7 },
-  toolIcon: { color: "#6b6478", fontSize: 14 },
+  input: { color: "#eef1f6", minHeight: 26, maxHeight: 80, fontSize: 14 },
+  toolRow: { flexDirection: "row", alignItems: "center", gap: 7, paddingTop: 6 },
+  toolBtn: { width: 28, height: 28, borderRadius: 10, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
+  toolIcon: { color: "rgba(238,241,246,0.55)", fontSize: 14 },
+  // Bright specular white puck (redesign): dark glyph on near-white, luminous
+  // halo — reads as glossy premium against the dark composer.
   send: {
     marginLeft: "auto",
-    width: 30, height: 30, borderRadius: 15,
+    width: 32, height: 32, borderRadius: 16,
     alignItems: "center", justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.14)",
-    borderWidth: 1, borderColor: "rgba(255,255,255,0.25)",
-    shadowColor: "rgba(255,255,255,0.2)", shadowOpacity: 0.5, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 4,
+    backgroundColor: "#eef2f8",
+    borderWidth: 0,
+    shadowColor: "rgba(230,236,244,0.5)", shadowOpacity: 0.7, shadowRadius: 14, shadowOffset: { width: 0, height: 0 }, elevation: 5,
   },
   disabled: { opacity: 0.38 },
-  sendText: { color: "#0c0c0e", fontWeight: "900", fontSize: 14 },
+  sendText: { color: "#0a0c11", fontWeight: "700", fontSize: 15 },
 
   // Collide track button styles — glossy white pill instead of the old
   // warm-orange gradient/glow, per the black & white / high-contrast
@@ -282,10 +340,11 @@ export const styles = StyleSheet.create(withFont({
     width: "100%",
   },
   verdictLabel: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.4)",
+    fontFamily: FONT_MONO,
     textTransform: "uppercase",
-    fontSize: 9,
-    letterSpacing: 2,
+    fontSize: 8,
+    letterSpacing: 3,
     marginBottom: 4,
     textAlign: "center",
   },
@@ -318,11 +377,11 @@ export const styles = StyleSheet.create(withFont({
   dissentCard: {
     padding: 10,
     borderRadius: 12,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     marginBottom: 6,
   },
   dissentText: {
-    color: "#9a949f",
+    color: "rgba(238,241,246,0.6)",
     fontSize: 11,
     marginTop: 4,
   },
@@ -347,7 +406,7 @@ export const styles = StyleSheet.create(withFont({
     marginTop: 8,
     padding: 12,
     borderRadius: 14,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   previewActions: {
     flexDirection: "row",
@@ -374,20 +433,20 @@ export const styles = StyleSheet.create(withFont({
   bigText: { fontSize: 20, fontWeight: "800", marginBottom: 8 },
   drawerItem: {
     borderRadius: 16, paddingVertical: 13, paddingHorizontal: 12,
-    marginBottom: 4, backgroundColor: "#0a0a0c",
+    marginBottom: 4, backgroundColor: "rgba(255,255,255,0.04)",
   },
 
   fullModal: { flex: 1, paddingTop: 54, paddingHorizontal: 18 },
-  kicker: { color: "#6b6478", textTransform: "uppercase", fontSize: 11, letterSpacing: 2, marginBottom: 8 },
-  score: { color: "#ffc04d", fontSize: 84, fontWeight: "900", textAlign: "center" },
+  kicker: { color: "rgba(238,241,246,0.45)", fontFamily: FONT_MONO, textTransform: "uppercase", fontSize: 10, letterSpacing: 2.5, marginBottom: 8 },
+  score: { color: "#7ee2a8", fontFamily: FONT_MONO_SEMIBOLD, fontSize: 84, fontWeight: "600", textAlign: "center", textShadowColor: "rgba(126,226,168,0.5)", textShadowOffset: { width: 0, height: 0 }, textShadowRadius: 40 },
   svg: { alignSelf: "center", marginVertical: 14 },
   verdict: { borderRadius: 20, padding: 16 },
-  pageTitle: { color: "#fff", fontSize: 17, fontWeight: "800", letterSpacing: 1 },
+  pageTitle: { color: "#f4f7fb", fontSize: 14, fontWeight: "700", letterSpacing: 2 },
   page: { padding: 14, gap: 12, paddingBottom: 120 },
   messageList: { padding: 14, gap: 10 },
   bubble: {
-    maxWidth: "86%", padding: 12, borderRadius: 18,
-    backgroundColor: "#0a0a0c", borderWidth: 1, borderColor: "rgba(255,255,255,0.14)",
+    maxWidth: "88%", padding: 12, borderRadius: 16,
+    backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.09)",
   },
   // "False bubble" — the response side keeps a real (if faint) glass panel
   // for legibility, but the user's own messages don't need a competing box:
@@ -396,12 +455,13 @@ export const styles = StyleSheet.create(withFont({
   // which are the part actually worth reading.
   userBubble: {
     alignSelf: "flex-end",
-    backgroundColor: "#0a0a0c",
-    borderWidth: 0,
+    backgroundColor: "rgba(255,255,255,0.09)",
+    borderColor: "rgba(255,255,255,0.1)",
+    borderWidth: 1,
   },
   listItem: { borderRadius: 20, padding: 14, gap: 8 },
   rowItem: { borderRadius: 18, padding: 14, flexDirection: "row", alignItems: "center", gap: 12 },
-  done: { color: "#6b6478", textDecorationLine: "line-through" },
+  done: { color: "rgba(238,241,246,0.45)", textDecorationLine: "line-through" },
   inlineAdd: { minHeight: 52, borderRadius: 20, padding: 8, flexDirection: "row", alignItems: "center", gap: 8 },
   compact: { marginTop: 8, minHeight: 42, borderRadius: 14 },
   inlineInput: { flex: 1, color: "#fff", fontSize: 14, paddingHorizontal: 8 },
@@ -419,7 +479,7 @@ export const styles = StyleSheet.create(withFont({
   primaryText: { color: "#ffffff", fontWeight: "800" },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 12 },
   segment: { flexDirection: "row", gap: 8, marginBottom: 10 },
-  segmentBtn: { borderRadius: 15, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "#0a0a0c" },
+  segmentBtn: { borderRadius: 15, paddingVertical: 8, paddingHorizontal: 10, backgroundColor: "rgba(255,255,255,0.04)" },
   segmentActive: {
     backgroundColor: "rgba(255,255,255,0.16)",
     borderWidth: 1, borderColor: "rgba(255,255,255,0.45)",
@@ -500,7 +560,7 @@ export const styles = StyleSheet.create(withFont({
     alignItems: "center",
     gap: 10,
     marginTop: 8,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     padding: 8,
     borderRadius: 12,
   },
@@ -568,7 +628,7 @@ export const styles = StyleSheet.create(withFont({
     elevation: 10,
   },
   editInput: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     color: "#fff",
     padding: 10,
     borderRadius: 10,
@@ -581,7 +641,7 @@ export const styles = StyleSheet.create(withFont({
     flex: 1,
     paddingVertical: 8,
     borderRadius: 8,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "transparent",
     alignItems: "center",
@@ -590,7 +650,7 @@ export const styles = StyleSheet.create(withFont({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#161619",
+    backgroundColor: "rgba(255,255,255,0.05)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
@@ -610,7 +670,7 @@ export const styles = StyleSheet.create(withFont({
     justifyContent: "center",
   },
   chipCircleText: {
-    color: "#c5bdd4",
+    color: "rgba(238,241,246,0.7)",
     fontSize: 9,
     fontWeight: "700",
     letterSpacing: 0.2,
@@ -633,15 +693,15 @@ export const styles = StyleSheet.create(withFont({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.1)",
   },
   subTabText: {
-    color: "#6b6478",
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1.2,
+    color: "rgba(238,241,246,0.5)",
+    fontFamily: FONT_MONO,
+    fontSize: 9,
+    letterSpacing: 1.5,
   },
 
   // Modal backdrop and edit sheet header
@@ -654,9 +714,9 @@ export const styles = StyleSheet.create(withFont({
   // No default color — each modal supplies its own accent inline so a
   // Reminder's sheet doesn't look identical to a Memory's or an Artifact's.
   sheetKicker: {
-    fontSize: 11,
-    fontWeight: "800",
-    letterSpacing: 2,
+    fontSize: 9,
+    fontFamily: FONT_MONO,
+    letterSpacing: 3,
     textTransform: "uppercase",
     marginBottom: 12,
   },
@@ -682,8 +742,8 @@ export const styles = StyleSheet.create(withFont({
   },
   tierSepLabel: {
     color: "rgba(255,255,255,0.28)",
+    fontFamily: FONT_MONO,
     fontSize: 7,
-    fontWeight: "800",
     letterSpacing: 1,
     textTransform: "uppercase",
   },
@@ -776,10 +836,10 @@ export const WALLPAPERS: {
   premium?: boolean;
 }[] = [
   { id: "default",  name: "Collider",       colors: ["rgba(7,4,13,0.35)", "rgba(7,4,13,0.82)", "rgba(7,4,13,0.94)"] },
-  { id: "aurora",   name: "Aurora",         colors: ["#163b82", "#22b884", "#07040d"] },
-  { id: "cove",     name: "Midnight Cove",  colors: ["#091a4a", "#60315f", "#07040d"] },
-  { id: "inferno",  name: "Inferno",        colors: ["#f46b32", "#31135e", "#07040d"], premium: true },
-  { id: "quartz",   name: "Quartz",         colors: ["#65d5cf", "#ab54d8", "#07040d"], premium: true },
-  { id: "magnolia", name: "Magnolia",       colors: ["#e8ae98", "#c4488c", "#07040d"] },
-  { id: "voyager",  name: "Voyager",        colors: ["#e2e8f0", "#16184f", "#07040d"], premium: true },
+  { id: "aurora",   name: "Aurora",         colors: ["#163b82", "#22b884", "#07080b"] },
+  { id: "cove",     name: "Midnight Cove",  colors: ["#091a4a", "#60315f", "#07080b"] },
+  { id: "inferno",  name: "Inferno",        colors: ["#f46b32", "#31135e", "#07080b"], premium: true },
+  { id: "quartz",   name: "Quartz",         colors: ["#65d5cf", "#ab54d8", "#07080b"], premium: true },
+  { id: "magnolia", name: "Magnolia",       colors: ["#e8ae98", "#c4488c", "#07080b"] },
+  { id: "voyager",  name: "Voyager",        colors: ["#e2e8f0", "#16184f", "#07080b"], premium: true },
 ];

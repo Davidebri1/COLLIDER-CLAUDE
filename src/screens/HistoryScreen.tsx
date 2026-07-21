@@ -70,7 +70,7 @@ export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => voi
 
   return (
     <Page title={scopedModel ? `${scopedModel.label} History` : "History Logs"} goBack={goBack}>
-      <View style={{ flex: 1, backgroundColor: "#06040a" }}>
+      <View style={{ flex: 1, backgroundColor: "#07080b" }}>
 
         {/* Glass Navigation Segment switcher — Consensus is a cross-model
             concept (it scores multiple models against each other), so it
@@ -274,7 +274,7 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     paddingHorizontal: 12,
     marginVertical: 10,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     padding: 3,
     marginHorizontal: 12,
@@ -289,13 +289,13 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center"
   },
   navTabActive: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)"
   },
   navTabText: {
     fontSize: 9,
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
@@ -305,7 +305,7 @@ const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -345,11 +345,11 @@ const localStyles = StyleSheet.create(withFont({
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),
   },
   metaText: {
-    color: "#858091",
+    color: "rgba(238,241,246,0.5)",
     fontSize: 9.5,
   },
   dateText: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 9.5,
   },
 }));

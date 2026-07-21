@@ -54,7 +54,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
     // established orange accent instead.
     if (tier === "elite") return ["#f5e000", "#e2e8f0"]; // was orange/gold — banned accent per SPEC.md
     if (tier === "pro") return ["#dc2626", "#e2e8f0"];
-    return ["#3b3846", "#8d8398"]; // free
+    return ["#3b3846", "rgba(238,241,246,0.5)"]; // free
   };
 
   return (
@@ -162,7 +162,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                 disabled={isActive}
                 style={[
                   localStyles.activateBtn,
-                  isActive && { backgroundColor: "#0a0a0c" }
+                  isActive && { backgroundColor: "rgba(255,255,255,0.04)" }
                 ]}
               >
                 {isActive ? (
@@ -220,7 +220,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
             
             <TextInput
               placeholder="Work Email"
-              placeholderTextColor="#6b6478"
+              placeholderTextColor="rgba(238,241,246,0.45)"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -230,7 +230,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
             
             <TextInput
               placeholder="Tell us about your team's AI workload bounds..."
-              placeholderTextColor="#6b6478"
+              placeholderTextColor="rgba(238,241,246,0.45)"
               value={inquiry}
               onChangeText={setInquiry}
               multiline
@@ -344,13 +344,13 @@ const localStyles = StyleSheet.create(withFont({
     gap: 8,
   },
   formTitle: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 8.5,
     fontWeight: "900", fontFamily: fontFamilyForWeight(900),
     letterSpacing: 1.5,
   },
   formInput: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",
@@ -360,7 +360,7 @@ const localStyles = StyleSheet.create(withFont({
     fontSize: 12,
   },
   formTextarea: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 10,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.08)",

@@ -37,7 +37,7 @@ export function ModelTray({
           justifyContent: "center", alignItems: "flex-start",
         }}
       >
-        <Text style={{ fontSize: 11, color: "#6b6478", fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>
+        <Text style={{ fontSize: 11, color: "rgba(238,241,246,0.45)", fontWeight: "600", fontFamily: fontFamilyForWeight(600) }}>
           + Add models
         </Text>
       </Pressable>
@@ -89,7 +89,7 @@ export function ModelTray({
             height: 28,
             paddingHorizontal: 10,
             borderRadius: 14,
-            backgroundColor: "#0a0a0c",
+            backgroundColor: "rgba(255,255,255,0.04)",
             borderWidth: 1,
             borderColor: "rgba(255,255,255,0.12)",
             alignItems: "center",

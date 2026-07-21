@@ -253,12 +253,12 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
     if (p === "high") return "#ef4444";
     if (p === "med") return "#f5e000"; // was orange/gold — banned accent per SPEC.md; true yellow instead
     if (p === "low") return "#5dbdff";
-    return "#6b6478";
+    return "rgba(238,241,246,0.45)";
   };
 
   return (
     <Page title="Reminders" goBack={goBack}>
-      <View style={{ flex: 1, backgroundColor: "#06040a" }}>
+      <View style={{ flex: 1, backgroundColor: "#07080b" }}>
         
         {/* Calendar Picker Panel */}
         <View style={localStyles.calendarCard}>
@@ -369,8 +369,8 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
           )}
 
           {googleConnected && taskLists.length > 0 && (
-            <View style={{ marginTop: 6, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#0a0a0c", padding: 8, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
-              <Text style={{ color: "#858091", fontSize: 10, fontWeight: "700", fontFamily: fontFamilyForWeight(700), letterSpacing: 1 }}>GOOGLE TASKS LIST:</Text>
+            <View style={{ marginTop: 6, flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "rgba(255,255,255,0.04)", padding: 8, borderRadius: 10, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
+              <Text style={{ color: "rgba(238,241,246,0.5)", fontSize: 10, fontWeight: "700", fontFamily: fontFamilyForWeight(700), letterSpacing: 1 }}>GOOGLE TASKS LIST:</Text>
               <View style={{ flexDirection: "row", gap: 6, flexWrap: "wrap", justifyContent: "flex-end", flex: 1, marginLeft: 8 }}>
                 {[{ id: "@default", title: "Default" }, ...taskLists].slice(0, 3).map((tl) => (
                   <Pressable
@@ -385,7 +385,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
                       backgroundColor: selectedTaskListId === tl.id ? "#ffffff" : "transparent"
                     }}
                   >
-                    <Text style={{ fontSize: 9, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: selectedTaskListId === tl.id ? "#000" : "#6b6478" }}>
+                    <Text style={{ fontSize: 9, fontWeight: "800", fontFamily: fontFamilyForWeight(800), color: selectedTaskListId === tl.id ? "#000" : "rgba(238,241,246,0.45)" }}>
                       {tl.title.toUpperCase()}
                     </Text>
                   </Pressable>
@@ -696,7 +696,7 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -713,7 +713,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 10,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   googleBtnText: {
     color: "#fff",
@@ -730,7 +730,7 @@ const localStyles = StyleSheet.create(withFont({
     gap: 6,
   },
   googleEventsTitle: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 9,
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 1,
@@ -748,13 +748,13 @@ const localStyles = StyleSheet.create(withFont({
     flex: 1,
   },
   googleEventDate: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 9,
     fontWeight: "700", fontFamily: fontFamilyForWeight(700),
     marginLeft: 6,
   },
   calendarCard: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 20,
     padding: 12,
     borderWidth: 1,
@@ -779,7 +779,7 @@ const localStyles = StyleSheet.create(withFont({
     paddingHorizontal: 4,
   },
   weekdayText: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     width: 34,
     textAlign: "center",
     fontSize: 10,
@@ -826,7 +826,7 @@ const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -842,7 +842,7 @@ const localStyles = StyleSheet.create(withFont({
   },
   addBox: {
     flexDirection: "row",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.07)",
@@ -890,7 +890,7 @@ const localStyles = StyleSheet.create(withFont({
     gap: 2,
   },
   headerCellText: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 9,
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5,
@@ -912,13 +912,13 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     alignItems: "center",
     gap: 3,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 6,
   },
   metaText: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 9,
     fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
@@ -935,6 +935,6 @@ const localStyles = StyleSheet.create(withFont({
   actionButton: {
     padding: 5,
     borderRadius: 8,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
 }));

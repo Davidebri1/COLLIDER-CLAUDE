@@ -82,7 +82,7 @@ export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openO
 
   return (
     <Page title="File Vault" goBack={goBack}>
-      <View style={{ flex: 1, backgroundColor: "#06040a" }}>
+      <View style={{ flex: 1, backgroundColor: "#07080b" }}>
         
         {/* Glass tab segment */}
         <View style={localStyles.tabContainer}>
@@ -230,7 +230,7 @@ const localStyles = StyleSheet.create(withFont({
     flexDirection: "row",
     paddingHorizontal: 12,
     marginVertical: 10,
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     padding: 3,
     marginHorizontal: 12,
@@ -245,13 +245,13 @@ const localStyles = StyleSheet.create(withFont({
     justifyContent: "center"
   },
   navTabActive: {
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.12)"
   },
   navTabText: {
     fontSize: 9,
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),
     letterSpacing: 0.5
   },
@@ -261,7 +261,7 @@ const localStyles = StyleSheet.create(withFont({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "rgba(255,255,255,0.06)",
@@ -312,7 +312,7 @@ const localStyles = StyleSheet.create(withFont({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#0a0a0c",
+    backgroundColor: "rgba(255,255,255,0.04)",
   },
   tileInfoBox: {
     position: "absolute",
@@ -330,7 +330,7 @@ const localStyles = StyleSheet.create(withFont({
     fontWeight: "700", fontFamily: fontFamilyForWeight(700),
   },
   fileKind: {
-    color: "#6b6478",
+    color: "rgba(238,241,246,0.45)",
     fontSize: 8.5,
     textTransform: "uppercase",
     fontWeight: "800", fontFamily: fontFamilyForWeight(800),

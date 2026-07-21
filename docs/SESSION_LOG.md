@@ -25,3 +25,40 @@ Narrative record of this working session, in order. Purpose: so state/decisions 
 
 ## Outstanding as of end of Session 1
 See "Known open items" in `docs/PROGRESS.md` — search icon and Imagine Market both need a manual tap-test; Smart Gen "Convert to..." doesn't back-link yet; Android Google OAuth client pending a real build.
+
+---
+
+## Session 2 — Aurora-glass redesign (2026-07-21)
+
+Adopted the uploaded `Collider_Redesign.dc.html` as the new design system across
+every screen (a deliberate fork from the prior neutral black/white "gloss"
+direction — reintroduces per-model color + a cool aurora field).
+
+1. **Type system**: swapped Manrope → Instrument Sans (body) + IBM Plex Mono
+   (all technical labels/tiers/scores/kickers). Added `@expo-google-fonts/
+   instrument-sans` + `ibm-plex-mono`; rewired `useFonts`; `fontFamilyForWeight`
+   now maps to Instrument Sans, plus `monoFamily`/`FONT_MONO*` helpers.
+2. **Design tokens** (`theme.ts`): added `T` palette, `GLASS_CARD`/`GLASS_PANEL`
+   gradients; retuned chrome to transparent floating glass; mono applied to
+   kicker/score/verdictLabel/sheetKicker/tier badges.
+3. **Ambient background**: replaced the solid-disc `ParallaxScene` with an
+   `AuroraField` — drifting SVG radial aurora blobs (blue + wallpaper accent) +
+   a seeded twinkling starfield + bottom vignette. Default wallpaper is now a
+   pure graphite-radial aurora (no photo).
+4. **Home**: gradient SVG `Wordmark`; glass `ModelCard` with color dot · name ·
+   mono tier + per-model corner bloom; glass composer; new `CollideButton`
+   (obsidian pill, specular orb, breathing glow + pulse ring); `CollideBanner`
+   rebuilt as a horizontal glass bar with a mono ALIGN score cell.
+5. **Consensus**: 52px mono score, MODELS ALIGNED, glass verdict panel, dissent
+   cards with DISSENT badges; palette moved to green `#7ee2a8` / coral `#ff6a5c`.
+6. **All screens/drawers**: global sweep of legacy surfaces (`#6b6478`,
+   `#161619`, `#0a0a0c`, purple-grays, old `#07040d` bg) to the translucent
+   cool-glass palette. Smart Gen ("ai-firstify") stays proactive-by-default
+   (`autoGen: true`); drawer footer reworded to the "no permission prompts,
+   just delivered" ethos.
+
+Note: `react-native-svg` radial/text renders correctly on native (the ship
+target) but is known to render blank on `expo start --web` in this repo — the
+aurora/wordmark/orb are native-correct. Live web preview was blocked here
+(Expo's version-check call is refused by the agent proxy), so verification was
+by `tsc --noEmit` (clean) + close reading against the reference, not a render.
