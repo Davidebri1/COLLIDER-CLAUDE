@@ -15,7 +15,7 @@ import * as Haptics from "expo-haptics";
 import { useCollider } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, SCREEN_W, withFont, fontFamilyForWeight } from "../styles/theme";
+import { styles, SCREEN_W, withFont, fontFamilyForWeight, FONT_MONO } from "../styles/theme";
 import { TIER_INFO, type Tier } from "../models";
 import { IAP_PRODUCTS, purchaseProduct } from "../services/iap";
 import { useToast } from "../components/Toast";
@@ -48,13 +48,13 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
     }, 800);
   };
 
-  const getTierGradient = (tier: Tier): [string, string] => {
-    // #d39e00 (gold) was here for elite — explicitly banned by the palette
-    // rule, no tier-specific exception carved out. Matches TIER_INFO's
-    // established orange accent instead.
-    if (tier === "elite") return ["#f5e000", "#e2e8f0"]; // was orange/gold — banned accent per SPEC.md
-    if (tier === "pro") return ["#dc2626", "#e2e8f0"];
-    return ["#3b3846", "rgba(238,241,246,0.5)"]; // free
+  // Redesign: no per-tier red/yellow. The plans read as one cool-glass family;
+  // the featured tier (Pro) is simply brighter with a white specular CTA,
+  // Elite is a quieter glass CTA, Free is the muted "current plan" state.
+  const tierCfg = (tier: Tier) => {
+    if (tier === "pro") return { accent: "#eef2f8", cta: ["#ffffff", "#c9d2e0"] as [string, string], ctaText: "#0a0c11", wash: 0.09, border: "rgba(255,255,255,0.28)", hot: true };
+    if (tier === "elite") return { accent: "#c9d2e0", cta: null as [string, string] | null, ctaText: "#f2f5fa", wash: 0.06, border: "rgba(255,255,255,0.14)", hot: false };
+    return { accent: "rgba(238,241,246,0.6)", cta: null as [string, string] | null, ctaText: "rgba(238,241,246,0.5)", wash: 0.04, border: "rgba(255,255,255,0.1)", hot: false };
   };
 
   return (
@@ -65,61 +65,55 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
         {tiers.map((tier, index) => {
           const info = TIER_INFO[tier];
           const isActive = state.tier === tier;
-          const gradientColors = getTierGradient(tier);
-          
+          const cfg = tierCfg(tier);
+
           return (
             <Glass
               isCard
               key={tier}
               style={[
                 localStyles.planCard,
-                { borderColor: isActive ? info.color : `${gradientColors[0]}40` },
-                isActive && { borderWidth: 1.5 },
+                { borderColor: isActive ? "rgba(255,255,255,0.4)" : cfg.border },
+                (isActive || cfg.hot) && { borderWidth: 1.5 },
               ]}
             >
-              {/* Faint tier-colored wash behind the header — the gradient
-                  language used on the Activate button now bleeds into the
-                  card itself instead of living only on one element. */}
+              {/* Brightness wash — the featured (hot) tier glows a little more
+                  than the others; all neutral, no tier color. */}
               <LinearGradient
-                colors={[`${gradientColors[0]}26`, `${gradientColors[1]}00`]}
+                colors={[`rgba(255,255,255,${cfg.wash})`, "rgba(255,255,255,0)"]}
                 start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
+                end={{ x: 0.7, y: 1 }}
                 style={StyleSheet.absoluteFill}
                 pointerEvents="none"
               />
               {/* Card header with plan name and price */}
               <View style={localStyles.planHeader}>
                 <View>
-                  <Text style={[localStyles.planTitle, { color: info.color }]}>{info.label.toUpperCase()}</Text>
+                  <Text style={[localStyles.planTitle, { color: cfg.accent }]}>{info.label.toUpperCase()}</Text>
                   <View style={{ flexDirection: "row", alignItems: "flex-end", gap: 4 }}>
                     <Text style={localStyles.planPrice}>{info.price.replace("/mo", "")}</Text>
                     {tier !== "free" && <Text style={localStyles.planPriceSuffix}>/mo</Text>}
                   </View>
                 </View>
                 {isActive && (
-                  <View style={[localStyles.activeBadge, { backgroundColor: `${info.color}22`, borderWidth: 1, borderColor: `${info.color}66` }]}>
-                    <Text style={[localStyles.activeBadgeText, { color: info.color }]}>ACTIVE PLAN</Text>
+                  <View style={[localStyles.activeBadge, { backgroundColor: "rgba(255,255,255,0.1)", borderWidth: 1, borderColor: "rgba(255,255,255,0.28)" }]}>
+                    <Text style={[localStyles.activeBadgeText, { color: "#f2f5fa" }]}>ACTIVE PLAN</Text>
                   </View>
                 )}
               </View>
 
-              {/* Credits counter info */}
-              <LinearGradient
-                colors={[`${gradientColors[0]}30`, `${gradientColors[1]}18`]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 0 }}
-                style={[localStyles.creditsPill, { borderColor: `${gradientColors[0]}50` }]}
-              >
-                <Ionicons name="sparkles" size={12} color={info.color} />
-                <Text style={{ color: "#fff", fontSize: 10, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>
+              {/* Credits counter — neutral glass pill, mono figure */}
+              <View style={[localStyles.creditsPill, { backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.12)" }]}>
+                <Ionicons name="sparkles" size={12} color={cfg.accent} />
+                <Text style={{ color: "#eef1f6", fontSize: 10, fontFamily: FONT_MONO, letterSpacing: 0.5 }}>
                   {info.pool.toLocaleString()} CREDS / MONTH
                 </Text>
-              </LinearGradient>
+              </View>
 
               {/* Features list */}
               <View style={{ gap: 8, marginVertical: 8 }}>
                 <View style={localStyles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={13} color={info.color} />
+                  <Ionicons name="checkmark-circle" size={13} color={cfg.accent} />
                   <Text style={localStyles.featureText}>
                     {tier === "free"
                       ? "6 free General models (unlimited queries)"
@@ -129,7 +123,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                   </Text>
                 </View>
                 <View style={localStyles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={13} color={info.color} />
+                  <Ionicons name="checkmark-circle" size={13} color={cfg.accent} />
                   <Text style={localStyles.featureText}>
                     {tier === "free"
                       ? `20 daily messages for media generation tabs`
@@ -140,7 +134,7 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                 </View>
                 {tier !== "free" && (
                   <View style={localStyles.featureRow}>
-                    <Ionicons name="checkmark-circle" size={13} color={info.color} />
+                    <Ionicons name="checkmark-circle" size={13} color={cfg.accent} />
                     <Text style={localStyles.featureText}>
                       {tier === "pro"
                         ? "Unlock 10+ custom wallpaper presets and system instructions"
@@ -166,18 +160,24 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
                 ]}
               >
                 {isActive ? (
-                  <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 1 }}>CURRENT SUBSCRIPTION</Text>
-                ) : (
-                  <LinearGradient 
-                    colors={gradientColors} 
-                    start={{ x: 0, y: 0 }} 
-                    end={{ x: 1, y: 0 }} 
+                  <Text style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700), letterSpacing: 1 }}>CURRENT SUBSCRIPTION</Text>
+                ) : cfg.cta ? (
+                  <LinearGradient
+                    colors={cfg.cta}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
                     style={localStyles.gradientBtnBg}
                   >
-                    <Text style={{ color: "#000", fontSize: 11.5, fontWeight: "900", fontFamily: fontFamilyForWeight(900), letterSpacing: 1.5 }}>
-                      ACTIVATE {info.label.toUpperCase()}
+                    <Text style={{ color: cfg.ctaText, fontSize: 11.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700), letterSpacing: 1.5 }}>
+                      UPGRADE TO {info.label.toUpperCase()}
                     </Text>
                   </LinearGradient>
+                ) : (
+                  <View style={[localStyles.gradientBtnBg, { backgroundColor: "rgba(255,255,255,0.08)" }]}>
+                    <Text style={{ color: cfg.ctaText, fontSize: 11.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700), letterSpacing: 1.5 }}>
+                      UPGRADE TO {info.label.toUpperCase()}
+                    </Text>
+                  </View>
                 )}
               </Pressable>
             </Glass>
