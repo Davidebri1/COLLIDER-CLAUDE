@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#07080b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Collider &mdash; Multi-Model Intelligence</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* COLLIDER Production Design System */
+:root {
+  --bg-deep:#07080b;--bg-base:#0b0c10;--bg-elevated:#12141a;--bg-surface:rgba(255,255,255,0.04);--bg-surface-hover:rgba(255,255,255,0.08);
+  --text-primary:#eef1f6;--text-secondary:rgba(238,241,246,0.65);--text-tertiary:rgba(238,241,246,0.4);--text-muted:rgba(238,241,246,0.25);
+  --border-subtle:rgba(255,255,255,0.08);--border-medium:rgba(255,255,255,0.14);--border-strong:rgba(255,255,255,0.22);
+  --shadow-soft:0 14px 30px rgba(0,0,0,0.45);--shadow-medium:0 20px 50px rgba(0,0,0,0.55);
+  --radius-sm:8px;--radius-md:12px;--radius-lg:16px;--radius-xl:20px;--radius-full:9999px;
+  --font-sans:'Inter',system-ui,-apple-system,sans-serif;--font-mono:'JetBrains Mono','SF Mono',monospace;
+  --ease-out:cubic-bezier(0.2,0.8,0.2,1);--ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-primary);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.15);border-radius:2px}
+
+@keyframes aurora1{0%{transform:translate(-8%,-4%) scale(1)}50%{transform:translate(6%,5%) scale(1.15)}100%{transform:translate(-8%,-4%) scale(1)}}
+@keyframes aurora2{0%{transform:translate(6%,8%) scale(1.1)}50%{transform:translate(-5%,-6%) scale(0.95)}100%{transform:translate(6%,8%) scale(1.1)}}
+@keyframes breathe{0%,100%{opacity:.35;filter:brightness(1)}50%{opacity:.9;filter:brightness(1.6)}}
+@keyframes shimmer{0%{transform:translateX(-160px) skewX(-18deg)}60%,100%{transform:translateX(420px) skewX(-18deg)}}
+@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes floaty2{0%,100%{transform:translateY(0)}50%{transform:translateY(7px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes twinkle{0%,100%{opacity:.12}50%{opacity:.65}}
+@keyframes spark{0%{transform:translate(0,0) scaleY(.35);opacity:0}15%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scaleY(1);opacity:0}}
+@keyframes pulseRing{0%{transform:scale(.85);opacity:.55}100%{transform:scale(1.6);opacity:0}}
+@keyframes typingDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-4px)}}
+@keyframes skeleton{0%{background-position:-200px 0}100%{background-position:200px 0}}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px) scale(0.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toastOut{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-10px) scale(0.95)}}
+
+#app{position:fixed;inset:0;max-width:430px;margin:0 auto;background:var(--bg-deep);overflow:hidden;display:flex;flex-direction:column}
+.ambient{position:absolute;inset:-20%;pointer-events:none;z-index:0}
+.ambient-1{background:radial-gradient(60% 50% at 30% 20%,rgba(60,80,140,0.28) 0%,transparent 70%);animation:aurora1 26s ease-in-out infinite}
+.ambient-2{background:radial-gradient(50% 45% at 75% 75%,var(--aurora-color,rgba(70,90,130,0.22)) 0%,transparent 70%);animation:aurora2 34s ease-in-out infinite}
+.ambient-3{inset:0;background:radial-gradient(120% 90% at 50% 110%,rgba(0,0,0,0.55) 0%,transparent 55%)}
+.star{position:absolute;width:2px;height:2px;border-radius:1px;background:#dfe7f2;pointer-events:none;animation:twinkle var(--dur) ease-in-out infinite;animation-delay:var(--delay)}
+
+.screen{position:absolute;inset:0;display:none;flex-direction:column;z-index:1;overflow:hidden}
+.screen.active{display:flex}
+.screen-enter{animation:fadeUp .4s var(--ease-out) both}
+
+.header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px 6px;flex-shrink:0;position:relative;z-index:2}
+.header-btn{width:36px;height:36px;border-radius:var(--radius-md);display:flex;align-items:center;justify-content:center;background:var(--bg-surface);border:1px solid var(--border-subtle);backdrop-filter:blur(12px);cursor:pointer;transition:all .25s var(--ease-out);color:var(--text-primary);-webkit-appearance:none;appearance:none}
+.header-btn:hover,.header-btn:active{background:var(--bg-surface-hover);border-color:var(--border-medium);transform:scale(1.05)}
+.header-btn svg{width:16px;height:16px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-line{width:20px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.35))}
+.logo-line.right{background:linear-gradient(90deg,rgba(255,255,255,0.35),transparent)}
+.logo-text{font-weight:700;font-size:15px;letter-spacing:9px;text-indent:9px;background:linear-gradient(180deg,#fff 20%,#96a0b4 90%);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 24px rgba(230,236,244,0.25)}
+
+.cat-bar{display:flex;gap:6px;padding:6px 16px 10px;overflow-x:auto;flex-shrink:0;scrollbar-width:none;-ms-overflow-style:none}
+.cat-bar::-webkit-scrollbar{display:none}
+.cat-pill{flex:none;height:30px;padding:0 14px;border-radius:15px;display:flex;align-items:center;font-size:11px;font-weight:600;letter-spacing:1.2px;cursor:pointer;transition:all .25s var(--ease-out);user-select:none;border:1px solid var(--border-subtle);background:var(--bg-surface);color:var(--text-tertiary)}
+.cat-pill:hover{border-color:var(--border-medium)}
+.cat-pill.active{color:var(--text-primary);background:rgba(255,255,255,0.12);border-color:rgba(255,255,255,0.3);box-shadow:0 0 16px rgba(230,236,244,0.18),inset 0 1px 0 rgba(255,255,255,0.2)}
+
+.model-grid{flex:1;display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:10px;padding:0 14px;min-height:0;overflow-y:auto}
+.model-card{position:relative;border-radius:var(--radius-xl);overflow:hidden;background:linear-gradient(165deg,rgba(255,255,255,0.07) 0%,rgba(255,255,255,0.028) 40%,rgba(10,12,18,0.35) 100%);border:1px solid var(--border-subtle);backdrop-filter:blur(20px) saturate(150%);box-shadow:inset 0 1px 0 rgba(255,255,255,0.13),var(--shadow-soft);cursor:pointer;display:flex;flex-direction:column;transition:transform .3s var(--ease-out),border-color .3s,box-shadow .3s;animation:fadeUp .5s var(--ease-out) both}
+.model-card:hover,.model-card:active{transform:translateY(-3px);border-color:var(--border-strong);box-shadow:inset 0 1px 0 rgba(255,255,255,0.18),0 18px 40px rgba(0,0,0,0.5)}
+.model-card:nth-child(1){animation-delay:.05s}
+.model-card:nth-child(2){animation-delay:.1s}
+.model-card:nth-child(3){animation-delay:.15s}
+.model-card:nth-child(4){animation-delay:.2s}
+.model-glow{position:absolute;top:-30px;left:-30px;width:110px;height:110px;border-radius:60px;opacity:.09;filter:blur(24px);pointer-events:none}
+.model-header{display:flex;align-items:center;gap:7px;padding:11px 12px 8px;border-bottom:1px solid rgba(255,255,255,0.06);flex-shrink:0}
+.model-dot{width:7px;height:7px;border-radius:4px;flex-shrink:0}
+.model-name{font-size:10px;font-weight:700;letter-spacing:1.4px;color:#f2f5fa;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.model-tier{font-family:var(--font-mono);font-size:8px;letter-spacing:1px;color:var(--text-tertiary);flex-shrink:0}
+.model-body{flex:1;padding:10px 12px;font-size:11.5px;line-height:1.55;color:rgba(238,241,246,0.88);overflow:hidden;min-height:0;display:flex;flex-direction:column;justify-content:flex-start}
+.model-typing{display:flex;gap:4px;padding-top:4px}
+.typing-dot{width:5px;height:5px;border-radius:3px;animation:breathe 1s ease-in-out infinite}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+
+.consensus-bar{margin:10px 16px 0;position:relative;border-radius:15px;overflow:hidden;display:flex;align-items:stretch;background:linear-gradient(120deg,rgba(255,255,255,0.075),rgba(255,255,255,0.03) 55%,rgba(10,12,18,0.4));border:1px solid rgba(255,255,255,0.13);backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.14),0 10px 26px rgba(0,0,0,0.4);cursor:pointer;transition:border-color .3s;flex-shrink:0}
+.consensus-bar:hover{border-color:rgba(255,255,255,0.28)}
+.consensus-shimmer{position:absolute;top:0;bottom:0;width:90px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.16),transparent);animation:shimmer 4.5s ease-in-out infinite;pointer-events:none}
+.consensus-score{flex:none;width:64px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-right:1px solid rgba(255,255,255,0.09);background:rgba(255,255,255,0.03);padding:8px 0}
+.consensus-score-val{font-family:var(--font-mono);font-size:17px;font-weight:600;text-shadow:0 0 14px currentColor}
+.consensus-score-label{font-family:var(--font-mono);font-size:7px;letter-spacing:1.6px;color:var(--text-tertiary)}
+.consensus-body{flex:1;padding:9px 14px;display:flex;flex-direction:column;justify-content:center;gap:4px;min-width:0}
+.consensus-label{font-family:var(--font-mono);font-size:8px;letter-spacing:2px;color:var(--text-tertiary)}
+.consensus-text{font-size:11.5px;line-height:1.4;color:rgba(238,241,246,0.9);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.consensus-arrow{flex:none;display:flex;align-items:center;padding-right:14px;font-size:14px;color:var(--text-tertiary)}
+
+.composer{margin:10px 16px 4px;border-radius:var(--radius-xl);background:linear-gradient(165deg,rgba(255,255,255,0.08),rgba(14,16,22,0.6));border:1px solid var(--border-medium);backdrop-filter:blur(24px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.16),0 16px 34px rgba(0,0,0,0.5);padding:10px 12px 9px;flex-shrink:0}
+.composer-input{width:100%;background:transparent;border:none;outline:none;color:var(--text-primary);font-family:var(--font-sans);font-size:13.5px;padding:2px 2px 8px;resize:none;-webkit-appearance:none;appearance:none}
+.composer-input::placeholder{color:var(--text-tertiary);opacity:.7}
+.composer-toolbar{display:flex;align-items:center;gap:7px}
+.toolbar-btn{width:28px;height:28px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--bg-surface);border:1px solid var(--border-subtle);color:var(--text-tertiary);cursor:pointer;transition:all .2s;flex-shrink:0;-webkit-appearance:none;appearance:none}
+.toolbar-btn:hover{color:var(--text-primary);background:var(--bg-surface-hover)}
+.toolbar-btn svg{width:14px;height:14px}
+.toolbar-dropdown{height:26px;padding:0 10px;border-radius:13px;display:flex;align-items:center;gap:4px;background:var(--bg-surface);border:1px solid var(--border-subtle);font-family:var(--font-mono);font-size:9px;letter-spacing:1px;color:rgba(238,241,246,0.6);cursor:pointer;flex-shrink:0;user-select:none}
+.send-btn{margin-left:auto;width:32px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#c9d2e0);color:#0a0c11;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 0 18px rgba(230,236,244,0.35),inset 0 1px 0 #fff;transition:transform .2s var(--ease-spring);border:none;flex-shrink:0;-webkit-appearance:none;appearance:none}
+.send-btn:hover{transform:scale(1.08)}
+.send-btn:active{transform:scale(0.95)}
+.send-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+.collide-wrap{display:flex;justify-content:center;padding:8px 16px 14px;flex-shrink:0}
+.collide-btn{position:relative;height:46px;width:210px;border-radius:23px;display:flex;align-items:center;justify-content:center;gap:10px;cursor:pointer;background:linear-gradient(180deg,#16181f,#0a0b10);border:1px solid rgba(255,255,255,0.18);box-shadow:0 0 30px rgba(230,236,244,0.14),inset 0 1px 0 rgba(255,255,255,0.14);overflow:visible;transition:transform .2s var(--ease-spring);user-select:none;-webkit-appearance:none;appearance:none}
+.collide-btn:hover{transform:scale(1.03)}
+.collide-btn:active{transform:scale(0.97)}
+.collide-glow{position:absolute;inset:0;border-radius:23px;background:radial-gradient(60% 120% at 50% 50%,rgba(255,255,255,0.22),transparent 70%);animation:breathe 3.2s ease-in-out infinite;pointer-events:none}
+.collide-ring{position:absolute;left:50%;top:50%;width:100%;height:100%;transform:translate(-50%,-50%);border-radius:23px;border:1px solid rgba(230,236,244,0.35);animation:pulseRing 3.2s ease-out infinite;pointer-events:none}
+.collide-orb{width:14px;height:14px;border-radius:8px;background:radial-gradient(circle at 40% 35%,#fff,#aab6c9 60%,#5c6778 100%);box-shadow:0 0 14px rgba(255,255,255,0.7);flex-shrink:0}
+.collide-text{font-size:12px;font-weight:700;letter-spacing:4px;color:#f4f7fb}
+.spark{position:absolute;left:50%;top:50%;width:1.5px;height:10px;border-radius:1px;background:linear-gradient(180deg,#fff,transparent);transform-origin:center;animation:spark var(--dur) ease-out infinite;animation-delay:var(--delay);pointer-events:none}
+
+.detail-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.07);background:rgba(10,12,16,0.5);backdrop-filter:blur(20px);flex-shrink:0}
+.detail-back{width:32px;height:32px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:var(--bg-surface);border:1px solid var(--border-subtle);color:#dfe7f2;cursor:pointer;font-size:15px;transition:all .2s;flex-shrink:0;-webkit-appearance:none;appearance:none}
+.detail-back:hover{background:var(--bg-surface-hover)}
+.detail-dot{width:8px;height:8px;border-radius:4px;flex-shrink:0}
+.detail-name{font-size:13px;font-weight:700;letter-spacing:1.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.detail-tier{margin-left:auto;font-family:var(--font-mono);font-size:8px;letter-spacing:1.5px;color:var(--text-tertiary);flex-shrink:0}
+.detail-chat{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.msg-user{align-self:flex-end;max-width:82%;padding:10px 14px;border-radius:16px 16px 4px 16px;background:rgba(255,255,255,0.09);border:1px solid rgba(255,255,255,0.1);font-size:13px;line-height:1.5;animation:fadeUp .3s var(--ease-out)}
+.msg-ai{align-self:flex-start;max-width:88%;padding:12px 14px;border-radius:16px 16px 16px 4px;background:linear-gradient(165deg,rgba(255,255,255,0.06),rgba(12,14,19,0.4));border:1px solid rgba(255,255,255,0.09);backdrop-filter:blur(16px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1);font-size:13px;line-height:1.6;color:rgba(238,241,246,0.92);animation:fadeUp .3s var(--ease-out)}
+.detail-composer{margin:8px 16px 16px;border-radius:18px;background:linear-gradient(165deg,rgba(255,255,255,0.08),rgba(14,16,22,0.6));border:1px solid var(--border-medium);backdrop-filter:blur(24px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.16);padding:10px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.detail-composer input{flex:1;background:transparent;border:none;outline:none;color:var(--text-primary);font-family:var(--font-sans);font-size:13px;-webkit-appearance:none;appearance:none}
+.detail-composer input::placeholder{color:var(--text-tertiary);opacity:.6}
+.detail-send{width:30px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#c9d2e0);color:#0a0c11;font-weight:700;cursor:pointer;border:none;transition:transform .2s;flex-shrink:0;-webkit-appearance:none;appearance:none}
+.detail-send:hover{transform:scale(1.1)}
+.detail-send:active{transform:scale(0.9)}
+
+.consensus-header{display:flex;align-items:center;padding:12px 16px;flex-shrink:0}
+.consensus-title{flex:1;text-align:center;font-family:var(--font-mono);font-size:9px;letter-spacing:3px;color:var(--text-tertiary)}
+.consensus-score-big{text-align:center;padding:4px 0 2px;flex-shrink:0}
+.consensus-score-num{font-family:var(--font-mono);font-size:52px;font-weight:600;text-shadow:0 0 40px currentColor;line-height:1}
+.consensus-score-sub{font-family:var(--font-mono);font-size:8px;letter-spacing:3px;color:var(--text-tertiary);margin-top:6px}
+.consensus-summary{margin:12px 44px 0;padding:12px 16px;border-radius:14px;background:linear-gradient(165deg,rgba(255,255,255,0.06),rgba(12,14,19,0.5));border:1px solid rgba(255,255,255,0.11);backdrop-filter:blur(18px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1);font-size:12px;line-height:1.55;text-align:center;color:rgba(238,241,246,0.9);flex-shrink:0}
+.consensus-map{flex:1;position:relative;perspective:700px;min-height:0;margin-top:8px;overflow:hidden}
+.consensus-map-inner{position:absolute;inset:0;transform:rotateX(14deg);transform-style:preserve-3d}
+.node-link{position:absolute;height:1px;background:linear-gradient(90deg,rgba(230,236,244,0.02),var(--link-color),rgba(230,236,244,0.02));transform-origin:0 0;opacity:.5}
+.node-center{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);animation:floaty 7s ease-in-out infinite}
+.node-center-inner{width:58px;height:58px;border-radius:30px;background:radial-gradient(circle at 35% 30%,#8fb8ff 0%,#3d6bd8 45%,#0c1230 78%),radial-gradient(circle at 70% 75%,#ff5a4d 0%,transparent 50%);background-blend-mode:screen;box-shadow:0 0 40px rgba(90,130,230,0.5),0 0 60px rgba(255,90,77,0.25),inset -6px -8px 16px rgba(0,0,0,0.6)}
+.node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:5px}
+.node-orb{border-radius:50%;box-shadow:var(--node-glow),inset -4px -5px 10px rgba(0,0,0,0.55)}
+.node-label{font-family:var(--font-mono);font-size:8px;letter-spacing:1px;color:rgba(238,241,246,0.75)}
+.node-view{max-width:120px;padding:5px 8px;border-radius:8px;background:rgba(10,12,17,0.85);border:1px solid rgba(255,255,255,0.1);font-size:8.5px;line-height:1.4;color:rgba(238,241,246,0.7);text-align:center}
+.dissenters{padding:0 16px 18px;display:flex;flex-direction:column;gap:6px;flex-shrink:0;max-height:35vh;overflow-y:auto}
+.dissenter{padding:10px 12px;border-radius:12px;background:rgba(12,14,19,0.6);border:1px solid rgba(255,255,255,0.08);backdrop-filter:blur(12px);animation:fadeUp .4s var(--ease-out)}
+.dissenter-header{display:flex;align-items:center;gap:7px;margin-bottom:3px}
+.dissenter-dot{width:6px;height:6px;border-radius:3px;flex-shrink:0}
+.dissenter-name{font-size:10px;font-weight:700;letter-spacing:1px}
+.dissenter-badge{margin-left:auto;font-family:var(--font-mono);font-size:8px;color:#ff6a5c}
+.dissenter-text{font-size:11px;line-height:1.5;color:var(--text-secondary)}
+
+.market-header{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-shrink:0}
+.market-title{font-size:14px;font-weight:700;letter-spacing:2px}
+.market-credits{margin-left:auto;font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary)}
+.market-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 16px 20px}
+.market-card{aspect-ratio:0.78;border-radius:var(--radius-lg);overflow:hidden;position:relative;border:1px solid var(--border-subtle);background:var(--card-bg);box-shadow:inset 0 1px 0 rgba(255,255,255,0.08);cursor:pointer;transition:transform .3s var(--ease-out)}
+.market-card:hover{transform:translateY(-3px)}
+.market-kind{position:absolute;top:10px;left:10px;font-family:var(--font-mono);font-size:7.5px;letter-spacing:1.5px;color:rgba(238,241,246,0.55);padding:3px 7px;border-radius:6px;background:rgba(8,9,13,0.6)}
+.market-title-text{position:absolute;left:0;right:0;bottom:0;padding:22px 10px 10px;background:linear-gradient(transparent,rgba(5,6,9,0.85));font-size:10.5px;font-weight:600;line-height:1.35}
+
+.upgrade-header{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-shrink:0}
+.upgrade-title{font-size:14px;font-weight:700;letter-spacing:2px}
+.tiers{flex:1;overflow-y:auto;padding:8px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.tier{border-radius:var(--radius-xl);padding:18px;position:relative;overflow:hidden;background:linear-gradient(165deg,rgba(255,255,255,var(--tier-gl)),rgba(12,14,19,0.55));border:1px solid var(--tier-bd);backdrop-filter:blur(20px);box-shadow:inset 0 1px 0 rgba(255,255,255,0.14),var(--shadow-soft);transition:transform .3s,border-color .3s}
+.tier:hover{transform:translateY(-2px);border-color:var(--border-strong)}
+.tier-shimmer{position:absolute;top:0;bottom:0;width:80px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.1),transparent);animation:shimmer 5s ease-in-out infinite;pointer-events:none}
+.tier-header{display:flex;align-items:baseline;gap:10px}
+.tier-name{font-size:16px;font-weight:700;letter-spacing:2px}
+.tier-price{margin-left:auto;font-family:var(--font-mono);font-size:14px;color:#f2f5fa}
+.tier-desc{margin-top:8px;font-size:11.5px;line-height:1.6;color:var(--text-secondary)}
+.tier-cta{margin-top:14px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;letter-spacing:2px;cursor:pointer;border:1px solid rgba(255,255,255,0.16);transition:transform .2s,box-shadow .2s;user-select:none;-webkit-appearance:none;appearance:none}
+.tier-cta:hover{transform:scale(1.02);box-shadow:0 4px 20px rgba(0,0,0,0.3)}
+.tier-cta:active{transform:scale(0.98)}
+
+.wall-header{display:flex;align-items:center;gap:10px;padding:12px 16px;flex-shrink:0}
+.wall-title{font-size:14px;font-weight:700;letter-spacing:2px}
+.wall-badge{margin-left:auto;font-family:var(--font-mono);font-size:8px;letter-spacing:1px;color:var(--text-tertiary)}
+.wall-grid{flex:1;overflow-y:auto;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 16px 20px}
+.wall-card{aspect-ratio:0.75;border-radius:var(--radius-lg);position:relative;overflow:hidden;cursor:pointer;background:var(--wall-bg);border:1.5px solid var(--wall-bd);box-shadow:inset 0 1px 0 rgba(255,255,255,0.15);transition:transform .3s var(--ease-out),border-color .3s,box-shadow .3s}
+.wall-card:hover{transform:translateY(-3px)}
+.wall-card.active{border-color:rgba(255,255,255,0.6);box-shadow:0 0 20px rgba(255,255,255,0.1),inset 0 1px 0 rgba(255,255,255,0.2)}
+.wall-card-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.3);opacity:0;transition:opacity .3s}
+.wall-card:hover .wall-card-overlay,.wall-card.active .wall-card-overlay{opacity:1}
+.wall-check{width:28px;height:28px;border-radius:14px;background:rgba(255,255,255,0.9);display:flex;align-items:center;justify-content:center;color:#0a0c11;font-size:14px}
+.wall-info{position:absolute;left:0;right:0;bottom:0;padding:20px 10px 10px;background:linear-gradient(transparent,rgba(5,6,9,0.8));display:flex;align-items:baseline}
+.wall-name{font-size:11px;font-weight:700}
+.wall-tag{margin-left:auto;font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary)}
+
+.drawer-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(3px);transition:opacity .3s;z-index:10;cursor:pointer}
+.drawer-overlay.hidden{opacity:0;pointer-events:none}
+.drawer-overlay.visible{opacity:1;pointer-events:auto}
+.drawer{position:absolute;top:0;bottom:0;width:280px;transition:transform .38s cubic-bezier(0.3,0.9,0.3,1);background:linear-gradient(165deg,rgba(22,25,33,0.92),rgba(9,10,14,0.96));backdrop-filter:blur(30px);box-shadow:20px 0 60px rgba(0,0,0,0.55);display:flex;flex-direction:column;padding:18px 14px;z-index:11}
+.drawer-left{left:0;border-right:1px solid rgba(255,255,255,0.1);transform:translateX(-105%)}
+.drawer-left.open{transform:translateX(0)}
+.drawer-right{right:0;border-left:1px solid rgba(255,255,255,0.1);box-shadow:-20px 0 60px rgba(0,0,0,0.55);transform:translateX(105%)}
+.drawer-right.open{transform:translateX(0)}
+.drawer-label{font-family:var(--font-mono);font-size:8px;letter-spacing:3px;color:var(--text-tertiary);padding:0 4px 12px}
+.drawer-nav{display:flex;gap:6px;padding-bottom:14px}
+.drawer-nav-item{flex:1;height:56px;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;background:var(--bg-surface);border:1px solid var(--border-subtle);cursor:pointer;transition:all .25s;color:var(--text-primary);-webkit-appearance:none;appearance:none}
+.drawer-nav-item:hover{background:var(--bg-surface-hover)}
+.drawer-nav-glyph{font-size:13px}
+.drawer-nav-label{font-family:var(--font-mono);font-size:7px;letter-spacing:1.5px;color:rgba(238,241,246,0.55)}
+.drawer-tabs{display:flex;gap:4px;padding-bottom:10px}
+.drawer-tab{padding:6px 12px;border-radius:10px 10px 0 0;font-size:10px;cursor:pointer;color:var(--text-tertiary);transition:all .2s}
+.drawer-tab.active{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-bottom:none;font-weight:600;color:var(--text-primary)}
+.drawer-list{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:5px}
+.drawer-item{padding:10px 12px;border-radius:12px;background:rgba(255,255,255,0.035);border:1px solid rgba(255,255,255,0.06);cursor:pointer;transition:all .2s}
+.drawer-item:hover{background:rgba(255,255,255,0.08)}
+.drawer-item-title{font-size:11.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.drawer-item-meta{display:flex;gap:8px;margin-top:3px;font-family:var(--font-mono);font-size:8px;color:var(--text-tertiary)}
+
+.tool-list{display:flex;flex-direction:column;gap:8px}
+.tool-item{display:flex;align-items:center;gap:12px;padding:12px;border-radius:14px;background:linear-gradient(165deg,rgba(255,255,255,0.055),rgba(12,14,19,0.4));border:1px solid rgba(255,255,255,0.08);cursor:pointer;transition:all .25s}
+.tool-item:hover{border-color:rgba(255,255,255,0.2);transform:translateX(-2px)}
+.tool-icon-wrap{width:34px;height:34px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);box-shadow:inset 0 1px 0 rgba(255,255,255,0.12);flex-shrink:0}
+.tool-icon{width:12px;height:12px;background:linear-gradient(135deg,#fff,#7d8798);box-shadow:0 0 8px rgba(230,236,244,0.4)}
+.tool-info{flex:1}
+.tool-name{font-size:12px;font-weight:600}
+.tool-desc{font-size:9.5px;color:var(--text-tertiary);margin-top:1px}
+.tool-count{font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary);flex-shrink:0}
+.tool-footer{margin-top:auto;padding:12px;border-radius:14px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.14);font-size:10px;line-height:1.5;color:var(--text-tertiary)}
+
+.toast-container{position:absolute;top:16px;left:16px;right:16px;z-index:100;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{padding:10px 14px;border-radius:12px;background:rgba(12,14,20,0.9);border:1px solid rgba(255,255,255,0.1);backdrop-filter:blur(20px);font-size:12px;color:var(--text-secondary);display:flex;align-items:center;gap:8px;animation:toastIn .3s var(--ease-out);pointer-events:auto;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+.toast.hiding{animation:toastOut .3s var(--ease-out) both}
+.toast-icon{width:16px;height:16px;flex-shrink:0}
+
+.labels-toggle{height:24px;padding:0 10px;border-radius:12px;display:flex;align-items:center;font-family:var(--font-mono);font-size:8px;letter-spacing:1.5px;cursor:pointer;border:1px solid rgba(255,255,255,0.14);transition:all .2s;user-select:none;-webkit-appearance:none;appearance:none}
+.labels-toggle:hover{border-color:rgba(255,255,255,0.25)}
+
+@media (max-width:380px){
+  .model-grid{grid-template-columns:1fr}
+  .market-grid{grid-template-columns:1fr}
+  .wall-grid{grid-template-columns:1fr}
+  .consensus-summary{margin:12px 20px 0}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="toast-container" id="toastContainer"></div>
+  <div class="ambient ambient-1"></div>
+  <div class="ambient ambient-2" id="aurora2"></div>
+  <div class="ambient ambient-3"></div>
+  <div id="starsContainer"></div>
+
+  <!-- HOME -->
+  <div class="screen active screen-enter" id="screen-home">
+    <div class="header">
+      <button class="header-btn" id="btnOpenLeft" aria-label="Open library">
+        <svg viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><line x1="1" y1="2" x2="15" y2="2"/><line x1="1" y1="6" x2="10" y2="6"/></svg>
+      </button>
+      <div class="logo"><div class="logo-line"></div><div class="logo-text">COLLIDER</div><div class="logo-line right"></div></div>
+      <button class="header-btn" id="btnOpenRight" aria-label="Open smart gen">
+        <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/><rect x="8" y="1" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/><rect x="1" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.5"/><rect x="8" y="8" width="5" height="5" rx="1" fill="currentColor" opacity="0.9"/></svg>
+      </button>
+    </div>
+    <div class="cat-bar" id="catBar"></div>
+    <div class="model-grid" id="modelGrid"></div>
+    <div class="consensus-bar" id="consensusBar">
+      <div class="consensus-shimmer" id="consensusShimmer" style="display:none"></div>
+      <div class="consensus-score"><div class="consensus-score-val" id="scoreVal">&ndash;/&ndash;</div><div class="consensus-score-label">ALIGN</div></div>
+      <div class="consensus-body"><div class="consensus-label">CONSENSUS</div><div class="consensus-text" id="consensusText">Waiting for all selected models to reply.</div></div>
+      <div class="consensus-arrow">&rsaquo;</div>
+    </div>
+    <div class="composer">
+      <textarea class="composer-input" id="homeInput" rows="1" placeholder="Ask anything, or collide minds&hellip;"></textarea>
+      <div class="composer-toolbar">
+        <button class="toolbar-btn" id="btnAttach" aria-label="Attach file" title="Attach"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M7 1v12M3 5l4-4 4 4"/></svg></button>
+        <button class="toolbar-btn" id="btnVoice" aria-label="Voice input" title="Voice"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="5" y="1" width="4" height="7" rx="2"/><path d="M3 6a4 4 0 0 0 8 0M7 12v2"/></svg></button>
+        <button class="toolbar-btn" id="btnGlobe" aria-label="Web search" title="Web"><svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="7" cy="7" r="6"/><path d="M1 7h12M7 1a9 9 0 0 1 0 12M7 1a9 9 0 0 0 0 12"/></svg></button>
+        <div class="toolbar-dropdown" id="modeDropdown">DEFAULT &#9662;</div>
+        <button class="send-btn" id="btnSend" aria-label="Send message">&#8593;</button>
+      </div>
+    </div>
+    <div class="collide-wrap">
+      <button class="collide-btn" id="btnCollide" aria-label="Collide minds">
+        <div class="collide-glow"></div>
+        <div class="collide-ring"></div>
+        <div id="sparksContainer"></div>
+        <div class="collide-orb"></div>
+        <div class="collide-text">COLLIDE</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="screen" id="screen-detail">
+    <div class="detail-header">
+      <button class="detail-back" id="btnDetailBack" aria-label="Go back">&#8249;</button>
+      <div class="detail-dot" id="detailDot"></div>
+      <div class="detail-name" id="detailName"></div>
+      <div class="detail-tier" id="detailTier"></div>
+    </div>
+    <div class="detail-chat" id="detailChat"></div>
+    <div class="detail-composer">
+      <input type="text" id="detailInput" placeholder="Continue the conversation&hellip;" autocomplete="off">
+      <button class="detail-send" id="btnDetailSend" aria-label="Send">&#8593;</button>
+    </div>
+  </div>
+
+  <!-- CONSENSUS -->
+  <div class="screen" id="screen-consensus">
+    <div class="consensus-header">
+      <button class="detail-back" id="btnConsensusBack" aria-label="Go back">&#8249;</button>
+      <div class="consensus-title">CONSENSUS</div>
+      <button class="labels-toggle" id="btnToggleLabels">LABELS</button>
+    </div>
+    <div class="consensus-score-big">
+      <div class="consensus-score-num" id="consensusScoreNum">&ndash;/&ndash;</div>
+      <div class="consensus-score-sub">MODELS ALIGNED</div>
+    </div>
+    <div class="consensus-summary" id="consensusSummary"></div>
+    <div class="consensus-map"><div class="consensus-map-inner" id="consensusMap"></div></div>
+    <div class="dissenters" id="dissentersList"></div>
+  </div>
+
+  <!-- MARKET -->
+  <div class="screen" id="screen-market">
+    <div class="market-header">
+      <button class="detail-back" id="btnMarketBack" aria-label="Go back">&#8249;</button>
+      <div class="market-title">MARKET</div>
+      <div class="market-credits">CREDITS 2,140</div>
+    </div>
+    <div class="market-grid" id="marketGrid"></div>
+  </div>
+
+  <!-- UPGRADE -->
+  <div class="screen" id="screen-upgrade">
+    <div class="upgrade-header">
+      <button class="detail-back" id="btnUpgradeBack" aria-label="Go back">&#8249;</button>
+      <div class="upgrade-title">UPGRADE</div>
+    </div>
+    <div class="tiers" id="tiersList"></div>
+  </div>
+
+  <!-- WALLPAPERS -->
+  <div class="screen" id="screen-wallpapers">
+    <div class="wall-header">
+      <button class="detail-back" id="btnWallBack" aria-label="Go back">&#8249;</button>
+      <div class="wall-title">AMBIENCE</div>
+      <div class="wall-badge">LIVE PREVIEW</div>
+    </div>
+    <div class="wall-grid" id="wallGrid"></div>
+  </div>
+
+  <!-- LEFT DRAWER -->
+  <div class="drawer-overlay hidden" id="leftOverlay"></div>
+  <div class="drawer drawer-left" id="leftDrawer">
+    <div class="drawer-label">LIBRARY</div>
+    <div class="drawer-nav" id="leftDrawerNav"></div>
+    <div class="drawer-tabs"><div class="drawer-tab active">Conversations</div><div class="drawer-tab">Consensus</div></div>
+    <div class="drawer-list" id="historyList"></div>
+  </div>
+
+  <!-- RIGHT DRAWER -->
+  <div class="drawer-overlay hidden" id="rightOverlay"></div>
+  <div class="drawer drawer-right" id="rightDrawer">
+    <div class="drawer-label">SMART GEN</div>
+    <div class="tool-list" id="toolList"></div>
+    <div class="tool-footer">Smart Gen auto-creates projects, reminders and artifacts from your conversations &mdash; no permission prompts, just delivered.</div>
+  </div>
+</div>
+<script>
+class ColliderApp {
+  constructor() {
+    this.state = {
+      screen: 'home', cat: 'general', leftOpen: false, rightOpen: false,
+      labels: false, input: '', detailId: null, wp: 'graphite',
+      replies: { done: true, typing: {} },
+      detailMessages: {}, toasts: [], sending: false,
+    };
+    this.MODELS = [
+      { id:'haiku', name:'CLAUDE HAIKU 4.5', short:'HAI5', tier:'FREE', color:'#f6a4c9',
+        reply:"Yes, but incrementally. Carve out the highest-throughput service first — the API gateway — and migrate it behind the existing interface. Full rewrite risk isn't justified by the perf data yet.",
+        view:'Migrate incrementally, gateway first.', agree:true },
+      { id:'gemini', name:'GEMINI 3.5 FLASH', short:'G3.5F', tier:'FREE', color:'#7fd8c4',
+        reply:'Agreed on migration, with a caveat: your team has two Rust engineers. Budget a quarter for ramp-up or the incremental plan stalls at service #2. Start with the gateway.',
+        view:'Agree — gateway first, budget ramp-up time.', agree:true },
+      { id:'llama', name:'LLAMA 4 SCOUT', short:'L4SC', tier:'FREE', color:'#4be6b1',
+        reply:"The gateway is the right first target. Rust's async story (tokio) maps cleanly to your current Node event model, and you keep the protobuf contracts unchanged.",
+        view:'Agree — tokio maps cleanly to current model.', agree:true },
+      { id:'mistral', name:'MISTRAL SMALL 3.2', short:'MISM', tier:'FREE', color:'#ffb066',
+        reply:'Dissent: the perf bottleneck in your traces is Postgres connection contention, not compute. A Rust rewrite moves the slow part nowhere. Fix pooling first; re-measure before committing a quarter.',
+        view:'Bottleneck is Postgres pooling, not compute.', agree:false },
+    ];
+    this.WPS = [
+      { id:'graphite', name:'Graphite', tag:'FREE', css:'radial-gradient(80% 60% at 30% 20%,#2a3040,#0b0c10 75%)', aurora:'rgba(70,90,130,0.22)' },
+      { id:'aurora', name:'Aurora', tag:'FREE', css:'linear-gradient(160deg,#163b82,#22b884 70%,#07090d)', aurora:'rgba(34,184,132,0.20)' },
+      { id:'cove', name:'Midnight Cove', tag:'FREE', css:'linear-gradient(160deg,#091a4a,#60315f 75%,#07090d)', aurora:'rgba(96,49,95,0.24)' },
+      { id:'inferno', name:'Inferno', tag:'$4.99', css:'linear-gradient(160deg,#f46b32,#31135e 70%,#07090d)', aurora:'rgba(244,107,50,0.18)' },
+      { id:'voyager', name:'Voyager', tag:'$4.99', css:'linear-gradient(160deg,#e2e8f0,#16184f 60%,#07090d)', aurora:'rgba(180,200,230,0.16)' },
+      { id:'quartz', name:'Quartz', tag:'$6.99', css:'linear-gradient(160deg,#65d5cf,#ab54d8 70%,#07090d)', aurora:'rgba(101,213,207,0.16)' },
+    ];
+    this.CATS = ['General','Image','Video','Audio','Coding'];
+    this.HISTORY = [
+      { title:'Should we migrate our backend to Rust?', when:'NOW', models:4 },
+      { title:'Q3 launch narrative — three angles', when:'2H', models:6 },
+      { title:'Contract clause 14.2 risk read', when:'1D', models:8 },
+      { title:'Naming the consumer tier', when:'2D', models:5 },
+      { title:'Postgres partitioning strategy', when:'4D', models:3 },
+    ];
+    this.TOOLS = [
+      { name:'Projects', desc:'Auto-created from context', count:4, r:'3px', rot:'0deg' },
+      { name:'Tasks', desc:'Convertible, cross-linked', count:11, r:'2px', rot:'45deg' },
+      { name:'Reminders', desc:'Full calendar, push at due', count:3, r:'50%', rot:'0deg' },
+      { name:'Memories', desc:'Long-term recall', count:27, r:'50% 50% 50% 2px', rot:'0deg' },
+      { name:'Artifacts', desc:'Docs saved as generated', count:8, r:'2px 8px 2px 8px', rot:'0deg' },
+    ];
+    this.MARKET = [
+      { kind:'IMAGE', title:'Brutalist atrium, morning fog', tint:'linear-gradient(160deg,#1b2233,#0b0c10)' },
+      { kind:'VIDEO', title:'Tokyo alley loop, rain', tint:'linear-gradient(160deg,#2b1a2e,#0b0c10)' },
+      { kind:'MUSIC', title:'Drift IV — ambient set', tint:'linear-gradient(160deg,#122b26,#0b0c10)' },
+      { kind:'IMAGE', title:'Chrome typography study', tint:'linear-gradient(160deg,#252a33,#0b0c10)' },
+      { kind:'VIDEO', title:'Particle collision, macro', tint:'linear-gradient(160deg,#301c1c,#0b0c10)' },
+      { kind:'MUSIC', title:'Night market — lo-fi', tint:'linear-gradient(160deg,#1c2530,#0b0c10)' },
+    ];
+    this.TIERS = [
+      { name:'FREE', price:'$0', gl:'0.04', bd:'rgba(255,255,255,0.09)', hot:false,
+        desc:'20 messages a day across all selected models. General chat only.', cta:'CURRENT PLAN', ctaFg:'rgba(238,241,246,0.5)', ctaBg:'rgba(255,255,255,0.04)' },
+      { name:'PRO', price:'$19.99/mo', gl:'0.09', bd:'rgba(255,255,255,0.28)', hot:true,
+        desc:'Unlimited general chat. 3,000 monthly credits for image, video, audio and agentic coding models.', cta:'UPGRADE TO PRO', ctaFg:'#0a0c11', ctaBg:'linear-gradient(180deg,#ffffff,#c9d2e0)' },
+      { name:'ELITE', price:'$49.99/mo', gl:'0.06', bd:'rgba(255,255,255,0.14)', hot:false,
+        desc:'Everything in Pro, 9,000 credits, and the elite model roster — frontier reasoning and top media models.', cta:'UPGRADE TO ELITE', ctaFg:'#f2f5fa', ctaBg:'rgba(255,255,255,0.08)' },
+    ];
+    this.init();
+  }
+
+  init() {
+    this.renderStars(); this.renderSparks(); this.renderCats(); this.renderModelGrid();
+    this.renderConsensus(); this.renderHistory(); this.renderTools(); this.renderMarket();
+    this.renderTiers(); this.renderWallpapers(); this.bindEvents(); this.applyWallpaper();
+  }
+
+  renderStars() {
+    const c = document.getElementById('starsContainer');
+    const seed = n => { let x = Math.sin(n*999)*10000; return x-Math.floor(x); };
+    let h = '';
+    for(let i=0;i<26;i++) h += '<div class="star" style="left:'+(seed(i)*100).toFixed(1)+'%;top:'+(seed(i+40)*100).toFixed(1)+'%;--dur:'+(3+seed(i+80)*5).toFixed(1)+'s;--delay:'+(seed(i+120)*4).toFixed(1)+'s"></div>';
+    c.innerHTML = h;
+  }
+
+  renderSparks() {
+    const c = document.getElementById('sparksContainer');
+    const seed = n => { let x = Math.sin(n*999)*10000; return x-Math.floor(x); };
+    let h = '';
+    for(let i=0;i<8;i++){
+      const a = (i/8)*Math.PI*2;
+      const dx = Math.round(Math.cos(a)*120)+'px', dy = Math.round(Math.sin(a)*46)+'px';
+      const rot = Math.round((a*180)/Math.PI+90)+'deg';
+      const dur = (1.6+seed(i+7)*1.6).toFixed(2)+'s', delay = (seed(i+3)*2.4).toFixed(2)+'s';
+      h += '<div class="spark" style="--dx:'+dx+';--dy:'+dy+';rotate:'+rot+';--dur:'+dur+';--delay:'+delay+'"></div>';
+    }
+    c.innerHTML = h;
+  }
+
+  renderCats() {
+    const bar = document.getElementById('catBar');
+    bar.innerHTML = this.CATS.map(l => {
+      const id = l.toLowerCase(), on = this.state.cat === id;
+      return '<button class="cat-pill '+(on?'active':'')+'" data-cat="'+id+'">'+l.toUpperCase()+'</button>';
+    }).join('');
+  }
+
+  renderModelGrid() {
+    const grid = document.getElementById('modelGrid');
+    const isGen = this.state.cat === 'general';
+    grid.innerHTML = this.MODELS.map(m => {
+      const typing = !!this.state.replies.typing[m.id];
+      const hasReply = isGen && this.state.replies.done && !typing;
+      const idle = !isGen;
+      let body = '';
+      if(hasReply) body = '<div style="animation:fadeUp .6s ease both">'+m.reply+'</div>';
+      else if(isGen && typing) body = '<div class="model-typing"><div class="typing-dot" style="background:'+m.color+'"></div><div class="typing-dot" style="background:'+m.color+'"></div><div class="typing-dot" style="background:'+m.color+'"></div></div>';
+      else if(idle) body = '<span style="font-style:italic;color:rgba(238,241,246,0.35)">Tap to start a conversation.</span>';
+      return '<div class="model-card" data-model="'+m.id+'"><div class="model-glow" style="background:'+m.color+'"></div><div class="model-header"><div class="model-dot" style="background:'+m.color+';box-shadow:0 0 8px '+m.color+'"></div><div class="model-name">'+m.name+'</div><div class="model-tier">'+m.tier+'</div></div><div class="model-body">'+body+'</div></div>';
+    }).join('');
+  }
+
+  renderConsensus() {
+    const agree = this.MODELS.filter(m => m.agree).length;
+    const hasCon = this.state.cat === 'general' && this.state.replies.done;
+    const sv = document.getElementById('scoreVal');
+    sv.textContent = hasCon ? agree+'/'+this.MODELS.length : '\u2014/\u2014';
+    sv.style.color = hasCon ? '#7ee2a8' : '#e6ecf4';
+    document.getElementById('consensusShimmer').style.display = hasCon ? 'block' : 'none';
+    document.getElementById('consensusText').textContent = hasCon
+      ? 'Migrate to Rust incrementally, starting with the API gateway \u2014 but validate that compute, not Postgres pooling, is the real bottleneck first.'
+      : 'Waiting for all selected models to reply.';
+  }
+
+  renderHistory() {
+    document.getElementById('historyList').innerHTML = this.HISTORY.map(h =>
+      '<div class="drawer-item" data-history><div class="drawer-item-title">'+h.title+'</div><div class="drawer-item-meta"><span>'+h.when+'</span><span>'+h.models+' models</span></div></div>'
+    ).join('');
+  }
+
+  renderTools() {
+    document.getElementById('toolList').innerHTML = this.TOOLS.map(t =>
+      '<div class="tool-item" data-tool="'+t.name+'"><div class="tool-icon-wrap"><div class="tool-icon" style="border-radius:'+t.r+';transform:rotate('+t.rot+')"></div></div><div class="tool-info"><div class="tool-name">'+t.name+'</div><div class="tool-desc">'+t.desc+'</div></div><div class="tool-count">'+t.count+'</div></div>'
+    ).join('');
+  }
+
+  renderMarket() {
+    document.getElementById('marketGrid').innerHTML = this.MARKET.map(m =>
+      '<div class="market-card" style="--card-bg:'+m.tint+'"><div class="market-kind">'+m.kind+'</div><div class="market-title-text">'+m.title+'</div></div>'
+    ).join('');
+  }
+
+  renderTiers() {
+    document.getElementById('tiersList').innerHTML = this.TIERS.map(t =>
+      '<div class="tier" style="--tier-gl:'+t.gl+';--tier-bd:'+t.bd+'">'+(t.hot?'<div class="tier-shimmer"></div>':'')+
+      '<div class="tier-header"><div class="tier-name">'+t.name+'</div><div class="tier-price">'+t.price+'</div></div>'+
+      '<div class="tier-desc">'+t.desc+'</div>'+
+      '<button class="tier-cta" style="color:'+t.ctaFg+';background:'+t.ctaBg+'">'+t.cta+'</button></div>'
+    ).join('');
+  }
+
+  renderWallpapers() {
+    document.getElementById('wallGrid').innerHTML = this.WPS.map(w => {
+      const a = this.state.wp === w.id;
+      return '<div class="wall-card '+(a?'active':'')+'" data-wp="'+w.id+'" style="--wall-bg:'+w.css+';--wall-bd:'+(a?'rgba(255,255,255,0.6)':'rgba(255,255,255,0.1)')+'"><div class="wall-card-overlay">'+(a?'<div class="wall-check">&#10003;</div>':'')+'</div><div class="wall-info"><div class="wall-name">'+w.name+'</div><div class="wall-tag">'+w.tag+'</div></div></div>';
+    }).join('');
+  }
+
+  renderDetail() {
+    const det = this.MODELS.find(m => m.id === this.state.detailId) || this.MODELS[0];
+    document.getElementById('detailDot').style.background = det.color;
+    document.getElementById('detailDot').style.boxShadow = '0 0 10px '+det.color;
+    document.getElementById('detailName').textContent = det.name;
+    document.getElementById('detailTier').textContent = det.tier;
+    const chat = document.getElementById('detailChat');
+    const msgs = this.state.detailMessages[det.id] || [];
+    let h = '<div class="msg-user">Should we migrate our backend to Rust?</div><div class="msg-ai">'+det.reply+'</div>';
+    msgs.forEach(m => h += '<div class="msg-'+m.role+'">'+m.text+'</div>');
+    chat.innerHTML = h;
+    chat.scrollTop = chat.scrollHeight;
+  }
+
+  renderConsensusScreen() {
+    const agree = this.MODELS.filter(m => m.agree).length;
+    const hasCon = this.state.cat === 'general' && this.state.replies.done;
+    const sn = document.getElementById('consensusScoreNum');
+    sn.textContent = hasCon ? agree+'/'+this.MODELS.length : '\u2014/\u2014';
+    sn.style.color = hasCon ? '#7ee2a8' : '#e6ecf4';
+    document.getElementById('consensusSummary').textContent = hasCon
+      ? 'Migrate to Rust incrementally, starting with the API gateway \u2014 but validate that compute, not Postgres pooling, is the real bottleneck first.'
+      : 'Waiting for all selected models to reply.';
+
+    const P = [{x:'20%',y:'22%'},{x:'80%',y:'26%'},{x:'76%',y:'68%'},{x:'22%',y:'74%'}];
+    const map = document.getElementById('consensusMap');
+    let h = '';
+    P.forEach((p,i) => {
+      const m = this.MODELS[i];
+      const cx=50, cy=44, px=parseFloat(p.x), py=parseFloat(p.y);
+      const dx=(cx-px)*3.6, dy=(cy-py)*6.6;
+      const len = Math.hypot(dx,dy).toFixed(0)+'px';
+      const rot = (Math.atan2(dy,dx)*180/Math.PI).toFixed(1)+'deg';
+      const color = m.agree?'rgba(120,160,240,0.4)':'rgba(255,100,90,0.45)';
+      h += '<div class="node-link" style="left:'+p.x+';top:'+p.y+';width:'+len+';transform:rotate('+rot+');--link-color:'+color+'"></div>';
+    });
+    h += '<div class="node-center"><div class="node-center-inner"></div></div>';
+    this.MODELS.forEach((m,i) => {
+      const p = P[i], anim = i%2?'floaty2':'floaty', dur = (6+i*1.3).toFixed(1)+'s', size = m.agree?'26px':'34px';
+      h += '<div class="node" style="left:'+p.x+';top:'+p.y+';animation:'+anim+' '+dur+' ease-in-out infinite"><div class="node-orb" style="width:'+size+';height:'+size+';background:radial-gradient(circle at 35% 30%,#fff 0%,'+m.color+' 40%,#0a0c14 85%);--node-glow:0 0 18px '+m.color+'"></div><div class="node-label">'+m.short+'</div>'+(this.state.labels?'<div class="node-view">'+m.view+'</div>':'')+'</div>';
+    });
+    map.innerHTML = h;
+
+    const diss = this.MODELS.filter(m => !m.agree);
+    document.getElementById('dissentersList').innerHTML = diss.map(m =>
+      '<div class="dissenter"><div class="dissenter-header"><div class="dissenter-dot" style="background:'+m.color+'"></div><div class="dissenter-name">'+m.name+'</div><div class="dissenter-badge">DISSENT</div></div><div class="dissenter-text">'+m.reply+'</div></div>'
+    ).join('');
+
+    const btn = document.getElementById('btnToggleLabels');
+    btn.style.color = this.state.labels ? '#0a0c11' : 'rgba(238,241,246,0.55)';
+    btn.style.background = this.state.labels ? '#e6ecf4' : 'rgba(255,255,255,0.05)';
+  }
+
+  renderDrawerNav() {
+    document.getElementById('leftDrawerNav').innerHTML = [
+      {g:'&#9671;',l:'MARKET',s:'market'},{g:'&#9680;',l:'AMBIENCE',s:'wallpapers'},{g:'&#9651;',l:'UPGRADE',s:'upgrade'}
+    ].map(n => '<button class="drawer-nav-item" data-nav="'+n.s+'"><div class="drawer-nav-glyph">'+n.g+'</div><div class="drawer-nav-label">'+n.l+'</div></button>').join('');
+  }
+
+  go(screen) {
+    const old = document.querySelector('.screen.active');
+    if(old) old.classList.remove('active','screen-enter');
+    this.state.screen = screen;
+    this.state.leftOpen = false; this.state.rightOpen = false;
+    this.updateDrawers();
+    const ns = document.getElementById('screen-'+screen);
+    if(ns) ns.classList.add('active','screen-enter');
+    if(screen === 'detail') this.renderDetail();
+    if(screen === 'consensus') this.renderConsensusScreen();
+  }
+
+  goHome() { this.go('home'); }
+
+  setState(u) {
+    Object.assign(this.state, u);
+    if(u.cat !== undefined){ this.renderCats(); this.renderModelGrid(); this.renderConsensus(); }
+    if(u.wp !== undefined){ this.applyWallpaper(); this.renderWallpapers(); }
+    if(u.labels !== undefined) this.renderConsensusScreen();
+    if(u.replies !== undefined){ this.renderModelGrid(); this.renderConsensus(); }
+    if(u.detailMessages !== undefined && this.state.screen === 'detail') this.renderDetail();
+  }
+
+  applyWallpaper() {
+    const wp = this.WPS.find(w => w.id === this.state.wp) || this.WPS[0];
+    document.getElementById('aurora2').style.setProperty('--aurora-color', wp.aurora);
+  }
+
+  send() {
+    const input = document.getElementById('homeInput');
+    const text = input.value.trim();
+    if(!text) return;
+    input.value = ''; input.style.height = 'auto';
+    this.setState({input:''});
+    const typing = {};
+    this.MODELS.forEach(m => typing[m.id] = true);
+    this.setState({replies:{done:false,typing}});
+    this.MODELS.forEach((m,i) => setTimeout(() => {
+      const t = {...this.state.replies.typing}; delete t[m.id];
+      this.setState({replies:{done:Object.keys(t).length===0,typing:t}});
+    }, 900 + i*750));
+    this.showToast('Message sent to all models', 'success');
+  }
+
+  sendDetail() {
+    const input = document.getElementById('detailInput');
+    const text = input.value.trim();
+    if(!text || this.state.sending) return;
+    this.state.sending = true;
+    const detId = this.state.detailId;
+    const msgs = this.state.detailMessages[detId] || [];
+    msgs.push({role:'user',text});
+    this.setState({detailMessages:{...this.state.detailMessages,[detId]:msgs}});
+    input.value = '';
+    setTimeout(() => {
+      const model = this.MODELS.find(m => m.id === detId);
+      const rmsgs = this.state.detailMessages[detId] || [];
+      rmsgs.push({role:'ai',text:'Continuing with '+(model?model.name:'the model')+': '+(text.length>20?text.slice(0,20)+'...':text)+' \u2014 acknowledged. I will factor this into the analysis.'});
+      this.setState({detailMessages:{...this.state.detailMessages,[detId]:rmsgs},sending:false});
+    }, 1200);
+  }
+
+  showToast(msg, type) {
+    const c = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = 'toast';
+    const icon = type==='success'?'&#10003;':type==='error'?'&#10007;':'&#9432;';
+    t.innerHTML = '<span class="toast-icon">'+icon+'</span><span>'+msg+'</span>';
+    c.appendChild(t);
+    setTimeout(() => { t.classList.add('hiding'); setTimeout(() => t.remove(), 300); }, 3000);
+  }
+
+  openLeft() { this.setState({leftOpen:true}); this.updateDrawers(); }
+  openRight() { this.setState({rightOpen:true}); this.updateDrawers(); }
+  closeDrawers() { this.setState({leftOpen:false,rightOpen:false}); this.updateDrawers(); }
+
+  updateDrawers() {
+    document.getElementById('leftDrawer').classList.toggle('open', this.state.leftOpen);
+    document.getElementById('rightDrawer').classList.toggle('open', this.state.rightOpen);
+    document.getElementById('leftOverlay').className = this.state.leftOpen?'drawer-overlay visible':'drawer-overlay hidden';
+    document.getElementById('rightOverlay').className = this.state.rightOpen?'drawer-overlay visible':'drawer-overlay hidden';
+  }
+
+  toggleLabels() { this.setState({labels:!this.state.labels}); }
+
+  bindEvents() {
+    document.getElementById('btnOpenLeft').addEventListener('click', () => this.openLeft());
+    document.getElementById('btnOpenRight').addEventListener('click', () => this.openRight());
+    document.getElementById('leftOverlay').addEventListener('click', () => this.closeDrawers());
+    document.getElementById('rightOverlay').addEventListener('click', () => this.closeDrawers());
+
+    document.getElementById('catBar').addEventListener('click', e => {
+      const p = e.target.closest('.cat-pill'); if(p) this.setState({cat:p.dataset.cat});
+    });
+
+    document.getElementById('modelGrid').addEventListener('click', e => {
+      const c = e.target.closest('.model-card'); if(c){ this.setState({detailId:c.dataset.model}); this.go('detail'); }
+    });
+
+    document.getElementById('consensusBar').addEventListener('click', () => this.go('consensus'));
+    document.getElementById('btnCollide').addEventListener('click', () => this.go('consensus'));
+    document.getElementById('btnSend').addEventListener('click', () => this.send());
+    document.getElementById('homeInput').addEventListener('keydown', e => {
+      if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); this.send(); }
+    });
+    document.getElementById('btnDetailSend').addEventListener('click', () => this.sendDetail());
+    document.getElementById('detailInput').addEventListener('keydown', e => {
+      if(e.key==='Enter'){ e.preventDefault(); this.sendDetail(); }
+    });
+    document.getElementById('btnDetailBack').addEventListener('click', () => this.goHome());
+    document.getElementById('btnConsensusBack').addEventListener('click', () => this.goHome());
+    document.getElementById('btnToggleLabels').addEventListener('click', () => this.toggleLabels());
+    document.getElementById('btnMarketBack').addEventListener('click', () => this.goHome());
+    document.getElementById('btnUpgradeBack').addEventListener('click', () => this.goHome());
+    document.getElementById('btnWallBack').addEventListener('click', () => this.goHome());
+
+    this.renderDrawerNav();
+    document.getElementById('leftDrawerNav').addEventListener('click', e => {
+      const item = e.target.closest('.drawer-nav-item'); if(item && item.dataset.nav) this.go(item.dataset.nav);
+    });
+
+    document.getElementById('historyList').addEventListener('click', e => {
+      if(e.target.closest('.drawer-item')){ this.showToast('Loading conversation...','info'); this.closeDrawers(); }
+    });
+
+    document.getElementById('toolList').addEventListener('click', e => {
+      const item = e.target.closest('.tool-item'); if(item) this.showToast(item.dataset.tool+' opened','info');
+    });
+
+    document.getElementById('wallGrid').addEventListener('click', e => {
+      const c = e.target.closest('.wall-card'); if(c){ this.setState({wp:c.dataset.wp}); this.showToast('Ambience updated','success'); }
+    });
+
+    document.getElementById('btnAttach').addEventListener('click', () => this.showToast('Attachment coming soon','info'));
+    document.getElementById('btnVoice').addEventListener('click', () => this.showToast('Voice input activated','info'));
+    document.getElementById('btnGlobe').addEventListener('click', () => this.showToast('Web search enabled','info'));
+    document.getElementById('modeDropdown').addEventListener('click', () => this.showToast('Mode selector opened','info'));
+
+    document.getElementById('tiersList').addEventListener('click', e => {
+      if(e.target.closest('.tier-cta')) this.showToast('Processing upgrade...','info');
+    });
+
+    document.getElementById('marketGrid').addEventListener('click', e => {
+      if(e.target.closest('.market-card')) this.showToast('Preview loading...','info');
+    });
+
+    const ta = document.getElementById('homeInput');
+    ta.addEventListener('input', () => { ta.style.height='auto'; ta.style.height=Math.min(ta.scrollHeight,120)+'px'; });
+
+    document.addEventListener('keydown', e => {
+      if(e.key==='Escape'){
+        if(this.state.leftOpen || this.state.rightOpen) this.closeDrawers();
+        else if(this.state.screen !== 'home') this.goHome();
+      }
+    });
+
+    let tsx = 0;
+    document.addEventListener('touchstart', e => { tsx = e.touches[0].clientX; });
+    document.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - tsx;
+      if(Math.abs(dx) > 60){
+        if(dx>0 && tsx<40 && !this.state.leftOpen) this.openLeft();
+        if(dx<0 && tsx>window.innerWidth-40 && !this.state.rightOpen) this.openRight();
+        if(dx<0 && this.state.leftOpen) this.closeDrawers();
+        if(dx>0 && this.state.rightOpen) this.closeDrawers();
+      }
+    });
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => { window.app = new ColliderApp(); });
+</script>
+</body>
+</html>
