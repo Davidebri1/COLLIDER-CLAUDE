@@ -12,6 +12,24 @@ import type { MarketItem } from "../state";
 
 const DEVICE_ID_KEY = "collider-device-id";
 
+// Max time to wait on the live Supabase feed before falling back to local/
+// generated content. Supabase's JS client has no built-in request timeout, so
+// a dead/slow backend hangs the await indefinitely without this.
+const MARKET_FETCH_TIMEOUT_MS = 8000;
+
+// Reject if `promise` hasn't settled within `ms`. `PostgrestFilterBuilder` is
+// a thenable, so racing it works and the timeout branch turns an infinite
+// pending state into a catchable error.
+function withTimeout<T>(promise: PromiseLike<T>, ms: number, message: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error(message)), ms);
+    Promise.resolve(promise).then(
+      (v) => { clearTimeout(timer); resolve(v); },
+      (e) => { clearTimeout(timer); reject(e); },
+    );
+  });
+}
+
 function uuidv4(): string {
   // RFC4122-ish v4 UUID without relying on crypto.randomUUID(), which isn't
   // guaranteed to exist in the Hermes/RN runtime without extra polyfills.
@@ -118,7 +136,17 @@ export async function fetchMarketItems(opts: FetchMarketItemsOpts): Promise<{ it
 
   query = query.range(offset, offset + limit - 1);
 
-  const { data, error, count } = await query;
+  // Race the request against a timeout. A Supabase feed that is slow,
+  // unreachable, or misconfigured otherwise leaves this `await` pending
+  // forever — which froze the Market on its first "Loading…" state (the
+  // caller's catch-block fallback never fired because the promise never
+  // settled). On timeout we reject, so the caller falls back to local /
+  // generated content instead of hanging on one page.
+  const { data, error, count } = await withTimeout(
+    query,
+    MARKET_FETCH_TIMEOUT_MS,
+    "market feed request timed out",
+  );
   if (error) throw error;
 
   const rows = (data || []) as MarketRow[];
