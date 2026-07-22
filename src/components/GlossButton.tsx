@@ -18,20 +18,18 @@ export function GlossButton({ borderRadius = 14, active = false }: { borderRadiu
         {
           borderRadius,
           overflow: "hidden",
-          backgroundColor: active ? "#141416" : "rgba(255,255,255,0.04)",
+          backgroundColor: active ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.05)",
           borderWidth: 1,
-          borderTopColor: "rgba(255,255,255,0.22)",
-          borderLeftColor: "rgba(255,255,255,0.14)",
-          borderRightColor: "rgba(0,0,0,0.5)",
-          borderBottomColor: "rgba(0,0,0,0.6)",
+          borderColor: active ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.1)",
         },
       ]}
       pointerEvents="none"
     >
+      {/* Top-left specular sheen — the inset highlight that reads as glass. */}
       <LinearGradient
-        colors={["rgba(255,255,255,0.14)", "rgba(255,255,255,0)"]}
-        start={{ x: 0.15, y: 0 }}
-        end={{ x: 0.5, y: 0.6 }}
+        colors={["rgba(255,255,255,0.13)", "rgba(255,255,255,0)"]}
+        start={{ x: 0.1, y: 0 }}
+        end={{ x: 0.45, y: 0.45 }}
         style={StyleSheet.absoluteFill}
       />
     </View>

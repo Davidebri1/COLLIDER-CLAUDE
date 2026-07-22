@@ -3509,12 +3509,12 @@ function IconButton({ iconName, onPress }: { iconName: string; onPress: () => vo
 function SmartGenMark({ size = 18 }: { size?: number }) {
   const gradId = "smartGenSparkleGrad";
   return (
-    <View style={{ shadowColor: "#ffd54f", shadowOpacity: 0.9, shadowRadius: size * 0.4, shadowOffset: { width: 0, height: 0 } }}>
+    <View style={{ shadowColor: "rgba(230,236,244,0.7)", shadowOpacity: 0.9, shadowRadius: size * 0.4, shadowOffset: { width: 0, height: 0 } }}>
       <Svg width={size} height={size} viewBox="0 0 24 24">
         <Defs>
           <SvgGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
-            <Stop offset="0" stopColor="#ffe082" />
-            <Stop offset="1" stopColor="#ff8f00" />
+            <Stop offset="0" stopColor="#ffffff" />
+            <Stop offset="1" stopColor="#8b95a8" />
           </SvgGradient>
         </Defs>
         <Path
