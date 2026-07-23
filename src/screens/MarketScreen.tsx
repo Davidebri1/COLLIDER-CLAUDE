@@ -214,7 +214,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
   };
 
   useEffect(() => {
-    if (selectedItem && selectedItem.kind === "music") {
+    if (selectedItem && selectedItem.kind === "audio") {
       playAudio(selectedItem.id);
     }
     return () => {
@@ -437,13 +437,13 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
       file: {
         name: `market-${item.id}.png`,
         kind: "generated",
-        url: item.kind === "video" ? (videoUrls[item.id] || fallbackImg) : item.kind === "music" ? (audioUrls[item.id] || fallbackImg) : fallbackImg,
+        url: item.kind === "video" ? (videoUrls[item.id] || fallbackImg) : item.kind === "audio" ? (audioUrls[item.id] || fallbackImg) : fallbackImg,
       },
     });
   };
 
   const handleRemix = (item: MarketItem) => {
-    const cat = item.kind === "coding" ? "coding" : item.kind === "music" ? "music" : item.kind === "video" ? "video" : "image";
+    const cat = item.kind === "coding" ? "coding" : item.kind === "audio" ? "audio" : item.kind === "video" ? "video" : "image";
     dispatch({ type: "category", category: cat });
     
     if (!state.selectedModelIds[cat].includes(item.model)) {
@@ -455,7 +455,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
   };
 
   const handleUse = (item: MarketItem) => {
-    const cat = item.kind === "coding" ? "coding" : item.kind === "music" ? "music" : item.kind === "video" ? "video" : "image";
+    const cat = item.kind === "coding" ? "coding" : item.kind === "audio" ? "audio" : item.kind === "video" ? "video" : "image";
     dispatch({ type: "category", category: cat });
     setSelectedItem(null);
     goBack();
@@ -493,7 +493,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
     // Guess category from file name
     let cat: MarketItem["kind"] = "image";
     if (file.name.includes("music") || file.name.includes("audio") || file.name.includes(".mp3")) {
-      cat = "music";
+      cat = "audio";
     } else if (file.name.includes("video") || file.name.includes(".mp4")) {
       cat = "video";
     } else if (file.name.includes("code") || file.name.includes(".json") || file.name.includes(".txt")) {
@@ -501,7 +501,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
     }
     setPublishCategory(cat);
     
-    const catModels = modelsForCategory(cat === "coding" ? "coding" : cat === "music" ? "music" : cat === "video" ? "video" : "image");
+    const catModels = modelsForCategory(cat === "coding" ? "coding" : cat === "audio" ? "audio" : cat === "video" ? "video" : "image");
     setPublishModel(catModels[0]?.label || "Flux Schnell");
     setPublishTags("");
     setAgreedToGuidelines(false);
@@ -622,7 +622,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
 
             {/* Kind filter — compact icon row, no verbose pills/dropdown */}
             <View style={localStyles.filtersRow}>
-              {(["all", "image", "video", "music", "coding"] as const).map((k) => (
+              {(["all", "image", "video", "audio", "coding"] as const).map((k) => (
                 <Pressable
                   key={k}
                   onPress={() => setActiveKind(k)}
@@ -721,7 +721,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                           {/* Kind badge indicator icon top-left */}
                           <View style={localStyles.badgeContainer}>
                             <Ionicons 
-                              name={item.kind === "video" ? "play" : item.kind === "music" ? "musical-notes" : item.kind === "coding" ? "code-slash" : "image"} 
+                              name={item.kind === "video" ? "play" : item.kind === "audio" ? "musical-notes" : item.kind === "coding" ? "code-slash" : "image"} 
                               size={8} 
                               color="#fff" 
                               style={{ marginRight: 2 }}
@@ -870,7 +870,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                         <Text style={{ color: "#fff", fontSize: 8, fontFamily: "monospace" }}>0:{Math.floor(playProgress * 0.18).toString().padStart(2, "0")}</Text>
                       </View>
                     </View>
-                  ) : selectedItem.kind === "music" ? (
+                  ) : selectedItem.kind === "audio" ? (
                     /* Music cassette animated visualizer */
                     <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#0b0c10", padding: 16 }}>
                       {/* Cassette Plate Shell */}
@@ -1184,13 +1184,13 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                     onChange={(v) => {
                       const c = v as MarketItem["kind"];
                       setPublishCategory(c);
-                      const catModels = modelsForCategory(c === "coding" ? "coding" : c === "music" ? "music" : c === "video" ? "video" : "image");
+                      const catModels = modelsForCategory(c === "coding" ? "coding" : c === "audio" ? "audio" : c === "video" ? "video" : "image");
                       setPublishModel(catModels[0]?.label || "Flux Schnell");
                     }}
                     options={[
                       { label: "Image", value: "image" },
                       { label: "Video", value: "video" },
-                      { label: "Music", value: "music" },
+                      { label: "Audio", value: "audio" },
                       { label: "Preset Code", value: "coding" },
                     ]}
                     style={localStyles.publishSelect}
@@ -1203,7 +1203,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                   <Picker
                     value={publishModel}
                     onChange={setPublishModel}
-                    options={modelsForCategory(publishCategory === "coding" ? "coding" : publishCategory === "music" ? "music" : publishCategory === "video" ? "video" : "image").map(m => ({ label: m.label, value: m.label }))}
+                    options={modelsForCategory(publishCategory === "coding" ? "coding" : publishCategory === "audio" ? "audio" : publishCategory === "video" ? "video" : "image").map(m => ({ label: m.label, value: m.label }))}
                     style={localStyles.publishSelect}
                   />
                 </View>

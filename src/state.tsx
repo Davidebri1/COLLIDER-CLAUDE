@@ -91,7 +91,7 @@ export type ConsensusRun = {
 export type AuthUser = { kind: "guest" } | { kind: "email"; email: string } | { kind: "google"; email: string } | { kind: "apple"; email: string };
 export type ChatMode = "default" | "research" | "deep";
 
-export type MarketItem = { id: string; kind: "image" | "video" | "music" | "coding"; prompt: string; model: string; author: string; likes: number; likedByUser?: boolean; url?: string; category?: string };
+export type MarketItem = { id: string; kind: "image" | "video" | "audio" | "coding"; prompt: string; model: string; author: string; likes: number; likedByUser?: boolean; url?: string; category?: string };
 
 type AppState = {
   tier: Tier;
@@ -221,6 +221,13 @@ type Action =
   | { type: "incognito"; category: Category; enabled: boolean }
   | { type: "auth"; user: AuthUser }
   | { type: "spend"; credits: number }
+  // Returns credits taken by a generation that then failed. Deliberately a
+  // separate action rather than a negative `spend`: `spend` refuses when the
+  // balance is short (`credits < action.credits`), so a negative amount there
+  // would be silently dropped exactly when the balance is lowest — i.e. the
+  // case a refund matters most. Refund also must not trigger the daily-refill
+  // branch, or a failure that straddles midnight would top the pool back up.
+  | { type: "refund"; credits: number }
   | { type: "recordMessageSent" }
   | { type: "resetLimits" }
   | { type: "smartCapture"; text: string; modelId?: string; convId?: string }
@@ -323,30 +330,30 @@ export function unlinkItems(state: AppState, a: LinkRef, b: LinkRef): AppState {
 
 export const DEFAULT_MARKET_ITEMS: MarketItem[] = [
   // ── Images ──
-  { id: "img1", kind: "image", prompt: "A glowing orange nebula shaped like a mechanical butterfly, unreal engine rendering", model: "img/flux-schnell", author: "@cosmic_render", likes: 1420, likedByUser: false },
-  { id: "img2", kind: "image", prompt: "Detailed cyberpunk samurai standing under neon rain, dramatic lighting, 8k resolution", model: "img/sdxl", author: "@pixel_ronin", likes: 980, likedByUser: false },
-  { id: "img3", kind: "image", prompt: "Magical library hidden inside a giant hollow oak tree, fantasy painting style", model: "img/midjourney-v6", author: "@spellbound", likes: 2310, likedByUser: false },
-  { id: "img4", kind: "image", prompt: "A majestic crystalline white stag walking through an enchanted emerald forest", model: "img/flux-dev", author: "@aurora_art", likes: 880, likedByUser: false },
-  { id: "img5", kind: "image", prompt: "Retro-futuristic astronaut lounge on Mars, vaporwave aesthetic, warm shadows", model: "img/dalle-3", author: "@red_planet", likes: 1250, likedByUser: false },
-  { id: "img6", kind: "image", prompt: "Ethereal glass palace floating above a sea of clouds during a golden sunset", model: "img/imagen-3", author: "@stratus_design", likes: 3100, likedByUser: false },
+  { id: "img1", kind: "image", prompt: "A glowing orange nebula shaped like a mechanical butterfly, unreal engine rendering", model: "img/flux-2-klein", author: "@cosmic_render", likes: 1420, likedByUser: false },
+  { id: "img2", kind: "image", prompt: "Detailed cyberpunk samurai standing under neon rain, dramatic lighting, 8k resolution", model: "img/flux-2-klein", author: "@pixel_ronin", likes: 980, likedByUser: false },
+  { id: "img3", kind: "image", prompt: "Magical library hidden inside a giant hollow oak tree, fantasy painting style", model: "img/seedream-4-5", author: "@spellbound", likes: 2310, likedByUser: false },
+  { id: "img4", kind: "image", prompt: "A majestic crystalline white stag walking through an enchanted emerald forest", model: "img/flux-free", author: "@aurora_art", likes: 880, likedByUser: false },
+  { id: "img5", kind: "image", prompt: "Retro-futuristic astronaut lounge on Mars, vaporwave aesthetic, warm shadows", model: "img/gpt-5-image", author: "@red_planet", likes: 1250, likedByUser: false },
+  { id: "img6", kind: "image", prompt: "Ethereal glass palace floating above a sea of clouds during a golden sunset", model: "img/gemini-3-pro-image", author: "@stratus_design", likes: 3100, likedByUser: false },
 
   // ── Videos ──
   { id: "vid1", kind: "video", prompt: "Cinematic flythrough of a translucent glass skyscraper city during a meteor shower", model: "vid/sora-2", author: "@glass_lens", likes: 4500, likedByUser: false },
   { id: "vid2", kind: "video", prompt: "Macro video of tiny mechanical robots farming moss on a basalt rock, photorealistic", model: "vid/veo-3", author: "@nano_nature", likes: 2800, likedByUser: false },
-  { id: "vid3", kind: "video", prompt: "A surreal cosmic black hole swallowing a glowing blue solar system, fluid dynamics, high motion", model: "vid/luma-dream", author: "@event_horizon", likes: 3400, likedByUser: false },
-  { id: "vid4", kind: "video", prompt: "Slow motion close-up of clockwork gear mechanisms rotating inside a crystal sphere", model: "vid/kling-ai", author: "@crono_watch", likes: 1900, likedByUser: false },
+  { id: "vid3", kind: "video", prompt: "A surreal cosmic black hole swallowing a glowing blue solar system, fluid dynamics, high motion", model: "vid/seedance-2", author: "@event_horizon", likes: 3400, likedByUser: false },
+  { id: "vid4", kind: "video", prompt: "Slow motion close-up of clockwork gear mechanisms rotating inside a crystal sphere", model: "vid/kling-3-standard", author: "@crono_watch", likes: 1900, likedByUser: false },
 
   // ── Music ──
-  { id: "mus1", kind: "music", prompt: "Nocturnal synthwave with deep cello swells and retro analog drum beat", model: "mus/udio", author: "@retro_wave", likes: 1850, likedByUser: false },
-  { id: "mus2", kind: "music", prompt: "Minimalist piano solo transitioning into a cinematic ambient string crescendo", model: "mus/suno", author: "@mozart_ambient", likes: 2900, likedByUser: false },
-  { id: "mus3", kind: "music", prompt: "Glitch-hop lo-fi instrumental beat with vinyl crackles and jazz trumpet accents", model: "mus/musiclm", author: "@groove_vinyl", likes: 1100, likedByUser: false },
-  { id: "mus4", kind: "music", prompt: "Dark industrial warehouse techno loop with heavy modular synth modulation", model: "mus/riffusion", author: "@heavy_voltage", likes: 950, likedByUser: false },
+  { id: "mus1", kind: "audio", prompt: "Nocturnal synthwave with deep cello swells and retro analog drum beat", model: "aud/lyria-3-pro", author: "@retro_wave", likes: 1850, likedByUser: false },
+  { id: "mus2", kind: "audio", prompt: "Minimalist piano solo transitioning into a cinematic ambient string crescendo", model: "aud/lyria-3-clip", author: "@mozart_ambient", likes: 2900, likedByUser: false },
+  { id: "mus3", kind: "audio", prompt: "Glitch-hop lo-fi instrumental beat with vinyl crackles and jazz trumpet accents", model: "aud/gpt-4o-mini-tts", author: "@groove_vinyl", likes: 1100, likedByUser: false },
+  { id: "mus4", kind: "audio", prompt: "Dark industrial warehouse techno loop with heavy modular synth modulation", model: "aud/gemini-3-1-flash-tts", author: "@heavy_voltage", likes: 950, likedByUser: false },
 
   // ── Coding / Presets ──
-  { id: "cod1", kind: "coding", prompt: "Contrast/debate helper: Give a safe option, a bold alternative, and a contrarian critique", model: "pro/gpt-5-code", author: "@dialectic_ai", likes: 3200, likedByUser: false },
+  { id: "cod1", kind: "coding", prompt: "Contrast/debate helper: Give a safe option, a bold alternative, and a contrarian critique", model: "pro/gpt-5-1-codex", author: "@dialectic_ai", likes: 3200, likedByUser: false },
   { id: "cod2", kind: "coding", prompt: "React 3D canvas preset: Render an interactive procedural marble shader sphere", model: "or/qwen-coder-72b", author: "@react_specular", likes: 2500, likedByUser: false },
-  { id: "cod3", kind: "coding", prompt: "Fast rust game engine boilerplate: Initialize a 60fps game loop with input handling", model: "pro/claude-4.5-code", author: "@rust_gear", likes: 4100, likedByUser: false },
-  { id: "cod4", kind: "coding", prompt: "Automated regex compiler: Synthesize and explain complex regex search patterns", model: "elite/o1-code", author: "@parser_regex", likes: 1800, likedByUser: false },
+  { id: "cod3", kind: "coding", prompt: "Fast rust game engine boilerplate: Initialize a 60fps game loop with input handling", model: "pro/claude-sonnet-5-code", author: "@rust_gear", likes: 4100, likedByUser: false },
+  { id: "cod4", kind: "coding", prompt: "Automated regex compiler: Synthesize and explain complex regex search patterns", model: "elite/codestral-2508", author: "@parser_regex", likes: 1800, likedByUser: false },
 ];
 
 function defaultSelected(category: Category) {
@@ -374,7 +381,7 @@ function initialState(): AppState {
     conversations: [],
     memories: [
       { id: "m_mock1", modelId: "groq/llama-3.3-70b", content: "User prefers dark HSL gradient theme backgrounds.", ts: Date.now() - 3600000 },
-      { id: "m_mock2", modelId: "pro/gpt-5", content: "Prefers concise, non-wordy replies.", ts: Date.now() - 7200000 }
+      { id: "m_mock2", modelId: "pro/gpt-5-1-codex", content: "Prefers concise, non-wordy replies.", ts: Date.now() - 7200000 }
     ],
     reminders: [
       { id: "r_mock1", title: "Review agreement consensus deviations", due: Date.now(), done: false, ts: Date.now(), priority: "high", progress: "inprogress", tags: ["consensus", "audit"] },
@@ -566,6 +573,13 @@ function reducer(state: AppState, action: Action): AppState {
         ? { ...state, credits: TIER_INFO[state.tier].pool, lastCreditResetDate: today }
         : state;
       return base.credits < action.credits ? base : { ...base, credits: base.credits - action.credits };
+    }
+    case "refund": {
+      // Capped at the tier's pool so a refund can never inflate the balance
+      // above a legitimate day's allowance (e.g. a failure arriving after a
+      // rollover already refilled).
+      const pool = TIER_INFO[state.tier].pool;
+      return { ...state, credits: Math.min(pool, state.credits + action.credits) };
     }
     case "toggleModel": {
       const current = state.selectedModelIds[action.category];
@@ -997,7 +1011,7 @@ const CREATION_TEMPLATES = [
     ],
   },
   {
-    kind: "music" as const, category: "chill",
+    kind: "audio" as const, category: "chill",
     prompts: [
       "Lofi chill hop beats for studying, smooth saxophone",
       "Ambient atmospheric soundscape for deep meditation",
@@ -1006,7 +1020,7 @@ const CREATION_TEMPLATES = [
     ],
   },
   {
-    kind: "music" as const, category: "electronic",
+    kind: "audio" as const, category: "electronic",
     prompts: [
       "Synthwave cyberpunk track with heavy bassline",
       "Nocturnal synthwave with deep cello swells and retro analog drum beat",
@@ -1015,7 +1029,7 @@ const CREATION_TEMPLATES = [
     ],
   },
   {
-    kind: "music" as const, category: "orchestral",
+    kind: "audio" as const, category: "orchestral",
     prompts: [
       "Upbeat futuristic jazz fusion with electronic synth accents",
       "Epic orchestral theme with digital glitch sound design",
@@ -1078,7 +1092,7 @@ export function generateMoreMarketItems(count: number, currentLen: number, categ
     let url = `https://picsum.photos/seed/${id}/300/300`;
     if (kind === "video") {
       url = VIDEO_POOL[Math.floor(Math.random() * VIDEO_POOL.length)];
-    } else if (kind === "music") {
+    } else if (kind === "audio") {
       url = MUSIC_POOL[Math.floor(Math.random() * MUSIC_POOL.length)];
     }
 

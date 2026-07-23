@@ -443,7 +443,7 @@ function Shell() {
   const [rightDrawerScopeModelId, setRightDrawerScopeModelId] = useState<string | undefined>(undefined);
   const [consensus, setConsensus] = useState(false);
   const [composerAttachments, setComposerAttachments] = useState<Record<Category, Attachment[]>>({
-    general: [], image: [], video: [], music: [], coding: []
+    general: [], image: [], video: [], audio: [], coding: []
   });
   const [toastText, setToastText] = useState<string | null>(null);
 
@@ -2600,7 +2600,7 @@ function CardScreen({
                         message.role === "user"
                           ? styles.userBubble
                           : { borderColor: `${model.color}22`, backgroundColor: "rgba(23,16,38,0.15)" },
-                        (message.role === "assistant" && (model.category.includes("image") || model.category.includes("music") || model.category.includes("video"))) && { width: "100%", maxWidth: "90%" }
+                        (message.role === "assistant" && (model.category.includes("image") || model.category.includes("audio") || model.category.includes("video"))) && { width: "100%", maxWidth: "90%" }
                       ]}
                     >
                       {message.role === "assistant" && model.category.includes("image") && message.content ? (
@@ -2626,7 +2626,7 @@ function CardScreen({
                           </View>
                           <Text style={[styles.bodyText, { marginTop: 6, fontSize: 12, opacity: 0.8 }]}>{message.content}</Text>
                         </View>
-                      ) : message.role === "assistant" && model.category.includes("music") && message.content?.startsWith("data:audio") ? (
+                      ) : message.role === "assistant" && model.category.includes("audio") && message.content?.startsWith("data:audio") ? (
                         <View style={[styles.audioPlayerCard, { backgroundColor: "rgba(255,255,255,0.05)" }]}>
                           <Text style={{ color: "#ffffff", fontSize: 11, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginBottom: 4 }}> {model.label.toUpperCase()}</Text>
                           <AudioPlayerControls uri={message.content} />
@@ -3184,7 +3184,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
   // feature that happened to live in this same drawer; kept as its own tab
   // rather than folded into the Smart Gen list it doesn't belong to.
   const [panel, setPanel] = useState<"tools" | "outputs">("tools");
-  const [tab, setTab] = useState<"all" | "image" | "video" | "music" | "coding">("all");
+  const [tab, setTab] = useState<"all" | "image" | "video" | "audio" | "coding">("all");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [starred, setStarred] = useState<Record<string, boolean>>({});
   // Model filter: defaults to the card's own model when scoped, but stays
@@ -3374,7 +3374,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
         <>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, paddingBottom: 8, flexWrap: "wrap" }}>
           <View style={{ flexDirection: "row", paddingHorizontal: 0, gap: 4, flexWrap: "wrap" }}>
-            {(["all", "image", "video", "music", "coding"] as const).map((t) => (
+            {(["all", "image", "video", "audio", "coding"] as const).map((t) => (
               <Pressable
                 key={t}
                 onPress={() => setTab(t)}
@@ -3439,7 +3439,7 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                     dispatch({
                       type: "publishToMarket",
                       item: {
-                        kind: g.category === "coding" ? "coding" : g.category === "music" ? "music" : g.category === "video" ? "video" : "image",
+                        kind: g.category === "coding" ? "coding" : g.category === "audio" ? "audio" : g.category === "video" ? "video" : "image",
                         prompt: g.prompt,
                         model: g.modelId,
                         author: state.auth.kind === "guest" ? "@guest" : `@${state.auth.email.split('@')[0]}`,

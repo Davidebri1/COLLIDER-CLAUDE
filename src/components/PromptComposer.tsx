@@ -103,7 +103,7 @@ export function PromptComposer({
       }
     } else if (cat === "video") {
       compiledPrompt += ` --ar ${videoSettings.ar} --quality ${videoSettings.quality} --duration ${videoSettings.duration} --motion ${videoSettings.motion}`;
-    } else if (cat === "music") {
+    } else if (cat === "audio") {
       compiledPrompt += ` --vocals ${musicSettings.vocals} --bitrate ${musicSettings.quality} --format ${musicSettings.format}`;
       if (musicSettings.tags.trim()) {
         compiledPrompt += ` --tags "${musicSettings.tags.trim()}"`;
@@ -207,7 +207,7 @@ export function PromptComposer({
         )}
 
         {/* Media Generation Options Button */}
-        {(cat === "image" || cat === "video" || cat === "music") && (
+        {(cat === "image" || cat === "video" || cat === "audio") && (
           <Pressable
             onPress={() => setSettingsVisible(true)}
             style={[
@@ -423,7 +423,7 @@ export function PromptComposer({
                 </>
               )}
 
-              {cat === "music" && (
+              {cat === "audio" && (
                 <>
                   <Text style={localStyles.label}>VOCAL MODE</Text>
                   <View style={localStyles.row}>

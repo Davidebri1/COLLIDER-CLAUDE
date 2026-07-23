@@ -297,7 +297,7 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
 
         {/* ── Privacy ── */}
         <SettingsSection title="Privacy — Private Mode per Tab">
-          {(["general","image","video","music","coding"] as Category[]).map((cat) => (
+          {(["general","image","video","audio","coding"] as Category[]).map((cat) => (
             <SettingsToggleRow
               key={cat}
               label={`${cat.charAt(0).toUpperCase() + cat.slice(1)} tab`}

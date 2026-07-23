@@ -134,7 +134,14 @@ async function webSearch(query: string, mode?: string): Promise<string> {
 
 
 type Route = {
-  provider: "groq" | "openrouter" | "pollinations-image" | "openrouter-image" | "openrouter-video" | "openrouter-music";
+  // "openrouter-audio" = chat-completions with modalities:["audio","text"]
+  // (music generation and conversational voice). "openrouter-speech" = the
+  // dedicated /api/v1/audio/speech endpoint used by TTS models, which returns a
+  // RAW BYTE STREAM rather than JSON — a genuinely different call shape, not a
+  // variant of the same one, so it gets its own provider rather than a flag.
+  provider: "groq" | "openrouter" | "pollinations-image" | "openrouter-image" | "openrouter-video" | "openrouter-audio" | "openrouter-speech";
+  // TTS models require a voice id; each model exposes its own set.
+  voice?: string;
   remote: string;
   vision?: boolean;
   systemOverride?: string;
@@ -185,10 +192,9 @@ const ROUTES: Record<string, Route> = {
   // for that one, so it's a reasonable free taste of the category instead
   // of Image being entirely locked for free users.
   "img/flux-free":               { provider: "pollinations-image", remote: "flux" },
-  "img/gemini-3-1-flash-image":  { provider: "openrouter-image", remote: "google/gemini-3.1-flash-image" },
+  "img/gemini-3-1-flash-image":  { provider: "openrouter-image", remote: "google/gemini-3.1-flash-image-preview" },
   "img/gpt-5-image-mini":        { provider: "openrouter-image", remote: "openai/gpt-5-image-mini" },
-  "img/gemini-3-pro-image":      { provider: "openrouter-image", remote: "google/gemini-3-pro-image" },
-  "img/gpt-5-image":             { provider: "openrouter-image", remote: "openai/gpt-5-image" },
+  "img/gemini-3-pro-image":      { provider: "openrouter-image", remote: "google/gemini-3-pro-image-preview" },
 
   // ── Video generation — real video files via OpenRouter's async /videos job
   // API (create → poll → download), confirmed live: created a real job
@@ -202,13 +208,20 @@ const ROUTES: Record<string, Route> = {
   // x-ai/grok-imagine-video), added to fill SPEC.md's "3 pro" video
   // requirement, which the tier had 0 models against after the fake
   // runway/pika/kling/luma entries were removed.
+  "img/seedream-4-5":            { provider: "openrouter-image", remote: "bytedance-seed/seedream-4.5" },
+  "img/flux-2-klein":            { provider: "openrouter-image", remote: "black-forest-labs/flux.2-klein-4b" },
+  "img/flux-2-max":              { provider: "openrouter-image", remote: "black-forest-labs/flux.2-max" },
+  "img/gpt-5-4-image-2":         { provider: "openrouter-image", remote: "openai/gpt-5.4-image-2" },
+
   "vid/veo-3-1-lite":       { provider: "openrouter-video", remote: "google/veo-3.1-lite" },
   "vid/kling-3-standard":   { provider: "openrouter-video", remote: "kwaivgi/kling-v3.0-std" },
   "vid/grok-imagine-video": { provider: "openrouter-video", remote: "x-ai/grok-imagine-video" },
 
   "vid/sora-2":  { provider: "openrouter-video", remote: "openai/sora-2-pro" },
   "vid/veo-3":   { provider: "openrouter-video", remote: "google/veo-3.1" },
-  "vid/kling-3-pro": { provider: "openrouter-video", remote: "kwaivgi/kling-v3.0-pro" },
+  "vid/seedance-2-fast": { provider: "openrouter-video", remote: "bytedance/seedance-2.0-fast" },
+  "vid/seedance-2":      { provider: "openrouter-video", remote: "bytedance/seedance-2.0" },
+  "vid/wan-2-6":         { provider: "openrouter-video", remote: "alibaba/wan-2.6" },
 
   // ── Music generation — real sung/instrumental audio via Google's Lyria 3,
   // the only music-generation model actually available through OpenRouter
@@ -219,8 +232,17 @@ const ROUTES: Record<string, Route> = {
   // base64 chunks in each SSE delta's `audio.data` field, concatenated here
   // into one playable file — same category of bug as video: the previous
   // entries routed to a text model writing lyrics, no audio ever produced.
-  "mus/suno":  { provider: "openrouter-music", remote: "google/lyria-3-clip-preview" },
-  "mus/udio":  { provider: "openrouter-music", remote: "google/lyria-3-pro-preview" },
+  "aud/lyria-3-clip":  { provider: "openrouter-audio", remote: "google/lyria-3-clip-preview" },
+  "aud/gpt-audio-mini": { provider: "openrouter-audio", remote: "openai/gpt-audio-mini" },
+  "aud/gpt-audio":      { provider: "openrouter-audio", remote: "openai/gpt-audio" },
+  // TTS — note the non-obvious slug suffixes; OpenRouter's docs call this out
+  // explicitly ("gpt-4o-mini-tts-2025-12-15, not gpt-4o-mini-tts"). Dropping
+  // them 404s.
+  "aud/gpt-4o-mini-tts":   { provider: "openrouter-speech", remote: "openai/gpt-4o-mini-tts-2025-12-15", voice: "alloy" },
+  "aud/kokoro-82m":        { provider: "openrouter-speech", remote: "hexgrad/kokoro-82m", voice: "af_bella" },
+  "aud/gemini-3-1-flash-tts": { provider: "openrouter-speech", remote: "google/gemini-3.1-flash-tts-preview", voice: "Zephyr" },
+  "aud/voxtral-mini-tts":  { provider: "openrouter-speech", remote: "mistralai/voxtral-mini-tts-2603" },
+  "aud/lyria-3-pro":  { provider: "openrouter-audio", remote: "google/lyria-3-pro-preview" },
 };
 
 
@@ -293,8 +315,11 @@ export async function sendChat(
     return callOpenRouterVideo(route.remote, prompt || "a short abstract scene");
   }
 
-  if (route.provider === "openrouter-music") {
-    return callOpenRouterMusic(route.remote, prompt || "a short instrumental piece");
+  if (route.provider === "openrouter-audio") {
+    return callOpenRouterAudio(route.remote, prompt || "a short instrumental piece");
+  }
+  if (route.provider === "openrouter-speech") {
+    return callOpenRouterSpeech(route.remote, prompt || "Hello from Collider.", route.voice);
   }
 
   const messages: any[] = [];
@@ -566,7 +591,45 @@ async function callOpenRouterVideo(model: string, prompt: string): Promise<strin
 // base64 chunks in each SSE delta's `audio.data` field — concatenated here
 // into one file. A short clip completes fast enough that this reads the
 // whole SSE body at once rather than needing token-by-token onToken calls.
-async function callOpenRouterMusic(model: string, prompt: string): Promise<string> {
+// TTS via OpenRouter's dedicated speech endpoint. Unlike every other call in
+// this file the response is not JSON — it is raw audio bytes — so it is read as
+// a blob and converted to a data URI for the same downstream handling the audio
+// chat path produces.
+async function callOpenRouterSpeech(model: string, input: string, voice?: string): Promise<string> {
+  const fmtMatch = input.match(/--format\s+(\S+)/);
+  const voiceMatch = input.match(/--voice\s+(\S+)/);
+  const format = fmtMatch ? fmtMatch[1] : "mp3";
+  const chosenVoice = voiceMatch ? voiceMatch[1] : voice;
+  const text = input.replace(/--format\s+\S+/g, "").replace(/--voice\s+\S+/g, "").trim();
+
+  const res = await fetch("https://openrouter.ai/api/v1/audio/speech", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENROUTER_KEY}`,
+      "HTTP-Referer": "https://collider.app",
+      "X-Title": "Collider",
+    },
+    body: JSON.stringify({
+      model,
+      input: text || "Hello from Collider.",
+      ...(chosenVoice ? { voice: chosenVoice } : {}),
+      response_format: format,
+    }),
+  });
+  if (!res.ok) throw new Error(`OpenRouter speech ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const blob = await res.blob();
+  const b64: string = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(String(reader.result).split(",")[1] || "");
+    reader.onerror = () => reject(new Error("Could not read speech audio."));
+    reader.readAsDataURL(blob);
+  });
+  if (!b64) throw new Error("Speech generation returned no audio.");
+  return `data:audio/${format};base64,${b64}`;
+}
+
+async function callOpenRouterAudio(model: string, prompt: string): Promise<string> {
   const vocalsMatch = prompt.match(/--vocals\s+(\S+)/);
   const bitrateMatch = prompt.match(/--bitrate\s+(\S+)/);
   const formatMatch = prompt.match(/--format\s+(\S+)/);
