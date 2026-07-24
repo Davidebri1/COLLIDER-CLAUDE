@@ -701,8 +701,8 @@ export function generateImageUrl(prompt: string, model = "flux"): string {
 }
 
 // ── Consensus arbiter ───────────────────────────────────────────────────────
-// Claude Sonnet 5 via OpenRouter synthesizes all model replies into a unified
-// consensus verdict with per-model alignment scores.
+// MiniMax M3 synthesizes all model replies into a unified consensus verdict
+// with per-model alignment scores.
 // Deterministic local fallback if the arbiter call fails.
 export type ConsensusReply = { modelId: string; label: string; content: string };
 export type ConsensusResult = { verdict: string; scores: Record<string, number> };
@@ -760,40 +760,15 @@ export async function scoreConsensus(replies: ConsensusReply[]): Promise<Consens
       { role: "system", content: sys },
       { role: "user", content: body },
     ];
-    // MiniMax M3 (NVIDIA) is the arbiter — the same validated model that
-    // runs every other Smart Gen judgment, so the consensus drawer's
-    // verdicts and dissent scores come from one qualified judge. The
-    // previous Sonnet-via-OpenRouter arbiter stays as the fallback.
-    let raw = "";
-    try {
-      raw = await callMiniMax(messages, { temperature: 0.3, maxTokens: 8192 });
-    } catch (e) {
-      console.warn("[Consensus] MiniMax arbiter failed, trying OpenRouter:", e);
-    }
-    if (!raw) {
-      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPENROUTER_KEY}`,
-          "HTTP-Referer": "https://collider.app",
-          "X-Title": "Collider",
-        },
-        body: JSON.stringify({
-          model: "anthropic/claude-sonnet-5",
-          messages,
-          temperature: 0.3,
-          max_tokens: 8192,
-        }),
-      });
-      if (!res.ok) {
-        const errText = await res.text().catch(() => "");
-        console.warn(`[Consensus] OpenRouter ${res.status}: ${errText.slice(0, 200)}`);
-        throw new Error(`OpenRouter ${res.status}`);
-      }
-      const json = await res.json();
-      raw = json.choices?.[0]?.message?.content ?? "";
-    }
+    // MiniMax M3 is the ONLY model that arbitrates — the same validated
+    // judge that runs every other Smart Gen judgment. No other model's
+    // judgment enters this loop: a different-model fallback would silently
+    // swap the qualified chain for an unqualified one exactly when things
+    // degrade. callMiniMax itself already handles transport (NVIDIA primary,
+    // the identical model via OpenRouter when NVIDIA is unreachable). If the
+    // model is truly unreachable, the deterministic local overlap heuristic
+    // below takes over — arithmetic, not another model's opinion.
+    const raw = await callMiniMax(messages, { temperature: 0.3, maxTokens: 8192 });
     let cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
     // Reasoning models sometimes wrap the JSON in a sentence of preamble —
     // parse the outermost object, not the prose around it.
