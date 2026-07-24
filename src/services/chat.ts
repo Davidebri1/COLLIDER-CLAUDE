@@ -9,6 +9,10 @@
 // 429 RESOURCE_EXHAUSTED in live testing. Exa + Tavily are both independent,
 // dedicated search-API keys with their own quotas.
 import type { ChatMessage, Memory } from "../state";
+// Deliberate module cycle (minimax.ts imports webSearch/readSSEStream from
+// here): both sides only call each other's hoisted function declarations at
+// request time, never during module init, so Metro resolves it fine.
+import { callMiniMax } from "./minimax";
 
 // Provider errors below (Groq/OpenRouter) intentionally carry the raw
 // response body for debugging — but that raw text (rate-limit JSON,
@@ -118,7 +122,9 @@ async function tavilySearch(query: string): Promise<string> {
 // concurrent model call share one real network round trip and one identical
 // result set.
 const searchCache = new Map<string, Promise<string>>();
-async function webSearch(query: string, mode?: string): Promise<string> {
+// Exported for minimax.ts (Smart Gen's own model) — same shared cache, so a
+// board-chat lookup and a grid-chat lookup of the same query cost one call.
+export async function webSearch(query: string, mode?: string): Promise<string> {
   const key = `${mode || "default"}::${query}`;
   const cached = searchCache.get(key);
   if (cached) return cached;
@@ -399,7 +405,7 @@ export async function sendChat(
 // accumulated text as chunks arrive. Falls back to a single onToken call
 // with the full text if the runtime's fetch doesn't expose a body reader
 // (React Native's native fetch, unlike react-native-web's browser fetch).
-async function readSSEStream(res: Response, onToken?: (partial: string) => void): Promise<string> {
+export async function readSSEStream(res: Response, onToken?: (partial: string) => void): Promise<string> {
   const body: any = res.body;
   if (!body || typeof body.getReader !== "function") {
     const json = await res.json();
@@ -455,7 +461,12 @@ export async function callGroq(model: string, messages: any[], onToken?: (partia
   throw lastErr || new Error("Groq unavailable");
 }
 
-async function callOpenRouter(model: string, messages: any[], onToken?: (partial: string) => void) {
+// Exported for minimax.ts: NVIDIA's NIM endpoint has no CORS headers, so on
+// web builds the direct MiniMax call can never succeed from the browser —
+// the same model routed through OpenRouter (which does allow browser CORS)
+// is the fallback there. opts widen the fixed defaults for callers that
+// need arbiter-sized outputs.
+export async function callOpenRouter(model: string, messages: any[], onToken?: (partial: string) => void, opts?: { temperature?: number; maxTokens?: number }) {
   const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
@@ -464,7 +475,7 @@ async function callOpenRouter(model: string, messages: any[], onToken?: (partial
       "HTTP-Referer": "https://collider.app",
       "X-Title": "Collider",
     },
-    body: JSON.stringify({ model, messages, temperature: 0.7, max_tokens: 1024, stream: !!onToken }),
+    body: JSON.stringify({ model, messages, temperature: opts?.temperature ?? 0.7, max_tokens: opts?.maxTokens ?? 1024, stream: !!onToken }),
   });
   if (!res.ok) throw new Error(`OpenRouter ${res.status}: ${(await res.text()).slice(0, 200)}`);
   if (!onToken) {
@@ -749,29 +760,45 @@ export async function scoreConsensus(replies: ConsensusReply[]): Promise<Consens
       { role: "system", content: sys },
       { role: "user", content: body },
     ];
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${OPENROUTER_KEY}`,
-        "HTTP-Referer": "https://collider.app",
-        "X-Title": "Collider",
-      },
-      body: JSON.stringify({
-        model: "anthropic/claude-sonnet-5",
-        messages,
-        temperature: 0.3,
-        max_tokens: 8192,
-      }),
-    });
-    if (!res.ok) {
-      const errText = await res.text().catch(() => "");
-      console.warn(`[Consensus] OpenRouter ${res.status}: ${errText.slice(0, 200)}`);
-      throw new Error(`OpenRouter ${res.status}`);
+    // MiniMax M3 (NVIDIA) is the arbiter — the same validated model that
+    // runs every other Smart Gen judgment, so the consensus drawer's
+    // verdicts and dissent scores come from one qualified judge. The
+    // previous Sonnet-via-OpenRouter arbiter stays as the fallback.
+    let raw = "";
+    try {
+      raw = await callMiniMax(messages, { temperature: 0.3, maxTokens: 8192 });
+    } catch (e) {
+      console.warn("[Consensus] MiniMax arbiter failed, trying OpenRouter:", e);
     }
-    const json = await res.json();
-    const raw = json.choices?.[0]?.message?.content ?? "";
-    const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+    if (!raw) {
+      const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${OPENROUTER_KEY}`,
+          "HTTP-Referer": "https://collider.app",
+          "X-Title": "Collider",
+        },
+        body: JSON.stringify({
+          model: "anthropic/claude-sonnet-5",
+          messages,
+          temperature: 0.3,
+          max_tokens: 8192,
+        }),
+      });
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        console.warn(`[Consensus] OpenRouter ${res.status}: ${errText.slice(0, 200)}`);
+        throw new Error(`OpenRouter ${res.status}`);
+      }
+      const json = await res.json();
+      raw = json.choices?.[0]?.message?.content ?? "";
+    }
+    let cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
+    // Reasoning models sometimes wrap the JSON in a sentence of preamble —
+    // parse the outermost object, not the prose around it.
+    const first = cleaned.indexOf("{"), last = cleaned.lastIndexOf("}");
+    if (first > 0 && last > first) cleaned = cleaned.slice(first, last + 1);
     const parsed = JSON.parse(cleaned);
     if (!parsed || typeof parsed.verdict !== "string" || typeof parsed.scores !== "object" || !parsed.scores) {
       throw new Error("malformed arbiter response");

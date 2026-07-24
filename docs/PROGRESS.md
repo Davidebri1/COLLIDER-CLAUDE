@@ -109,6 +109,37 @@ This supersedes the "fixed aspect ratio, cards never widen" instruction from ear
 
 `CardScreen`'s header also brought in line with the grid header's language (solid black `#060608`, gradient fade instead of a hard `borderBottomWidth` line) per "make sure it carries to card view."
 
+## Session 3 — Smart Gen kanban board + MiniMax M3 as the single judge
+
+### Repo sync finding (answers "is the repo up to date?")
+Code is fully in sync with origin/main. **Binary assets are not**: 9 files referenced by `src/styles/theme.ts` are absent from the repo (`assets/themes/premium/*.jpg` ×4, `assets/themes/premium/tracks/*.mp3` ×5) — a fresh clone cannot bundle at all until they're added. They exist only on the machine that authored the wallpaper/music feature. **Action needed: upload `assets/themes/premium/` to the repo.** (This session used locally-generated placeholders, deliberately not committed, to be able to run the app.)
+
+### MiniMax M3 — Smart Gen's model (src/services/minimax.ts)
+- `minimaxai/minimax-m3` via NVIDIA NIM (`https://integrate.api.nvidia.com/v1/chat/completions`), slug verified live against the key's /v1/models. Key ships in-app (same stance as chat.ts), `EXPO_PUBLIC_NVIDIA_API_KEY` overrides.
+- **NVIDIA NIM sends no CORS headers** — browser fetch dies before leaving (verified live). On web the same model falls back to OpenRouter (`minimax/minimax-m3`, slug verified in their catalog) using the app's existing key. Native is unaffected. One judge, two wires.
+- Free NVIDIA key rate-limits hard on bursts; `callMiniMax` retries twice paced, then falls to OpenRouter.
+- Routed through MiniMax now: LLM extraction (`llmExtract.ts`, Groq llama fallback), consensus arbiter (`chat.ts scoreConsensus`, Sonnet-via-OpenRouter fallback, local heuristic last), and the new board chat.
+
+### Kanban card system (state.tsx + src/screens/SmartGenBoardScreen.tsx)
+- All four Smart Gen kinds are now cards on one board. New state: `embeds` (directional card-in-card, any kind into any kind, both directions, self/2-cycle refused), `customFields` on all four types, `Reminder.recurring` (optional by design), `cardTypeFields` (global default attributes per type, user- and model-editable), `smartBoard` config (view/groupBy/sortBy/filter — persisted).
+- `convertCard` reducer: full-fidelity type conversion — links, embeds, custom fields, tags, priority, due all carry; content without a native slot in the target lands in `customFields.Notes`; every reference to the old identity (links bags, embeds, projectId pointers) is rewritten. Conversion changes a card's form, never its place in the web around it.
+- Board screen: Board (kanban columns, horizontal overflow) / List / Calendar (Overdue/Today/Tomorrow/This week/Later sections) views; group by status/type/priority/project/tag; sort by due/created/priority/title; filter reaches embedded cards; live countdown chips (per-second ticking when anything is due within the hour); card detail modal (attributes, embed picker, convert, quick due/recurring/priority); global per-type attribute manager.
+- Embedded cards render nested inside their host and don't double-show at top level (search still finds them).
+- Ask tab: MiniMax chat with the full board serialized as context. The model answers from the board AND changes it in the same reply via a fenced `collider-actions` JSON block (create/update/convert/embed/board actions — executed by `executeBoardActions`, shown as an "N changes applied" chip). System prompt bans dangled offers outright. Globe toggle pipes Exa/Tavily search in.
+- Nav: `smartboard` screen, "Board" row leads the RightDrawer Smart Gen list. `Page` got a `noScroll` prop (board manages its own scroll surfaces).
+
+### Logic-chain validation (scripts/validate-logic-chain.mjs, docs/VALIDATION_MINIMAX.md)
+5-whys convergence harness per the validation spec — record chains, never grade responses. 100-replication live run against the real endpoint was **in progress** at commit time (~3 min/replication; the free key only sustains ~1 request/4s). Preliminary 20-rep readout is in the validation doc; final summary JSON lands in `scripts/out/` and the doc gets updated when the run completes.
+
+### Verified live this session (expo web + Playwright, zero console errors)
+App boots; drawer→Board navigates; kanban/calendar render with correct grouping and ticking countdowns; card modal shows type-default + custom attributes; embed picker excludes self/cycles and embedding works; project→reminder conversion works; Ask chat sends, streams, and correctly walks the NVIDIA→OpenRouter fallback (couldn't complete a reply in this container only because no OpenRouter key exists here).
+
+### Open items from this session
+1. Upload `assets/themes/premium/` binaries (blocker for fresh clones).
+2. Board chat history is session-local (component state) — persist to AppState if continuity across visits matters.
+3. `recurring` renders and round-trips but nothing re-schedules a completed recurring reminder yet — needs a "done → advance due by interval" reducer behavior.
+4. Imagine-market procedural-generation drop-in from Google AI Studio: not started, user may supply their build.
+
 ## Known open items (as of last session)
 1. **Manually verify**: tap the search icon (grid toolbar, between MODELS and OUTPUTS) — does it open the search overlay?
 2. **Manually verify**: tap "Imagine Market" in the left drawer — does it open correctly?
