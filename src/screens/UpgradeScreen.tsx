@@ -17,7 +17,7 @@ import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
 import { styles, SCREEN_W, withFont, fontFamilyForWeight, FONT_MONO } from "../styles/theme";
 import { TIER_INFO, type Tier } from "../models";
-import { IAP_PRODUCTS, purchaseProduct } from "../services/iap";
+import { IAP_PRODUCTS, purchaseProduct, verifyPurchase, restorePurchases } from "../services/iap";
 import { useToast } from "../components/Toast";
 
 export function UpgradeScreen({ goBack }: { goBack: () => void }) {
@@ -28,6 +28,61 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
   const [email, setEmail] = useState("");
   const [inquiry, setInquiry] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [purchasing, setPurchasing] = useState<Tier | null>(null);
+
+  // The tier grant must happen ONLY after the store confirms payment and the
+  // receipt verifies. The previous version dispatched the tier first and then
+  // fired the purchase unawaited with `.catch(() => undefined)`, so:
+  //   • on web, purchaseProduct throws immediately and the error was swallowed
+  //     — tapping the button was a free upgrade to Elite;
+  //   • on native, a cancelled or failed purchase still left the tier granted.
+  // Downgrading to free is the one transition with no payment, so it stays
+  // immediate.
+  const handleActivate = async (tier: Tier, index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+    if (index === 0) {
+      dispatch({ type: "tier", tier });
+      return;
+    }
+    if (purchasing) return;
+    setPurchasing(tier);
+    try {
+      const result = await purchaseProduct(IAP_PRODUCTS[index - 1]);
+      const ok = await verifyPurchase(result);
+      if (!ok) {
+        toast("Could not verify that purchase. You have not been charged for access.");
+        return;
+      }
+      dispatch({ type: "tier", tier });
+      toast(`${TIER_INFO[tier].label} is active.`);
+    } catch (e: any) {
+      const msg = e?.message === "cancelled"
+        ? "Purchase cancelled."
+        : e?.message || "Purchase failed.";
+      toast(msg);
+    } finally {
+      setPurchasing(null);
+    }
+  };
+
+  const handleRestore = async () => {
+    try {
+      const owned = await restorePurchases();
+      const restored = owned.includes("collider.elite.monthly")
+        ? "elite"
+        : owned.includes("collider.pro.monthly")
+        ? "pro"
+        : null;
+      if (restored) {
+        dispatch({ type: "tier", tier: restored as Tier });
+        toast(`Restored ${TIER_INFO[restored as Tier].label}.`);
+      } else {
+        toast("No previous purchases found for this account.");
+      }
+    } catch (e: any) {
+      toast(e?.message || "Could not restore purchases.");
+    }
+  };
 
   const handleEnterpriseSubmit = () => {
     if (!email.trim() || !inquiry.trim()) {
@@ -146,14 +201,8 @@ export function UpgradeScreen({ goBack }: { goBack: () => void }) {
 
               {/* Activate Button */}
               <Pressable
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
-                  dispatch({ type: "tier", tier });
-                  if (index > 0) {
-                    purchaseProduct(IAP_PRODUCTS[index - 1]).catch(() => undefined);
-                  }
-                }}
-                disabled={isActive}
+                onPress={() => handleActivate(tier, index)}
+                disabled={isActive || purchasing !== null}
                 style={[
                   localStyles.activateBtn,
                   isActive && { backgroundColor: "rgba(255,255,255,0.04)" }

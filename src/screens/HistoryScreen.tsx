@@ -9,7 +9,7 @@ import {
   LayoutAnimation
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useCollider } from "../state";
+import { useCollider, type Conversation, type ConsensusRun } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
 import { styles, withFont, fontFamilyForWeight } from "../styles/theme";
@@ -19,6 +19,7 @@ import { SelectionBar, SelectModeToggle, SelectDot } from "../components/Selecti
 
 export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => void; openCard: (id: string) => void; modelId?: string }) {
   const { state, dispatch } = useCollider();
+  const typed_conversations = state.conversations as Conversation[];
   const [tab, setTab] = useState<"convos" | "consensus">("convos");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -29,13 +30,13 @@ export function HistoryScreen({ goBack, openCard, modelId }: { goBack: () => voi
   // this model's own conversation pointer, not the shared one.
   const scopedModel = modelId ? modelById(modelId) : undefined;
   const scopedConversations = modelId
-    ? state.conversations.filter((c) => {
+    ? typed_conversations.filter((c) => {
         const modelsInConv = Object.keys(c.threads).filter((mid) => (c.threads[mid] || []).length > 0);
         return modelsInConv.length === 1 && modelsInConv[0] === modelId;
       })
-    : state.conversations;
+    : typed_conversations;
   const convSearch = useSearch(scopedConversations, (c) => `${c.title} ${c.tab}`);
-  const consSearch = useSearch(state.consensusRuns, (r) => `${r.prompt} ${r.verdict}`);
+  const consSearch = useSearch((state.consensusRuns as ConsensusRun[]), (r) => `${r.prompt} ${r.verdict}`);
 
   const toggleSelected = (id: string) => {
     setSelectedIds((prev) => {

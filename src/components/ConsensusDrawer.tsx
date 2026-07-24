@@ -77,6 +77,10 @@ export function ConsensusModal({
   const insets = useSafeAreaInsets();
 
   const [activeTab, setActiveTab] = useState<"current" | "history" | "settings">("current");
+  // Spec §Consensus item 4: a tab pair in front of the map area — Dissent is
+  // tab 1, Total is tab 2. Total shows every model; Dissent shows only models
+  // below the agreement threshold.
+  const [mapTab, setMapTab] = useState<"dissent" | "total">("dissent");
   const [selectedRun, setSelectedRun] = useState<ConsensusRun | null>(null);
   // Dissenting views can be read two ways: inline on the map (next to each
   // model's sphere, in context of where it sits) or as the list below. Both
@@ -94,9 +98,29 @@ export function ConsensusModal({
     }))
     .filter((x) => x.model && x.last) as { model: ModelDef; last: ChatMessage }[];
 
-  // Token-overlap similarity — used as the pairwise-affinity input to the force
-  // layout (and as the deterministic fallback if the LLM arbiter is unavailable).
-  const tokens = (s: string) => (s.toLowerCase().match(/[a-z0-9]{3,}/g) || []);
+  // Pairwise affinity for the force layout's x-axis.
+  //
+  // Spec: "horizontal position = force-directed based on MUTUAL AGREEMENT with
+  // other dissenters." This previously fed `sim()` — bag-of-words token overlap
+  // — which measures topical vocabulary, not agreement. "Rust is faster than
+  // Go" and "Rust is not faster than Go" share nearly every token and scored
+  // ~1.0 similar while being exact opposites, so the map asserted agreement
+  // between models that flatly contradicted each other. It also meant the two
+  // axes of one map measured two different quantities (y used the arbiter's
+  // semantic score, x used vocabulary).
+  //
+  // Both axes now derive from the arbiter's alignment score: two models that
+  // land at the same distance from consensus are treated as mutually affine.
+  // `1 - |si - sj|` is the honest first approximation available from data the
+  // arbiter already returns. It's directional-agnostic (two models can dissent
+  // for different reasons and still score alike), so a pairwise matrix from the
+  // arbiter would be strictly better — but this is correct in kind, where token
+  // overlap was correct in neither kind nor degree.
+  const agreementAffinity = (si: number, sj: number) => 1 - Math.abs(si - sj);
+
+  // Token overlap survives ONLY as the offline fallback score (used when the
+  // arbiter is unreachable), never as a layout input.
+  const tokens = (str: string) => (str.toLowerCase().match(/[a-z0-9]{3,}/g) || []);
   const bags = replies.map((r) => new Set(tokens(r.last.content)));
   const sim = (a: Set<string>, b: Set<string>) => {
     if (!a.size || !b.size) return 0;
@@ -131,10 +155,18 @@ export function ConsensusModal({
 
   const scores = consensusResult?.scores || {};
   const fallbackScore = (i: number) => {
-    // Bag-of-words fallback score if the arbiter hasn't resolved / failed.
+    // Deterministic bag-of-words score, used only when the arbiter hasn't
+    // resolved or failed. Two prior defects: the `* 1.8` multiplier meant any
+    // model with maxSim > 0.556 clamped to exactly 1.0, flattening the top 44%
+    // of the range to a single value; and taking `max` similarity against any
+    // ONE other model scored a model that agreed with a single outlier as full
+    // consensus. Mean similarity against all others, ungained, preserves
+    // ordering across the whole range and reflects agreement with the field
+    // rather than with its nearest neighbour.
     const others = bags.filter((_, j) => j !== i);
-    const maxSim = others.length ? Math.max(...others.map((b) => sim(bags[i], b))) : 0;
-    return Math.max(0, Math.min(1, maxSim * 1.8));
+    if (!others.length) return 0;
+    const mean = others.reduce((acc, b) => acc + sim(bags[i], b), 0) / others.length;
+    return Math.max(0, Math.min(1, mean));
   };
   const scoredReplies = replies.map((r, i) => ({
     ...r,
@@ -198,42 +230,74 @@ export function ConsensusModal({
   // The map is the primary content of this view — it gets most of the
   // screen's height, not a token box squeezed between other elements.
   const fieldW = SCREEN_W - 32;
-  const anchorY = 30;
-  // Extra headroom under each dissenter when inline map labels are showing,
-  // so the label text has somewhere to sit without overlapping the sphere.
-  const fieldH = dissenters.length === 0 ? 160 : (showMapLabels ? 380 : 260);
+  // Field height follows whichever tab is showing. Keying this on
+  // `dissenters.length` alone collapsed the map to 160px whenever consensus was
+  // unanimous — correct for the Dissent tab (nothing to plot) but wrong for
+  // Total, which still has every agreeing model to place.
+  const visibleCount = mapTab === "dissent" ? dissenters.length : replies.length;
+  const fieldH = visibleCount === 0 ? 160 : (showMapLabels ? 380 : 260);
   const centerX = fieldW / 2;
+  // Center node sits at the field's center, matching the design system's
+  // `.node-center{top:44%}`. It was previously pinned to y=30 (the top edge)
+  // with dissenters strung beneath it — that reads as a hierarchy/tree, not
+  // the "2.5D constellation" the spec calls for.
+  const centerY = Math.round(fieldH * 0.44);
   const stars = backgroundStars(fieldW, fieldH);
 
   // Reserve extra bottom margin when labels can render below each sphere —
-  // otherwise a low-score dissenter (placed near the bottom of the field)
-  // gets its label box clipped by the map's overflow:hidden edge. Worst
-  // case: 36px sphere + 4px margin + up to a 3-line, padded label (~56px)
-  // = 78px of content below the sphere's own y — 120px reserve leaves real
-  // margin instead of an exact-fit number that breaks the next time label
-  // sizing changes.
-  const bottomReserve = showMapLabels && dissenters.length > 0 ? 120 : 56;
-  const dissentorData = dissenters.map((d, i) => {
-    const y = anchorY + (1 - Math.min(Math.max(d.score, 0), 1)) * (fieldH - bottomReserve);
-    return { d, y, idx: i };
-  });
+  // otherwise a low-score node (placed near the bottom of the field) gets its
+  // label box clipped by the map's overflow:hidden edge. Worst case: 36px
+  // sphere + 4px margin + up to a 3-line padded label (~56px) = 78px below the
+  // sphere's own y; 120px leaves real margin instead of an exact-fit number
+  // that breaks the next time label sizing changes.
+  const bottomReserve = showMapLabels && visibleCount > 0 ? 120 : 56;
+  const topReserve = 26;
 
-  const n = dissentorData.length;
-  const dissenterBags = dissenters.map((d) => bags[replies.findIndex((r) => r.model.id === d.modelId)] || new Set<string>());
-  const simMatrix = dissenters.map((_, i) => dissenters.map((_, j) => (i === j ? 1 : sim(dissenterBags[i], dissenterBags[j]))));
-  const dissenterScores = dissenters.map((d) => d.score);
-  const xs = computeDissenterX(n, simMatrix, dissenterScores, fieldW, centerX);
+  // Vertical position = agreement level (spec), computed per tab.
+  //
+  // DISSENT tab shows only score < DISSENT_THRESHOLD, so normalizing across
+  // [0,1] would confine every node to the lower half of the field and throw
+  // away half the axis's resolution. Normalizing within the dissent band
+  // instead spreads the actually-occupied range over the full height.
+  //
+  // TOTAL tab shows every model, so it normalizes across the real [0,1] range,
+  // which puts high agreement at the top, the center node at its own 44%
+  // consensus line, and dissent below — the constellation the spec describes.
+  const bandTop = topReserve;
+  const bandH = Math.max(40, fieldH - bottomReserve - bandTop);
+  const yForScore = (score: number, tab: "dissent" | "total") => {
+    const s0 = Math.min(Math.max(score, 0), 1);
+    const norm = tab === "dissent"
+      ? 1 - Math.min(s0, DISSENT_THRESHOLD) / DISSENT_THRESHOLD
+      : 1 - s0;
+    return bandTop + norm * bandH;
+  };
 
-  const mappedPoints = replies.map((reply) => {
-    const dissentIdx = dissentorData.findIndex(dd => dd.d.modelId === reply.model.id);
-    const isDissent = dissentIdx >= 0;
-    if (!isDissent) return { reply, x: centerX, y: anchorY + 10, isDissent };
-    const dd = dissentorData[dissentIdx];
-    const x = xs[dissentIdx] ?? centerX;
-    return { reply, x, y: dd.y, isDissent };
-  });
+  // Nodes for the active tab. DISSENT = dissenters only (each gets a line to
+  // the center). TOTAL = every model, and per spec §4 the dissenting views
+  // "do not have a line drawn to them" there — so links render for agreers
+  // only. Agreeing models previously all collapsed onto one hardcoded
+  // coordinate, which was invisible while the render filtered to dissenters
+  // but would have stacked the entire agreeing set in a single pile the moment
+  // the Total map existed.
+  const activeNodes = (mapTab === "dissent" ? scoredReplies.filter((r) => r.score < DISSENT_THRESHOLD) : scoredReplies)
+    .map((r) => ({ reply: r, score: r.score }));
 
-  const consSearch = useSearch(state.consensusRuns, (r) => `${r.prompt} ${r.verdict}`);
+  const nodeScores = activeNodes.map((nd) => nd.score);
+  const simMatrix = nodeScores.map((si, i) =>
+    nodeScores.map((sj, j) => (i === j ? 1 : agreementAffinity(si, sj)))
+  );
+  const xs = computeDissenterX(activeNodes.length, simMatrix, nodeScores, fieldW, centerX);
+
+  const mappedPoints = activeNodes.map((nd, i) => ({
+    reply: nd.reply,
+    x: xs[i] ?? centerX,
+    y: yForScore(nd.score, mapTab),
+    isDissent: nd.score < DISSENT_THRESHOLD,
+    point: dissenters.find((d) => d.modelId === nd.reply.model.id)?.point || "",
+  }));
+
+  const consSearch = useSearch(state.consensusRuns as {id:string;prompt:string;verdict:string;[k:string]:any}[], (r) => `${r.prompt} ${r.verdict}`);
 
   return (
     <>
@@ -317,8 +381,24 @@ export function ConsensusModal({
                   render blank on web in this environment. */}
               <View style={{ alignItems: "center" }}>
                 <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: fieldW, marginBottom: 4 }}>
-                  <Text style={[styles.kicker, { marginBottom: 0 }]}>Deviation Map</Text>
-                  {dissenters.length > 0 && (
+                  {/* Spec: Dissent is tab 1, Total is tab 2. */}
+                  <View style={{ flexDirection: "row", gap: 4 }}>
+                    {(["dissent", "total"] as const).map((t) => (
+                      <Pressable
+                        key={t}
+                        onPress={() => setMapTab(t)}
+                        style={{
+                          paddingVertical: 3, paddingHorizontal: 9, borderRadius: 8,
+                          backgroundColor: mapTab === t ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)",
+                        }}
+                      >
+                        <Text style={{ color: mapTab === t ? "#e2e8f0" : "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800), letterSpacing: 0.8 }}>
+                          {t === "dissent" ? "DISSENT" : "TOTAL"}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                  {visibleCount > 0 && (
                     <Pressable onPress={() => setShowMapLabels((v) => !v)} style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 8, backgroundColor: showMapLabels ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.05)" }}>
                       <Text style={{ color: showMapLabels ? "#e2e8f0" : "rgba(238,241,246,0.45)", fontSize: 10, fontWeight: "800", fontFamily: fontFamilyForWeight(800) }}>
                         {showMapLabels ? "LABELS ON" : "LABELS OFF"}
@@ -334,18 +414,18 @@ export function ConsensusModal({
                   {/* Dashed lines from center to each dissenter — a row of
                       short rotated segments, since RN has no native dash
                       pattern for a plain View "line". */}
-                  {mappedPoints.filter((pt) => pt.isDissent).map(({ reply, x, y }) => {
-                    const dx = x - centerX, dy = y - anchorY;
+                  {mappedPoints.filter((pt) => (mapTab === "dissent" ? pt.isDissent : !pt.isDissent)).map(({ reply, x, y, isDissent }) => {
+                    const dx = x - centerX, dy = y - centerY;
                     const length = Math.sqrt(dx * dx + dy * dy);
                     const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
                     const segLen = 4, gapLen = 3, segCount = Math.floor(length / (segLen + gapLen));
                     return (
                       <View
                         key={`line_${reply.model.id}`}
-                        style={{ position: "absolute", left: centerX, top: anchorY, width: length, height: 1.5, transform: [{ translateX: 0 }, { translateY: 0 }, { rotate: `${angle}deg` }], transformOrigin: "0 0" } as any}
+                        style={{ position: "absolute", left: centerX, top: centerY, width: length, height: 1.5, transform: [{ translateX: 0 }, { translateY: 0 }, { rotate: `${angle}deg` }], transformOrigin: "0 0" } as any}
                       >
                         {Array.from({ length: segCount }).map((_, i) => (
-                          <View key={i} style={{ position: "absolute", left: i * (segLen + gapLen), width: segLen, height: 1.5, backgroundColor: "rgba(255,106,92,0.5)" }} />
+                          <View key={i} style={{ position: "absolute", left: i * (segLen + gapLen), width: segLen, height: 1.5, backgroundColor: isDissent ? "rgba(255,106,92,0.5)" : "rgba(120,160,240,0.4)" }} />
                         ))}
                       </View>
                     );
@@ -362,12 +442,27 @@ export function ConsensusModal({
                       reason noted in ModelCard.tsx: overflow:hidden (needed
                       to clip the gradient to a circle) would clip a shadow
                       applied on the same node to nothing. */}
+                  {/* Spec: "Center node uses blue/red duality (binary
+                      agree/disagree is literally what this feature measures)."
+                      This was a pure-blue gradient — the red half of the
+                      required duality was simply absent. The design system
+                      composites a blue radial with a red bloom at 70%/75%
+                      under `background-blend-mode:screen`; RN has no blend
+                      mode on gradients, so the red is layered as a second
+                      absolutely-positioned gradient fading to transparent,
+                      which reads the same way over a dark field. */}
                   <View style={{
-                    position: "absolute", left: centerX - 10, top: anchorY - 10, width: 20, height: 20, borderRadius: 10,
-                    shadowColor: "#000", shadowOpacity: 0.5, shadowRadius: 4, shadowOffset: { width: 0, height: 2 }, elevation: 4,
+                    position: "absolute", left: centerX - 20, top: centerY - 20, width: 40, height: 40, borderRadius: 20,
+                    shadowColor: "#5a82e6", shadowOpacity: 0.55, shadowRadius: 14, shadowOffset: { width: 0, height: 0 }, elevation: 6,
                   }}>
-                    <View style={{ width: 20, height: 20, borderRadius: 10, overflow: "hidden", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)" }}>
-                      <LinearGradient colors={["#93c5fd", "#2563eb", "#0f172a"]} start={{ x: 0.3, y: 0.3 }} end={{ x: 1, y: 1 }} style={{ width: "100%", height: "100%" }} />
+                    <View style={{ width: 40, height: 40, borderRadius: 20, overflow: "hidden", borderWidth: 1.5, borderColor: "rgba(255,255,255,0.5)" }}>
+                      <LinearGradient colors={["#8fb8ff", "#3d6bd8", "#0c1230"]} start={{ x: 0.35, y: 0.3 }} end={{ x: 1, y: 1 }} style={{ width: "100%", height: "100%" }} />
+                      <LinearGradient
+                        colors={["rgba(255,90,77,0.85)", "rgba(255,90,77,0)"]}
+                        start={{ x: 0.7, y: 0.75 }}
+                        end={{ x: 0.15, y: 0.2 }}
+                        style={{ position: "absolute", width: "100%", height: "100%" }}
+                      />
                     </View>
                   </View>
 
@@ -376,16 +471,22 @@ export function ConsensusModal({
                       (toggleable) the dissenting point itself right below
                       the sphere it belongs to — visual analysis instead of
                       having to cross-reference a separate list. */}
-                  {mappedPoints.filter((pt) => pt.isDissent).map(({ reply, x, y }) => {
-                    const point = dissenters.find((d) => d.modelId === reply.model.id)?.point || "";
+                  {mappedPoints.map(({ reply, x, y, isDissent, point }) => {
+                    const size = isDissent ? 36 : 28;
                     return (
-                      <View key={reply.model.id} style={{ position: "absolute", left: x - 18, top: y - 18, width: 36, alignItems: "center" }}>
-                        <View style={{ width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                      <View key={reply.model.id} style={{ position: "absolute", left: x - size / 2, top: y - size / 2, width: size, alignItems: "center" }}>
+                        {/* Agreeing nodes render smaller than dissenters, as in
+                            the design system (26px vs 34px) — dissent is the
+                            signal this view exists to surface. */}
+                        <View style={{
+                          width: size, height: size, borderRadius: size / 2, alignItems: "center", justifyContent: "center", overflow: "hidden",
+                          shadowColor: reply.model.color, shadowOpacity: 0.7, shadowRadius: 9, shadowOffset: { width: 0, height: 0 }, elevation: 5,
+                        }}>
                           <LinearGradient colors={["#ffffff", reply.model.color, "#0a0512"]} start={{ x: 0.35, y: 0.35 }} end={{ x: 1, y: 1 }} style={{ width: "100%", height: "100%", position: "absolute" }} />
-                          <Text style={{ color: "#fff", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{reply.model.short.slice(0, 4)}</Text>
+                          <Text style={{ color: "#fff", fontSize: isDissent ? 9 : 8, fontWeight: "900", fontFamily: fontFamilyForWeight(900) }}>{reply.model.short.slice(0, 4)}</Text>
                         </View>
                         {showMapLabels && point && (
-                          <View style={{ marginTop: 4, width: 128, marginLeft: -46, backgroundColor: "rgba(8,6,14,0.92)", borderRadius: 6, borderWidth: 1, borderColor: `${reply.model.color}55`, padding: 6 }}>
+                          <View style={{ marginTop: 4, width: 128, marginLeft: -(64 - size / 2), backgroundColor: "rgba(8,6,14,0.92)", borderRadius: 6, borderWidth: 1, borderColor: `${reply.model.color}55`, padding: 6 }}>
                             <Text style={{ color: "#f2eef7", fontSize: 10.5, lineHeight: 14, fontFamily: fontFamilyForWeight(400), textAlign: "center" }} numberOfLines={3}>
                               {point}
                             </Text>

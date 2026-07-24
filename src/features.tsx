@@ -335,7 +335,7 @@ export function SettingsScreen({ goBack, openAuth, openWallpapers }: { goBack: (
   );
 }
 
-function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
+function SettingsSection({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionKicker}>{title}</Text>
@@ -354,7 +354,7 @@ function SettingsRow({ label, hint, onPress }: { label: string; hint?: string; o
     </Pressable>
   );
 }
-function SettingsToggleRow({ label, hint, value, onValueChange }: { label: string; hint?: string; value: boolean; onValueChange: (v: boolean) => void }) {
+function SettingsToggleRow({ label, hint, value, onValueChange }: { label: string; hint?: string; value: boolean; onValueChange: (v: boolean) => any; [k:string]:any }) {
   return (
     <View style={styles.settingsRow}>
       <View style={{ flex: 1 }}>
@@ -436,7 +436,7 @@ export function AuthScreen({ goBack }: { goBack: () => void }) {
 }
 
 // ── Consensus history viewer ───────────────────────────────────────────────
-export function ConsensusRunCard({ run, onOpen, onDelete }: { run: ConsensusRun; onOpen: () => void; onDelete: () => void }) {
+export function ConsensusRunCard({ run, onOpen, onDelete }: { run: ConsensusRun; onOpen: () => void; onDelete: () => any; [k:string]:any }) {
   const pct = Math.round((run.ratioN / Math.max(run.ratioM, 1)) * 100);
   const color = pct >= 66 ? "#4be6b1" : pct >= 40 ? "#e2e8f0" : "#ff6b6b";
   return (

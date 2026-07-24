@@ -25,7 +25,8 @@
         "NSMicrophoneUsageDescription": "Voice input for chat prompts.",
         "NSPhotoLibraryUsageDescription": "Attach images to your prompts.",
         "NSCameraUsageDescription": "Capture photos to send as prompts."
-      }
+      },
+      "usesAppleSignIn": false
     },
     "android": {
       "package": "app.collider.native",
@@ -38,7 +39,8 @@
         "RECORD_AUDIO",
         "CAMERA",
         "READ_MEDIA_IMAGES",
-        "POST_NOTIFICATIONS"
+        "POST_NOTIFICATIONS",
+        "com.android.vending.BILLING"
       ]
     },
     "plugins": [
@@ -56,7 +58,8 @@
         }
       ],
       "expo-notifications",
-      "expo-font"
+      "expo-font",
+      "react-native-iap"
     ],
     "extra": {
       "eas": {

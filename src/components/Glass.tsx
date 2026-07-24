@@ -6,7 +6,7 @@ import { styles, GLASS_CARD } from "../styles/theme";
 // Frosted glass surface (Collider redesign). Both variants share the same
 // diagonal top-light → bottom-dark gradient fill + a hairline highlight edge,
 // so a card and a panel read as the same material at different scales.
-export function Glass({ children, style, isCard }: { children: ReactNode; style?: StyleProp<ViewStyle>; isCard?: boolean }) {
+export function Glass({ children, style, isCard }: { children?: ReactNode; style?: StyleProp<ViewStyle>; isCard?: boolean; [k:string]:any }) {
   return (
     <View style={[styles.glass, { backgroundColor: "transparent", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" }, style]}>
       <LinearGradient

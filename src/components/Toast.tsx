@@ -37,7 +37,7 @@ export function useToast(): ToastContextValue {
   return ctx;
 }
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+export function ToastProvider({ children }: { children?: React.ReactNode }) {
   const [items, setItems] = useState<ToastItem[]>([]);
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const idRef = useRef(0);

@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useCollider } from "../state";
+import { useCollider, type ColliderFile } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
 import { styles, withFont, fontFamilyForWeight } from "../styles/theme";
@@ -22,12 +22,13 @@ import { SelectionBar, SelectModeToggle } from "../components/SelectionBar";
 
 export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openOutputs?: () => void }) {
   const { state, dispatch } = useCollider();
+  const typed_files = state.files as ColliderFile[];
   const [tab, setTab] = useState<"all" | "uploaded" | "generated">("all");
   const [editingFile, setEditingFile] = useState<any | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const scope = state.files.filter((f) => tab === "all" || f.kind === tab);
+  const scope = typed_files.filter((f) => tab === "all" || f.kind === tab);
   const { q, setQ, filtered } = useSearch(scope, (f) => f.name);
 
   const toggleSelected = (id: string) => {
@@ -72,7 +73,7 @@ export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openO
     dispatch({
       type: "file",
       file: { 
-        name: `collider-note-${state.files.length + 1}.txt`, 
+        name: `collider-note-${typed_files.length + 1}.txt`, 
         kind: "generated", 
         url: "local://generated" 
       },
@@ -96,7 +97,7 @@ export function FilesScreen({ goBack, openOutputs }: { goBack: () => void; openO
               style={[localStyles.navTab, tab === t && localStyles.navTabActive]}
             >
               <Text style={[localStyles.navTabText, tab === t && localStyles.navTabTextActive]}>
-                {t === "all" ? "ALL FILES" : t.toUpperCase()} ({state.files.filter((f) => t === "all" || f.kind === t).length})
+                {t === "all" ? "ALL FILES" : t.toUpperCase()} ({typed_files.filter((f) => t === "all" || f.kind === t).length})
               </Text>
             </Pressable>
           ))}
