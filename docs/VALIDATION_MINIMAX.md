@@ -21,19 +21,19 @@ The only thing measured is **convergence**: does the final "why" bottom out at t
 - **Run 1** (100 reps, concurrency 8): aborted — the free NVIDIA key hard-429s under burst load. Finding recorded: the key sustains paced sequential traffic (~1 request start / 4s) but not parallel bursts. The in-app client got retry + OpenRouter fallback out of this.
 - **Run 2** (100 reps, concurrency 3, 4s global pacing): in progress at time of this commit — each replication is 6 sequential reasoning-model calls (~3 min/rep). Raw chains stream into `scripts/out/logic-chain-2026-07-24T21-47-00-314Z.jsonl`; the final summary JSON lands beside it and this section gets updated when the run completes.
 
-## Preliminary readout (first 20 replications)
+## Readout at 37 replications (run continuing toward 100)
 
 Mean pairwise token-overlap by why-depth:
 
 | depth | overlap |
 |---|---|
-| why 1 | 0.176 |
-| why 2 | 0.147 |
-| why 3 | 0.107 |
-| why 4 | 0.068 |
-| why 5 | 0.059 |
+| why 1 | 0.175 |
+| why 2 | 0.132 |
+| why 3 | 0.086 |
+| why 4 | 0.064 |
+| why 5 | 0.061 |
 
-Term frequency across final (depth-5) answers: `legal` 45%, `system` 40%, `disputes` 30%, `courts` 25%, `people` 25%, `facts` 15%.
+Term frequency across final (depth-5) answers: `legal` 51%, `system` 35%, `disputes` 27%, `courts` 22%, `evidence` 22%, `people` 24%.
 
 Sample final why, verbatim: *"Because the legal system is built on the principle that disputes are resolved through verifiable facts presented by both sides, not by who seems more believable — so the party with paper wins when memories conflict."*
 
