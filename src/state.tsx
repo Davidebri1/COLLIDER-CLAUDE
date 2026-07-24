@@ -718,6 +718,28 @@ function applyLLMBatch(state: AppState, batch: LLMBatch, modelId?: string, convI
   return { ...next, seen };
 }
 
+// Completing a recurring reminder finishes this occurrence and rolls the
+// card to the next one — the reminder itself never "dies" while it repeats.
+// The next due is advanced past now (catching up across missed intervals),
+// progress resets, and the Google-event linkage is cleared so the auto-sync
+// effect books the new occurrence as its own calendar event.
+function advanceDue(due: number, recurring: NonNullable<Reminder["recurring"]>, now = Date.now()): number {
+  const d = new Date(due);
+  do {
+    if (recurring === "daily") d.setDate(d.getDate() + 1);
+    else if (recurring === "weekly") d.setDate(d.getDate() + 7);
+    else if (recurring === "monthly") d.setMonth(d.getMonth() + 1);
+    else d.setFullYear(d.getFullYear() + 1);
+  } while (d.getTime() <= now);
+  return d.getTime();
+}
+function completeReminder(r: Reminder): Reminder {
+  if (r.recurring && r.due) {
+    return { ...r, due: advanceDue(r.due, r.recurring), done: false, progress: "todo", googleEventId: undefined, googleTaskId: undefined };
+  }
+  return { ...r, done: true, progress: "done" };
+}
+
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "hydrate": {
@@ -828,14 +850,15 @@ function reducer(state: AppState, action: Action): AppState {
       if (action.linkFrom) next = linkItems(next, action.linkFrom, { kind: "reminder", id: newId });
       return next;
     }
-    case "toggleReminder": return { ...state, reminders: state.reminders.map((r) => r.id === action.id ? { ...r, done: !r.done, progress: !r.done ? "done" : "todo" } : r) };
+    case "toggleReminder": return { ...state, reminders: state.reminders.map((r) => r.id === action.id ? (!r.done ? completeReminder(r) : { ...r, done: false, progress: "todo" }) : r) };
     case "cycleReminderProgress": {
       const order: Progress[] = ["todo", "inprogress", "done"];
       return { ...state, reminders: state.reminders.map((r) => {
         if (r.id !== action.id) return r;
         const cur = r.progress || "todo";
         const next = order[(order.indexOf(cur) + 1) % order.length];
-        return { ...r, progress: next, done: next === "done" };
+        if (next === "done") return completeReminder(r);
+        return { ...r, progress: next, done: false };
       }) };
     }
     case "removeReminder": return { ...state, reminders: state.reminders.filter((r) => r.id !== action.id) };
