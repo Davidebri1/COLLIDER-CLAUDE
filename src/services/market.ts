@@ -142,11 +142,11 @@ export async function fetchMarketItems(opts: FetchMarketItemsOpts): Promise<{ it
   // caller's catch-block fallback never fired because the promise never
   // settled). On timeout we reject, so the caller falls back to local /
   // generated content instead of hanging on one page.
-  const { data, error, count } = await withTimeout(
+  const { data, error, count } = (await withTimeout(
     query,
     MARKET_FETCH_TIMEOUT_MS,
     "market feed request timed out",
-  );
+  )) as { data: MarketRow[] | null; error: Error | null; count: number | null };
   if (error) throw error;
 
   const rows = (data || []) as MarketRow[];

@@ -29,6 +29,7 @@ function kindColor(kind: Artifact["kind"]) {
 
 export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
   const { state, dispatch } = useCollider();
+  const typed_artifacts = state.artifacts as Artifact[];
   const { toast } = useToast();
   const [title, setTitle] = useState("");
   const [kind, setKind] = useState<Artifact["kind"]>("custom");
@@ -36,7 +37,7 @@ export function ArtifactsScreen({ goBack }: { goBack: () => void }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const { q, setQ, filtered } = useSearch(state.artifacts, (a) => `${a.title} ${a.content} ${a.kind}`);
+  const { q, setQ, filtered } = useSearch(typed_artifacts, (a) => `${a.title} ${a.content} ${a.kind}`);
 
   const toggleSelected = (id: string) => {
     setSelectedIds((prev) => {

@@ -26,6 +26,7 @@ import { SelectionBar, SelectModeToggle, SelectDot } from "../components/Selecti
 
 export function RemindersScreen({ goBack }: { goBack: () => void }) {
   const { state, dispatch } = useCollider();
+  const typed_reminders = state.reminders as Reminder[];
   const { toast } = useToast();
   const [value, setValue] = useState("");
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<Date | null>(null);
@@ -166,10 +167,10 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
   }, []);
 
   const hasReminder = (date: Date) => {
-    return state.reminders.some((r) => r.due && new Date(r.due).toDateString() === date.toDateString());
+    return typed_reminders.some((r) => r.due && new Date(r.due).toDateString() === date.toDateString());
   };
 
-  const { q, setQ, filtered } = useSearch(state.reminders, (r) => r.title);
+  const { q, setQ, filtered } = useSearch(typed_reminders, (r) => r.title);
 
   // Sortable table columns — clicking a header toggles direction, clicking a
   // different column switches to it ascending first.
@@ -229,7 +230,7 @@ export function RemindersScreen({ goBack }: { goBack: () => void }) {
   };
 
   const handleDeleteReminder = async (id: string) => {
-    const reminder = state.reminders.find((r) => r.id === id);
+    const reminder = typed_reminders.find((r) => r.id === id);
     dispatch({ type: "removeReminder", id });
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     if (reminder && googleConnected) {

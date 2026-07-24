@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Animated,
   TextInput,
+  Image,
   ImageBackground,
   FlatList,
   Modal,
@@ -23,10 +24,11 @@ import { Video, ResizeMode, Audio } from "expo-av";
 import * as Haptics from "expo-haptics";
 import * as Clipboard from "expo-clipboard";
 import { useCollider, type MarketItem, DEFAULT_MARKET_ITEMS, generateMoreMarketItems } from "../state";
+import AssetActionBar from "../components/AssetActionBar";
 import { GlossSurface } from "../components/GlossSurface";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
-import { styles, SCREEN_W, SCREEN_H, withFont, fontFamilyForWeight } from "../styles/theme";
+import { styles, SCREEN_W, SCREEN_H, withFont, fontFamilyForWeight, FONT_MONO } from "../styles/theme";
 import { CATEGORIES, MODELS, TIER_INFO, canUse, modelById, modelsForCategory } from "../models";
 import { Picker } from "../components/Picker";
 import { useToast } from "../components/Toast";
@@ -62,7 +64,7 @@ function timeAgo(iso: string): string {
   return `${days}d ago`;
 }
 
-type PrimaryTab = "discover" | "published" | "my-assets";
+type PrimaryTab = "discover" | "published" | "favorites" | "collections" | "my-assets";
 type SortOption = "trending" | "likes" | "remixes" | "newest";
 
 export function MarketScreen({ goBack }: { goBack: () => void }) {
@@ -340,6 +342,10 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
       const localFiltered = state.marketItems.filter((item) => {
         // Tab filter
         if (tab === "published" && item.author !== "@you") return false;
+        // Favorites is a view over the app-wide favorite registry, not a
+        // separate feed — an item favorited from a generation result and one
+        // favorited in the Market are the same thing.
+        if (tab === "favorites" && !state.favoriteAssetIds.includes(item.id)) return false;
         // Kind filter
         if (activeKind !== "all" && item.kind !== activeKind) return false;
         // Search query filter
@@ -492,7 +498,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
     
     // Guess category from file name
     let cat: MarketItem["kind"] = "image";
-    if (file.name.includes("music") || file.name.includes("audio") || file.name.includes(".mp3")) {
+    if (file.name.includes("audio") || file.name.includes("audio") || file.name.includes(".mp3")) {
       cat = "audio";
     } else if (file.name.includes("video") || file.name.includes(".mp4")) {
       cat = "video";
@@ -570,7 +576,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
             style found nowhere else in the app. */}
         <View style={localStyles.tabContainer}>
           <View style={{ flexDirection: "row", flex: 1, gap: 4, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 12, padding: 3, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)" }}>
-            {(["discover", "published", "my-assets"] as const).map((t) => (
+            {(["discover", "published", "favorites", "collections", "my-assets"] as const).map((t) => (
               <Pressable
                 key={t}
                 onPress={() => {
@@ -585,7 +591,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
               </Pressable>
             ))}
           </View>
-          {tab !== "my-assets" && (
+          {tab !== "my-assets" && tab !== "collections" && (
             <Pressable
               onPress={() => { LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); setSearchOpen((v) => !v); }}
               style={localStyles.sideSearchBtn}
@@ -595,7 +601,9 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
           )}
         </View>
 
-        {tab !== "my-assets" ? (
+        {tab === "collections" ? (
+          <CollectionsPane />
+        ) : tab !== "my-assets" ? (
           <>
             {searchOpen && (
               <View style={localStyles.searchBox}>
@@ -1190,7 +1198,7 @@ export function MarketScreen({ goBack }: { goBack: () => void }) {
                     options={[
                       { label: "Image", value: "image" },
                       { label: "Video", value: "video" },
-                      { label: "Audio", value: "audio" },
+                      { label: "Music", value: "audio" },
                       { label: "Preset Code", value: "coding" },
                     ]}
                     style={localStyles.publishSelect}
@@ -1701,3 +1709,106 @@ const localStyles = StyleSheet.create(withFont({
     backgroundColor: "#ffffff"
   }
 }));
+
+/**
+ * CollectionsPane — browse saved collections and their assets.
+ * Uses the same AssetActionBar template as every other asset surface, so
+ * behaviour cannot drift between here, the feed, and generation results.
+ */
+function CollectionsPane() {
+  const { state, dispatch, toast } = useCollider();
+  const [openId, setOpenId] = useState<string | null>(null);
+  const open = state.collections.find((c) => c.id === openId) || null;
+  const assetsFor = (ids: string[]) =>
+    ids.map((id) => state.savedAssets.find((a) => a.id === id)).filter(Boolean) as typeof state.savedAssets;
+
+  if (open) {
+    const assets = assetsFor(open.assetIds);
+    return (
+      <View style={{ flex: 1, paddingHorizontal: 14 }}>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 12 }}>
+          {/* Spec: never trap the user — every pane needs a way back. */}
+          <Pressable onPress={() => setOpenId(null)} hitSlop={10} accessibilityLabel="Back to collections">
+            <Ionicons name="chevron-back" size={22} color="#fff" />
+          </Pressable>
+          <Text style={{ color: "#eef1f6", fontSize: 16, fontWeight: "800", fontFamily: fontFamilyForWeight(800), flex: 1 }}>
+            {open.name}
+          </Text>
+          <Pressable
+            onPress={() => { dispatch({ type: "deleteCollection", collectionId: open.id }); setOpenId(null); toast("Collection deleted"); }}
+            hitSlop={10}
+            accessibilityLabel="Delete collection"
+          >
+            <Ionicons name="trash-outline" size={18} color="rgba(255,106,92,0.85)" />
+          </Pressable>
+        </View>
+        {assets.length === 0 ? (
+          <Text style={{ color: "rgba(238,241,246,0.4)", fontSize: 12.5, textAlign: "center", marginTop: 40, fontFamily: fontFamilyForWeight(400) }}>
+            Nothing saved here yet.
+          </Text>
+        ) : (
+          <FlatList
+            data={assets}
+            keyExtractor={(a) => a.id}
+            numColumns={2}
+            columnWrapperStyle={{ gap: 10 }}
+            contentContainerStyle={{ gap: 10, paddingBottom: 40 }}
+            renderItem={({ item }) => (
+              <View style={{ flex: 1, borderRadius: 14, overflow: "hidden", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" }}>
+                <Image source={{ uri: item.url }} style={{ width: "100%", aspectRatio: 0.78 }} />
+                <Text numberOfLines={2} style={{ color: "rgba(238,241,246,0.75)", fontSize: 10.5, padding: 7, fontFamily: fontFamilyForWeight(400) }}>
+                  {item.prompt}
+                </Text>
+                <AssetActionBar
+                  asset={item}
+                  compact
+                  hide={["context", "source", "view"]}
+                  onDelete={() => { dispatch({ type: "removeFromCollection", collectionId: open.id, assetId: item.id }); toast("Removed"); }}
+                />
+              </View>
+            )}
+          />
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <View style={{ flex: 1, paddingHorizontal: 14 }}>
+      {state.collections.length === 0 ? (
+        <View style={{ alignItems: "center", marginTop: 60, paddingHorizontal: 30 }}>
+          <Ionicons name="albums-outline" size={34} color="rgba(238,241,246,0.25)" />
+          <Text style={{ color: "rgba(238,241,246,0.45)", fontSize: 13, textAlign: "center", marginTop: 12, fontFamily: fontFamilyForWeight(400) }}>
+            No collections yet. Tap SAVE on any asset to start one.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={state.collections}
+          keyExtractor={(c) => c.id}
+          contentContainerStyle={{ paddingTop: 12, paddingBottom: 40, gap: 8 }}
+          renderItem={({ item }) => {
+            const cover = assetsFor(item.assetIds)[0];
+            return (
+              <Pressable
+                onPress={() => setOpenId(item.id)}
+                style={{ flexDirection: "row", alignItems: "center", gap: 12, padding: 10, borderRadius: 14, borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", backgroundColor: "rgba(255,255,255,0.04)" }}
+              >
+                <View style={{ width: 52, height: 52, borderRadius: 10, overflow: "hidden", backgroundColor: "rgba(255,255,255,0.06)" }}>
+                  {cover ? <Image source={{ uri: cover.url }} style={{ width: "100%", height: "100%" }} /> : null}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: "#eef1f6", fontSize: 14, fontWeight: "700", fontFamily: fontFamilyForWeight(700) }}>{item.name}</Text>
+                  <Text style={{ color: "rgba(238,241,246,0.42)", fontSize: 10.5, marginTop: 2, fontFamily: FONT_MONO }}>
+                    {item.assetIds.length} ITEM{item.assetIds.length === 1 ? "" : "S"}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="rgba(238,241,246,0.35)" />
+              </Pressable>
+            );
+          }}
+        />
+      )}
+    </View>
+  );
+}

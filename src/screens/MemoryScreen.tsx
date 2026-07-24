@@ -10,7 +10,7 @@ import {
   LayoutAnimation
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useCollider, newId } from "../state";
+import { useCollider, type Memory, newId } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
 import { InlineAdd } from "../components/InlineAdd";
@@ -23,6 +23,7 @@ import { SelectionBar, SelectModeToggle, SelectDot } from "../components/Selecti
 
 export function MemoryScreen({ goBack }: { goBack: () => void }) {
   const { state, dispatch } = useCollider();
+  const typed_memories = state.memories as Memory[];
   const { toast } = useToast();
   const [value, setValue] = useState("");
   const [editingMemory, setEditingMemory] = useState<any | null>(null);
@@ -30,7 +31,7 @@ export function MemoryScreen({ goBack }: { goBack: () => void }) {
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
-  const { q, setQ, filtered } = useSearch(state.memories, (m) => `${m.content} ${m.modelId}`);
+  const { q, setQ, filtered } = useSearch(typed_memories, (m) => `${m.content} ${m.modelId}`);
 
   const toggleSelected = (id: string) => {
     setSelectedIds((prev) => {

@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { useCollider, newId } from "../state";
+import { useCollider, type Project, newId } from "../state";
 import { Glass } from "../components/Glass";
 import { Page } from "../components/Page";
 import { styles, SCREEN_W, withFont, fontFamilyForWeight } from "../styles/theme";
@@ -21,6 +21,7 @@ import { SelectionBar, SelectModeToggle, SelectDot } from "../components/Selecti
 
 export function ProjectsScreen({ goBack }: { goBack: () => void }) {
   const { state, dispatch } = useCollider();
+  const typed_projects = state.projects as Project[];
   const [tab, setTab] = useState<"projects" | "tasks">("projects");
   const [value, setValue] = useState("");
   const [task, setTask] = useState<Record<string, string>>({});
@@ -42,17 +43,17 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
     exitSelectMode();
   };
 
-  const { q, setQ, filtered } = useSearch(state.projects, (p) => `${p.name} ${p.tasks.map((t) => t.title).join(" ")}`);
+  const { q, setQ, filtered } = useSearch(typed_projects, (p) => `${p.name} ${p.tasks.map((t) => t.title).join(" ")}`);
 
   const allTasks = useMemo(() => {
     const list: any[] = [];
-    state.projects.forEach((p) => {
+    typed_projects.forEach((p) => {
       p.tasks.forEach((t) => {
         list.push({ ...t, projectId: p.id, projectName: p.name });
       });
     });
     return list;
-  }, [state.projects]);
+  }, [typed_projects]);
 
   const todoTasks = allTasks.filter((t) => !t.done);
   const doneTasks = allTasks.filter((t) => t.done);
@@ -84,7 +85,7 @@ export function ProjectsScreen({ goBack }: { goBack: () => void }) {
             style={[localStyles.navTab, tab === "projects" && localStyles.navTabActive]}
           >
             <Text style={[localStyles.navTabText, tab === "projects" && localStyles.navTabTextActive]}>
-              PROJECTS ({state.projects.length})
+              PROJECTS ({typed_projects.length})
             </Text>
           </Pressable>
           <Pressable 

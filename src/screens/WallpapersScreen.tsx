@@ -17,6 +17,7 @@ import { Page } from "../components/Page";
 import { styles, WALLPAPERS, FREE_THEMES, PREMIUM_THEMES, withFont, fontFamilyForWeight, SCREEN_W } from "../styles/theme";
 import { useToast } from "../components/Toast";
 import * as player from "../services/musicPlayer";
+import { IAP_PRODUCTS, purchaseProduct, verifyPurchase } from "../services/iap";
 
 export function WallpapersScreen({ goBack }: { goBack: () => void }) {
   const { state, dispatch } = useCollider();
@@ -77,6 +78,11 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
   // it touches actual money; this scaffolds everything else (data model,
   // gating UI, player) so that's a drop-in swap later, not a rebuild.
   const isOwned = (id: string) => state.ownedWallpaperIds.includes(id);
+  // Every live wallpaper currently bills against one non-consumable SKU.
+  // When per-wallpaper SKUs exist in App Store Connect / Play Console, map
+  // theme.id -> its own product id here instead.
+  const WALLPAPER_SKU = IAP_PRODUCTS[2];
+  const [purchasingId, setPurchasingId] = useState<string | null>(null);
 
   const handleSelectWallpaper = (wId: string, locked?: boolean) => {
     if (locked) {
@@ -88,10 +94,29 @@ export function WallpapersScreen({ goBack }: { goBack: () => void }) {
     dispatch({ type: "wallpaper", wallpaper: wId });
   };
 
-  const handlePurchase = (wId: string, price?: string) => {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
-    dispatch({ type: "purchaseWallpaper", wallpaperId: wId });
-    toast(`Purchased for ${price || "the listed price"} (mock — no real charge).`);
+  // Real per-item purchase. Ownership is granted only after the store confirms
+  // payment and the receipt verifies — the previous version dispatched
+  // ownership locally and toasted "no real charge", so every premium wallpaper
+  // was free despite carrying a price.
+  const handlePurchase = async (wId: string, price?: string) => {
+    if (purchasingId) return;
+    setPurchasingId(wId);
+    try {
+      const result = await purchaseProduct(WALLPAPER_SKU);
+      const ok = await verifyPurchase(result);
+      if (!ok) {
+        toast("Could not verify that purchase. You have not been charged for access.");
+        return;
+      }
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
+      dispatch({ type: "purchaseWallpaper", wallpaperId: wId });
+      toast(`Unlocked for ${price || "the listed price"}.`);
+    } catch (e: any) {
+      const msg = e?.message === "cancelled" ? "Purchase cancelled." : e?.message || "Purchase failed.";
+      toast(msg);
+    } finally {
+      setPurchasingId(null);
+    }
   };
 
   const isSelected = (id: string) => state.wallpaper === id;

@@ -4,7 +4,7 @@ import { fontFamilyForWeight } from "../styles/theme";
 
 // ── Inline renderer ─────────────────────────────────────────────────────────
 // Handles: **bold**, __bold__, *italic*, _italic_, ~~strike~~, `code`, [text](url)
-function InlineText({ text, baseStyle }: { text: string; baseStyle: TextStyle }) {
+function InlineText({ text, baseStyle }: { text: string; baseStyle: TextStyle } & { [k:string]:any }) {
   const INLINE_RE = /(\*\*[^*]+\*\*|__[^_]+__|~~[^~]+~~|\*[^*]+\*|_[^_]+_|`[^`]+`|\[[^\]]+\]\([^)]+\))/g;
   const parts = text.split(INLINE_RE).filter(Boolean);
 

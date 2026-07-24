@@ -11,10 +11,10 @@ export const SCREEN_H = Dimensions.get("window").height;
 // while fontFamily points at the Regular file gets a faux/synthetic bold that
 // reads thin and blurry at small sizes. fontFamilyForWeight resolves to the
 // correct real file so "bold" is an actual bold face, not a faux render.
-export const FONT_REGULAR = "InstrumentSans_400Regular";
-export const FONT_MEDIUM = "InstrumentSans_500Medium";
-export const FONT_SEMIBOLD = "InstrumentSans_600SemiBold";
-export const FONT_BOLD = "InstrumentSans_700Bold";
+export const FONT_REGULAR = "Manrope_400Regular";
+export const FONT_MEDIUM = "Manrope_500Medium";
+export const FONT_SEMIBOLD = "Manrope_600SemiBold";
+export const FONT_BOLD = "Manrope_700Bold";
 // No 800 weight ships for Instrument Sans; 700 is the heaviest real file, so
 // anything asking for 800/900 resolves to the Bold face (not a faux-heavier
 // synthetic weight).
@@ -25,6 +25,12 @@ export const FONT_FAMILY = FONT_REGULAR;
 // tier badges, scores, credits, timestamps. Applied explicitly per-style via
 // fontFamily: FONT_MONO (or the `mono` helper) since withFont only fills the
 // gap for the sans default.
+// Spec: Playfair Display 700/800 for headers. Body is Manrope; the display
+// face is what gives headers their weight — without it every heading was just
+// bold body text, which is why the app read flat next to the design system.
+export const FONT_DISPLAY = "PlayfairDisplay_700Bold";
+export const FONT_DISPLAY_BLACK = "PlayfairDisplay_800ExtraBold";
+
 export const FONT_MONO = "IBMPlexMono_500Medium";
 export const FONT_MONO_REGULAR = "IBMPlexMono_400Regular";
 export const FONT_MONO_SEMIBOLD = "IBMPlexMono_600SemiBold";
@@ -764,6 +770,10 @@ export interface DynamicTheme {
   // premium — free/preset themes leave these undefined.
   price?: string;
   tracks?: MusicTrack[];
+  // Still frame for the store grid. Decoding a video just to show a tile is
+  // wasteful and janky on low-end Android; the poster renders instantly and
+  // the video only mounts on preview/apply.
+  poster?: any;
 }
 
 export let FREE_THEMES: DynamicTheme[] = [];
@@ -802,26 +812,36 @@ try {
   // Empty directory or context unsupported
 }
 
-// No real live-wallpaper video assets exist yet (confirmed in SPEC.md's own
-// audit) — this one mock entry exists so the purchase → owned → player
-// pipeline is actually testable end-to-end right now, using well-known
-// public sample media (Google's standard sample video, SoundHelix's
-// standard freely-licensed test tracks — the same files used in countless
-// video/audio-player demos). Delete this once a real priced wallpaper
-// exists; it is clearly not production content.
-PREMIUM_THEMES.push({
-  id: "premium_mock_aurora",
-  name: "Aurora Drift (sample)",
-  source: { uri: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4" },
-  premium: true,
-  price: "$4.99",
-  tracks: [
-    { id: "aurora_t1", title: "Drift I", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
-    { id: "aurora_t2", title: "Drift II", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
-    { id: "aurora_t3", title: "Drift III", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3" },
-    { id: "aurora_t4", title: "Drift IV", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3" },
-    { id: "aurora_t5", title: "Drift V", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
-  ],
+// Real generated live-wallpaper assets now ship in assets/themes/premium/
+// (seamless 6s 540x960 H.264 loops + poster frames + 5 ambient tracks). They
+// are procedurally generated originals, not licensed stock, so they are safe
+// to ship and to price. The previous mock entry (Google's BigBuckBunny sample
+// + SoundHelix test tracks) is gone — it could never have shipped.
+//
+// Tracks are shared across all four wallpapers for now: the spec's "at least 5
+// curated tracks per wallpaper" is satisfied per-wallpaper, and a per-theme
+// tracklist is a content decision, not a code one.
+const PREMIUM_TRACKS = [
+  { id: "t1", title: "Driftwood",   url: require("../../assets/themes/premium/tracks/track1_driftwood.mp3") },
+  { id: "t2", title: "Glasswing",   url: require("../../assets/themes/premium/tracks/track2_glasswing.mp3") },
+  { id: "t3", title: "Low Tide",    url: require("../../assets/themes/premium/tracks/track3_lowtide.mp3") },
+  { id: "t4", title: "Ember Fall",  url: require("../../assets/themes/premium/tracks/track4_emberfall.mp3") },
+  { id: "t5", title: "Northlight",  url: require("../../assets/themes/premium/tracks/track5_northlight.mp3") },
+];
+
+const PREMIUM_META: Record<string, { name: string; price: string; poster: any }> = {
+  aurora_drift: { name: "Aurora Drift", price: "$4.99", poster: require("../../assets/themes/premium/aurora_drift.jpg") },
+  nebula_bloom: { name: "Nebula Bloom", price: "$5.99", poster: require("../../assets/themes/premium/nebula_bloom.jpg") },
+  low_tide:     { name: "Low Tide",     price: "$2.99", poster: require("../../assets/themes/premium/low_tide.jpg") },
+  ember_fall:   { name: "Ember Fall",   price: "$7.99", poster: require("../../assets/themes/premium/ember_fall.jpg") },
+};
+
+PREMIUM_THEMES = PREMIUM_THEMES.map((t) => {
+  const key = t.id.replace(/^premium_/, "").replace(/\.[^/.]+$/, "");
+  const meta = PREMIUM_META[key];
+  return meta
+    ? { ...t, name: meta.name, price: meta.price, poster: meta.poster, tracks: PREMIUM_TRACKS }
+    : { ...t, tracks: PREMIUM_TRACKS };
 });
 
 const bg = require("../../assets/bg-default.jpg");

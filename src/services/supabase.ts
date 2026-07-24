@@ -4,8 +4,8 @@
 import "react-native-url-polyfill/auto";
 import { createClient } from "@supabase/supabase-js";
 
-const SUPABASE_URL = "https://gmenftvasdbhkbinkdux.supabase.co";
-const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_d7J47jH1lh3wnMwINhAxLQ_Ji1uizcI";
+export const SUPABASE_URL = "https://gmenftvasdbhkbinkdux.supabase.co";
+export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_d7J47jH1lh3wnMwINhAxLQ_Ji1uizcI";
 
 // No real Supabase Auth anywhere in this app (pseudo-identity is a
 // device-UUID we generate ourselves — see getDeviceId() in market.ts), so

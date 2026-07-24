@@ -31,11 +31,15 @@ import { Video, ResizeMode, Audio } from "expo-av";
 import { Ionicons } from "@expo/vector-icons";
 import { useFonts } from "@expo-google-fonts/manrope";
 import {
-  InstrumentSans_400Regular,
-  InstrumentSans_500Medium,
-  InstrumentSans_600SemiBold,
-  InstrumentSans_700Bold,
-} from "@expo-google-fonts/instrument-sans";
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+} from "@expo-google-fonts/manrope";
+import {
+  PlayfairDisplay_700Bold,
+  PlayfairDisplay_800ExtraBold,
+} from "@expo-google-fonts/playfair-display";
 import {
   IBMPlexMono_400Regular,
   IBMPlexMono_500Medium,
@@ -137,7 +141,8 @@ import { MarketScreen } from "./src/screens/MarketScreen";
 import { WallpapersScreen } from "./src/screens/WallpapersScreen";
 import { UpgradeScreen } from "./src/screens/UpgradeScreen";
 
-// Global default font — Manrope everywhere, one place, instead of hunting
+// Global default font — Manrope body everywhere (spec). Headers use
+// FONT_DISPLAY (Playfair Display) explicitly; see styles/theme.ts.
 // down every inline <Text style={{...}}> across the app that forgot
 // fontFamily and silently fell back to the platform default (the "childish"
 // mismatched font). Any Text/TextInput that explicitly sets its own
@@ -232,10 +237,12 @@ type Screen =
 
 export default function App() {
   useFonts({
-    InstrumentSans_400Regular,
-    InstrumentSans_500Medium,
-    InstrumentSans_600SemiBold,
-    InstrumentSans_700Bold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    PlayfairDisplay_700Bold,
+    PlayfairDisplay_800ExtraBold,
     IBMPlexMono_400Regular,
     IBMPlexMono_500Medium,
     IBMPlexMono_600SemiBold,
@@ -294,7 +301,7 @@ function AuroraBlob({
 }
 
 //  A single twinkling star — small dot that fades in/out on its own clock.
-function Star({ x, y, dur, delay, size }: { x: number; y: number; dur: number; delay: number; size: number }) {
+function Star({ x, y, dur, delay, size }: { x: number; y: number; dur: number; delay: number; size: number; [k:string]:any }) {
   const v = useRef(new Animated.Value(0.15)).current;
   useEffect(() => {
     const run = () =>
@@ -400,7 +407,7 @@ function ThemeBackground({ wallpaperId }: { wallpaperId: string }) {
   );
 }
 
-function ScreenTransition({ children, screenKey }: { children: ReactNode; screenKey: string }) {
+function ScreenTransition({ children, screenKey }: { children?: ReactNode; screenKey: string }) {
   const anim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -443,7 +450,7 @@ function Shell() {
   const [rightDrawerScopeModelId, setRightDrawerScopeModelId] = useState<string | undefined>(undefined);
   const [consensus, setConsensus] = useState(false);
   const [composerAttachments, setComposerAttachments] = useState<Record<Category, Attachment[]>>({
-    general: [], image: [], video: [], audio: [], coding: []
+    general: [], image: [], video: [], music: [], coding: []
   });
   const [toastText, setToastText] = useState<string | null>(null);
 
@@ -920,6 +927,15 @@ function Home({
         saveResearchArtifact(text, answer, state.chatMode[state.activeCategory], dispatch, mId);
       }
     } catch (e: any) {
+      // Credits are spent up-front (before the request) so the balance can't
+      // be raced by concurrent sends. That makes refunding on failure
+      // mandatory: without this, any network drop / provider 5xx / timeout
+      // permanently destroys the user's credits — up to 30 for a single failed
+      // Sora 2 or Veo 3.1 call. General chat is never charged, so only refund
+      // when we actually spent.
+      if (state.activeCategory !== "general") {
+        dispatch({ type: "refund", credits: model.weight });
+      }
       dispatch({
         type: "replaceLastAssistant",
         category: state.activeCategory,
@@ -2447,6 +2463,9 @@ function CardScreen({
       message: { id: `a_${Date.now()}_${model.id}`, role: "assistant", content: "", modelId: model.id, ts: Date.now() },
     });
     if (model.locked) {
+      // Credits were already spent above; this path never issues a request, so
+      // charging for it is pure loss to the user.
+      if (cat !== "general") dispatch({ type: "refund", credits: model.weight });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: "Locked  upgrade to unlock this provider.", convId });
       setSending(false); return;
     }
@@ -2471,6 +2490,9 @@ function CardScreen({
         dispatch({ type: "addGeneration", generation: { prompt: text, url: imgMatch[1], modelId: model.id, category: cat } });
       }
     } catch (e: any) {
+      // See the grid-view send path: credits are spent up-front, so a failed
+      // request must return them or the user pays for nothing.
+      if (cat !== "general") dispatch({ type: "refund", credits: model.weight });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: friendlyErrorMessage(e), convId });
     } finally { setSending(false); }
   };
@@ -2489,6 +2511,18 @@ function CardScreen({
     if (sending || thread.length < 2) return;
     const lastUser = thread[thread.length - 2];
     if (lastUser.role !== "user") return;
+    // Retry re-issues a full provider request, so it costs exactly what the
+    // original send cost. Previously this path charged nothing, which made
+    // retrying a weight-30 video model an unlimited free re-roll — a real
+    // margin hole, not just an inconsistency. Gate on balance the same way
+    // the send paths do.
+    if (cat !== "general") {
+      if (state.credits < model.weight) {
+        toast(`Insufficient daily credits. Retrying this model costs ${model.weight} credits, but you have ${state.credits}.`);
+        return;
+      }
+      dispatch({ type: "spend", credits: model.weight });
+    }
     setSending(true);
     try {
       const onToken = makeThrottledToken((partial) => {
@@ -2506,6 +2540,7 @@ function CardScreen({
         saveResearchArtifact(lastUser.content, answer, state.chatMode[cat], dispatch, model.id);
       }
     } catch (e: any) {
+      if (cat !== "general") dispatch({ type: "refund", credits: model.weight });
       dispatch({ type: "replaceLastAssistant", category: cat, modelId: model.id, content: friendlyErrorMessage(e), convId });
     } finally { setSending(false); }
   };

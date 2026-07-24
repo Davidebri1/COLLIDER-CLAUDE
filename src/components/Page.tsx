@@ -22,7 +22,7 @@ function BackButton({ onPress }: { onPress: () => void }) {
 // short gradient instead of a hard border line — keeps every "‹ Title"
 // screen (History included) visually consistent with the Card view's own
 // header.
-export function Page({ title, goBack, children }: { title: string; goBack: () => void; children: ReactNode }) {
+export function Page({ title, goBack, children }: { title: string; goBack: () => void; children?: ReactNode }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.flex, { backgroundColor: "rgba(4, 4, 4, 0.45)" }]}>

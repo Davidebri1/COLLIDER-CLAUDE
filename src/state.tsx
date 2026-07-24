@@ -91,9 +91,31 @@ export type ConsensusRun = {
 export type AuthUser = { kind: "guest" } | { kind: "email"; email: string } | { kind: "google"; email: string } | { kind: "apple"; email: string };
 export type ChatMode = "default" | "research" | "deep";
 
+function upsertAsset(state: { savedAssets: SavedAsset[] }, asset: SavedAsset): SavedAsset[] {
+  return state.savedAssets.some((a) => a.id === asset.id)
+    ? state.savedAssets
+    : [asset, ...state.savedAssets];
+}
+
+export type SavedAsset = {
+  id: string;              // stable: market item id, or gen:<ts> for local
+  kind: "image" | "video" | "audio" | "coding";
+  url: string;
+  prompt: string;
+  modelId?: string;
+  savedAt: number;
+};
+
+export type SavedCollection = {
+  id: string;
+  name: string;
+  assetIds: string[];
+  createdAt: number;
+};
+
 export type MarketItem = { id: string; kind: "image" | "video" | "audio" | "coding"; prompt: string; model: string; author: string; likes: number; likedByUser?: boolean; url?: string; category?: string };
 
-type AppState = {
+export type AppState = {
   tier: Tier;
   credits: number;
   dailyMessagesSent: number;
@@ -156,6 +178,16 @@ type AppState = {
   // purchased, each bundled with curated tracks. ownedWallpaperIds gates
   // both the wallpaper itself and its bundled tracks in the player.
   ownedWallpaperIds: string[];
+  // Collections & favorites (spec: media-gen action bar minimum includes
+  // "save to collection (in app)" and "favorite icon"). These are app-wide,
+  // not Market-local: the same asset saved from a generation result, the
+  // Market, or an exploded view lands in the same place. Keyed by a stable
+  // asset id so a Market item and a local generation can coexist.
+  collections: SavedCollection[];
+  favoriteAssetIds: string[];
+  // Single registry so an asset referenced by a collection AND by favorites
+  // is stored once, not duplicated per list.
+  savedAssets: SavedAsset[];
   musicPlayer: {
     trackId: string | null;
     isPlaying: boolean;
@@ -253,6 +285,11 @@ type Action =
   | { type: "toggleMarketLike"; id: string }
   | { type: "loadMoreMarket"; count: number }
   | { type: "purchaseWallpaper"; wallpaperId: string }
+  | { type: "toggleFavoriteAsset"; asset: SavedAsset }
+  | { type: "saveToCollection"; collectionId: string; asset: SavedAsset }
+  | { type: "createCollection"; name: string; asset?: SavedAsset }
+  | { type: "removeFromCollection"; collectionId: string; assetId: string }
+  | { type: "deleteCollection"; collectionId: string }
   | { type: "playTrack"; trackId: string }
   | { type: "pausePlayer" }
   | { type: "resumePlayer" }
@@ -334,7 +371,7 @@ export const DEFAULT_MARKET_ITEMS: MarketItem[] = [
   { id: "img2", kind: "image", prompt: "Detailed cyberpunk samurai standing under neon rain, dramatic lighting, 8k resolution", model: "img/flux-2-klein", author: "@pixel_ronin", likes: 980, likedByUser: false },
   { id: "img3", kind: "image", prompt: "Magical library hidden inside a giant hollow oak tree, fantasy painting style", model: "img/seedream-4-5", author: "@spellbound", likes: 2310, likedByUser: false },
   { id: "img4", kind: "image", prompt: "A majestic crystalline white stag walking through an enchanted emerald forest", model: "img/flux-free", author: "@aurora_art", likes: 880, likedByUser: false },
-  { id: "img5", kind: "image", prompt: "Retro-futuristic astronaut lounge on Mars, vaporwave aesthetic, warm shadows", model: "img/gpt-5-image", author: "@red_planet", likes: 1250, likedByUser: false },
+  { id: "img5", kind: "image", prompt: "Retro-futuristic astronaut lounge on Mars, vaporwave aesthetic, warm shadows", model: "img/gpt-5-4-image-2", author: "@red_planet", likes: 1250, likedByUser: false },
   { id: "img6", kind: "image", prompt: "Ethereal glass palace floating above a sea of clouds during a golden sunset", model: "img/gemini-3-pro-image", author: "@stratus_design", likes: 3100, likedByUser: false },
 
   // ── Videos ──
@@ -435,6 +472,9 @@ function initialState(): AppState {
     activeSkills: [],
     marketItems: [...DEFAULT_MARKET_ITEMS, ...generateMoreMarketItems(82, DEFAULT_MARKET_ITEMS.length)],
     ownedWallpaperIds: [],
+    collections: [],
+    favoriteAssetIds: [],
+    savedAssets: [],
     musicPlayer: { trackId: null, isPlaying: false, volume: 0.6, muted: false, disabledTrackIds: [] },
   };
 }
@@ -734,6 +774,51 @@ function reducer(state: AppState, action: Action): AppState {
     // Mocked purchase — adds to owned list locally, no real billing wired
     // in. See WallpapersScreen.tsx for the note on why (real IAP needs
     // explicit sign-off before it touches actual money).
+    case "toggleFavoriteAsset": {
+      const on = state.favoriteAssetIds.includes(action.asset.id);
+      // Favoriting also files the asset into the implicit "Favorites"
+      // collection so there is exactly one place assets live. Without this a
+      // favorited item has a flag but no record, and disappears from the feed
+      // it was favorited in — which is the bug this whole feature exists to
+      // fix.
+      const favs = on
+        ? state.favoriteAssetIds.filter((i) => i !== action.asset.id)
+        : [...state.favoriteAssetIds, action.asset.id];
+      return { ...state, favoriteAssetIds: favs, savedAssets: upsertAsset(state, action.asset) };
+    }
+    case "createCollection": {
+      const col: SavedCollection = {
+        id: `col_${Date.now()}`,
+        name: action.name.trim() || "Untitled collection",
+        assetIds: action.asset ? [action.asset.id] : [],
+        createdAt: Date.now(),
+      };
+      return {
+        ...state,
+        collections: [col, ...state.collections],
+        savedAssets: action.asset ? upsertAsset(state, action.asset) : state.savedAssets,
+      };
+    }
+    case "saveToCollection": {
+      return {
+        ...state,
+        savedAssets: upsertAsset(state, action.asset),
+        collections: state.collections.map((c) =>
+          c.id === action.collectionId && !c.assetIds.includes(action.asset.id)
+            ? { ...c, assetIds: [action.asset.id, ...c.assetIds] }
+            : c
+        ),
+      };
+    }
+    case "removeFromCollection":
+      return {
+        ...state,
+        collections: state.collections.map((c) =>
+          c.id === action.collectionId ? { ...c, assetIds: c.assetIds.filter((i) => i !== action.assetId) } : c
+        ),
+      };
+    case "deleteCollection":
+      return { ...state, collections: state.collections.filter((c) => c.id !== action.collectionId) };
     case "purchaseWallpaper":
       return state.ownedWallpaperIds.includes(action.wallpaperId)
         ? state
@@ -842,7 +927,7 @@ const STORAGE_KEY = "collider-state-v4";
 
 const AppContext = createContext<{ state: AppState; dispatch: React.Dispatch<Action>; getState: () => AppState } | undefined>(undefined);
 
-export function AppProvider({ children }: { children: ReactNode }) {
+export function AppProvider({ children }: { children?: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, initialState);
   useEffect(() => {
     (async () => {
