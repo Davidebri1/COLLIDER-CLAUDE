@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, useRef, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CATEGORIES, TIER_INFO, canUse, modelsForCategory, type Category, type Tier } from "./models";
 import { smartGen, tokens, overlap, type SmartBatch } from "./services/smartgen";
@@ -332,6 +332,7 @@ type Action =
   | { type: "setBoardConfig"; config: Partial<BoardConfig> }
   | { type: "reorderCards"; keys: string[] }
   | { type: "setDraft"; key: string; value: string }
+  | { type: "clearDrafts"; prefix: string }
   | { type: "setCardMedia"; ref: CardEmbed; media: CardMedia[] }
   | { type: "convertCard"; ref: CardEmbed; toKind: LinkKind }
   | { type: "applySmartBatch"; batch: LLMBatch; modelId?: string; convId?: string }
@@ -1034,6 +1035,11 @@ function reducer(state: AppState, action: Action): AppState {
       if (action.value) drafts[action.key] = action.value; else delete drafts[action.key];
       return { ...state, drafts };
     }
+    case "clearDrafts": {
+      const drafts: Record<string, string> = {};
+      for (const [k, v] of Object.entries(state.drafts)) if (!k.startsWith(action.prefix)) drafts[k] = v;
+      return { ...state, drafts };
+    }
     case "setCardMedia":
       return mutateCard(state, action.ref, (item) => ({ ...item, media: action.media }));
     case "reorderCards": {
@@ -1269,6 +1275,21 @@ export function AppProvider({ children }: { children?: ReactNode }) {
 
   const value = useMemo(() => ({ state, dispatch, getState: () => state }), [state]);
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+}
+
+// Any text field a user types into can be wrapped in this instead of
+// useState: every keystroke is mirrored into persisted state, so an
+// interruption — app switch, dead battery, accidental close — costs nothing.
+// The draft is dropped once the value is committed (see clearDrafts).
+export function useDraft(key: string, initial: string): [string, (v: string) => void] {
+  const ctx = useContext(AppContext);
+  const saved = ctx?.state.drafts[key];
+  const [val, setVal] = useState(saved ?? initial);
+  const set = (v: string) => {
+    setVal(v);
+    ctx?.dispatch({ type: "setDraft", key, value: v === initial ? "" : v });
+  };
+  return [val, set];
 }
 
 export function useCollider() {

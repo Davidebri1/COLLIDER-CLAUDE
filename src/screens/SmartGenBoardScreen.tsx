@@ -83,10 +83,21 @@ export function unifyCards(state: AppState): BoardCard[] {
   const cards: BoardCard[] = [];
   for (const p of state.projects) {
     const done = p.tasks.length > 0 && p.tasks.every((t) => t.done);
+    // A project has no deadline of its own, and urgency without a deadline is
+    // a claim with nothing behind it. So a project is urgent only when
+    // something inside it is actually due — and it then shows THAT deadline,
+    // the soonest one, so the countdown is a fact rather than a flag.
+    const inner = state.reminders.filter(
+      (r) => !r.done && r.due != null && (r.projectId === p.id || (p.embeds || []).some((e) => e.kind === "reminder" && e.id === r.id))
+    );
+    const soonestUrgent = inner
+      .filter((r) => collapsePriority(r.priority) === "high")
+      .reduce<number | undefined>((min, r) => (min == null || r.due! < min ? r.due! : min), undefined);
     cards.push({
       ref: { kind: "project", id: p.id }, kind: "project", title: p.name,
       body: p.tasks.length ? `${p.tasks.filter((t) => t.done).length}/${p.tasks.length} tasks done` : "No tasks yet",
-      priority: p.tasks.some((t) => t.priority === "high" && !t.done) ? "high" : "none",
+      due: soonestUrgent,
+      priority: soonestUrgent != null ? "high" : "none",
       progress: done ? "done" : "open",
       tags: [], ts: 0, embeds: p.embeds || [], customFields: p.customFields || {}, origin: p.origin, media: p.media,
     });
@@ -1133,7 +1144,7 @@ function BoardChat({ allCards, openDetail }: { allCards: BoardCard[]; openDetail
   const send = async () => {
     const prompt = input.trim();
     if (!prompt || busy) return;
-    setInput("");
+    setInput(""); // the message is committed; its draft is spent
     setBusy(true);
     const userMsg: BoardChatMsg = { id: newId("bc"), role: "user", content: prompt };
     const draftId = newId("bc");
