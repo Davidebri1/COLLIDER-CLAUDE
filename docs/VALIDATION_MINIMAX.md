@@ -51,9 +51,15 @@ Read together, the top clusters are facets of one root — disputes must termina
 - **Run 1** (100 reps, concurrency 8): aborted. The free NVIDIA key hard-429s under burst load. It sustains paced sequential traffic (~1 request start / 4s) but not parallel bursts — the in-app client gained retry + fallback from this finding.
 - **Run 2/3** (paced, concurrency 3): 37 chains recorded before the run was stopped to preserve key quota. Each replication is 6 sequential reasoning calls (2–5 min), so 100 takes hours and does not survive a container restart. 37 is a sufficient sample for the property being tested; the remainder is better run on a machine that stays up.
 
-## Not yet done
+## Gemini 3.6 Flash as a subject — blocked by quota, not by code
 
-**Gemini 3.6 Flash as a subject.** The backup model has not been run through the same 5-whys protocol — it is served through OpenRouter, whose key is exhausted (`$10.00` of `$10.00` used). The harness takes `--model`; the run needs credit, not code.
+The backup model now has a working path: `PROVIDER=google MODEL=gemini-3.6-flash`, calling Google's API directly with the app's own Gemini key (verified live — a full 6-call chain completed end to end).
+
+It cannot be sampled meaningfully today. Google's free tier allows **20 requests per day, per model, per project** (`GenerateRequestsPerDayPerProjectPerModel-FreeTier = 20`, reported by the API itself). One chain costs 6 calls, so the ceiling is **three chains per day** — far short of a sample worth comparing against MiniMax's 37.
+
+Two ways forward, neither requiring code: enable billing on the Google project, or collect three chains a day until the sample is large enough.
+
+**This limit also applies in-app.** Gemini text routes now call Google directly, and on this key they will stop answering after 20 requests in a day. OpenRouter — the alternative host for the same models — is separately exhausted (`$10.00` of `$10.00`). Both paths for Gemini are currently capped.
 
 ## Reproducing
 
