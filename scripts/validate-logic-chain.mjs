@@ -21,10 +21,16 @@ import { mkdirSync, writeFileSync, appendFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const API_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
-const MODEL = "minimaxai/minimax-m3";
-const KEY =
-  process.env.NVIDIA_API_KEY ||
+// The subject is switchable so the backup model runs the identical protocol:
+//   MODEL=google/gemini-3.6-flash PROVIDER=openrouter node scripts/validate-logic-chain.mjs
+const PROVIDER = process.env.PROVIDER || "nvidia";
+const API_URL = PROVIDER === "openrouter"
+  ? "https://openrouter.ai/api/v1/chat/completions"
+  : "https://integrate.api.nvidia.com/v1/chat/completions";
+const MODEL = process.env.MODEL || "minimaxai/minimax-m3";
+const KEY = PROVIDER === "openrouter"
+  ? (process.env.OPENROUTER_API_KEY || process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || "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")
+  : process.env.NVIDIA_API_KEY ||
   process.env.EXPO_PUBLIC_NVIDIA_API_KEY ||
   "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";
 
@@ -136,7 +142,7 @@ async function main() {
   const outDir = join(dirname(fileURLToPath(import.meta.url)), "out");
   mkdirSync(outDir, { recursive: true });
   const stamp = new Date().toISOString().replace(/[:.]/g, "-");
-  const rawPath = join(outDir, `logic-chain-${stamp}.jsonl`);
+  const rawPath = join(outDir, `logic-chain-${MODEL.replace(/[^a-z0-9]/gi, "-")}-${stamp}.jsonl`);
   const sumPath = join(outDir, `logic-chain-${stamp}.summary.json`);
 
   console.log(`model=${MODEL} replications=${REPLICATIONS} concurrency=${CONCURRENCY} whys=${WHYS}`);

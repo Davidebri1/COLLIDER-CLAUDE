@@ -161,7 +161,7 @@ const ROUTES: Record<string, Route> = {
   // ── General · Free — real current models, verified against OpenRouter's
   // live catalog (fetched directly), not guessed ────────────────────────────
   "free/claude-haiku-4-5":       { provider: "openrouter", remote: "anthropic/claude-haiku-4.5" },
-  "free/gemini-3-5-flash":       { provider: "openrouter", remote: "google/gemini-3.5-flash",       vision: true },
+  "free/gemini-3-6-flash":       { provider: "openrouter", remote: "google/gemini-3.6-flash",       vision: true },
   "free/nemotron-super":         { provider: "openrouter", remote: "nvidia/nemotron-3-super-120b-a12b:free" },
   "free/mistral-small":          { provider: "openrouter", remote: "mistralai/mistral-small-3.2-24b-instruct" },
   "free/command-r":              { provider: "openrouter", remote: "cohere/command-r-08-2024" },

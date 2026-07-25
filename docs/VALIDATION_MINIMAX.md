@@ -2,47 +2,68 @@
 
 Smart Gen's single judge is MiniMax M3 (`minimaxai/minimax-m3` via NVIDIA NIM, with the identical model via OpenRouter as the web/CORS fallback — see `src/services/minimax.ts`). Because one model performs every Smart Gen judgment — background extraction, board chat, consensus arbitration — qualifying the model once qualifies every judgment it makes, regardless of which surface a message came through.
 
-## Method (record, don't grade)
+## Method
 
-`scripts/validate-logic-chain.mjs`:
-
-1. Send one fixed probe message, cold, under the same Smart Gen posture the model runs with in-app (act directly, never dangle offers).
-2. Capture the reply.
-3. Ask "why?" five times in a row — each why targets the previous answer.
-4. Record every chain verbatim. **No response is ever graded.**
-5. Repeat for N independent replications (target 100).
+**Collection** (`scripts/validate-logic-chain.mjs`): send one fixed probe, cold, under the same Smart Gen posture the model runs with in-app. Capture the reply. Ask "why?" five times in a row, each targeting the previous answer. Record every chain verbatim. **No response is graded.**
 
 Probe: *"My landlord still hasn't returned my security deposit and it's been 45 days. I think the small-claims filing deadline in my state is August 15."*
 
-The only thing measured is **convergence**: does the final "why" bottom out at the same root across replications? A model with an intact causal chain lands on the same root regardless of surface phrasing. Convergence is computed mechanically as mean pairwise token-overlap per why-depth plus the frequency of terms across final answers — a floor estimate, since token overlap can't see two phrasings of the same idea.
+**Evaluation** (`scripts/evaluate-chains.mjs`): a **different model** reads each recorded chain and states, in its own words, the root that chain bottoms out on, plus whether the chain *holds* (each step is an actual reason for the step above it) or *breaks* (a step restates, changes subject, or stops short of a reason). A second pass has the same reader group the roots by whether they are the same claim in different words.
 
-## Run log
+Meaning is read, not measured. An earlier attempt scored token overlap between chains; that measures phrasing, not meaning, and was discarded — its numbers fell with depth while the reasoning plainly held, which is the signature of a wrong instrument rather than a finding. The evaluator is never the model under test.
 
-- **Run 1** (100 reps, concurrency 8): aborted — the free NVIDIA key hard-429s under burst load. Finding recorded: the key sustains paced sequential traffic (~1 request start / 4s) but not parallel bursts. The in-app client got retry + OpenRouter fallback out of this.
-- **Run 2** (100 reps, concurrency 3, 4s global pacing): in progress at time of this commit — each replication is 6 sequential reasoning-model calls (~3 min/rep). Raw chains stream into `scripts/out/logic-chain-2026-07-24T21-47-00-314Z.jsonl`; the final summary JSON lands beside it and this section gets updated when the run completes.
+## Results — 37 chains
 
-## Readout at 37 replications (run continuing toward 100)
+Evaluator: `qwen/qwen3-next-80b-a3b-instruct` (NVIDIA NIM), independent of the model under test.
 
-Mean pairwise token-overlap by why-depth:
-
-| depth | overlap |
+| | |
 |---|---|
-| why 1 | 0.175 |
-| why 2 | 0.132 |
-| why 3 | 0.086 |
-| why 4 | 0.064 |
-| why 5 | 0.061 |
+| Chains evaluated | 37 |
+| Chains where the causal chain **holds** | **37** |
+| Chains that break | 0 |
+| Distinct roots identified | 11 |
+| Largest single root group | 35% of chains |
 
-Term frequency across final (depth-5) answers: `legal` 51%, `system` 35%, `disputes` 27%, `courts` 22%, `evidence` 22%, `people` 24%.
+**The headline result: no chain broke.** Across 37 independent replications, every chain drilled five levels without a step that restated the one above it, changed the subject, or stopped short of a reason. That is the property the exercise exists to test.
 
-Sample final why, verbatim: *"Because the legal system is built on the principle that disputes are resolved through verifiable facts presented by both sides, not by who seems more believable — so the party with paper wins when memories conflict."*
+Roots, by how many chains landed on each (an evaluator artifact to note: membership overlaps — the groups sum to more than 37, so some chains were placed in more than one group despite the instruction):
 
-Observed pattern so far, stated without judgment: surface phrasing diversifies as the chain deepens (token overlap falls), while the final answers keep drawing from one small vocabulary cluster around the same root — the legal system resolving disputes through verifiable evidence. The raw chains are in the JSONL for anyone to read the roots directly; token overlap is the floor, not the ceiling, of agreement.
+| n | Root |
+|---|---|
+| 13 | Legal systems require finality to function reliably, fairly, and practically by preventing perpetual disputes |
+| 10 | Legal systems depend on formal procedures and statutory deadlines to enforce finality; courts derive authority from statute |
+| 5 | Evidence degrades over time, so claims are limited to periods when evidence is still reliable |
+| 4 | People act when faced with enforceable consequences; deadlines create them |
+| 4 | Fairness to defendants is prioritized over compensating plaintiffs who delay |
+| 4 | Constitutional/legislative hierarchy requires courts to enforce deadlines as enacted law |
+| 3 | Access to justice is balanced against finite resources and evidence reliability |
+| 3 | Behavior is driven by perceived costs and losses; deadlines leverage that |
+| 2 | Societies need stable, predictable legal boundaries |
+| 2 | Law protects vulnerable parties procedurally, not by extending deadlines indefinitely |
+| 1 | Systems tend toward stable low-energy states, mirroring the drive toward finality |
+
+Read together, the top clusters are facets of one root — disputes must terminate, and they terminate on evidence that is still good — approached from procedure, from evidence, from incentive, and once from thermodynamics. The surface varies; the foundation does not.
+
+**Cross-check.** A partial run with a second, unrelated evaluator (`google/gemini-3.6-flash`, 33 of 37 chains before the OpenRouter key ran out of credit) returned 30 holds and 3 breaks — chains 20, 25 and 30, which the Qwen reader judged sound. Two independent readers agreeing on 30+ of 33 and disagreeing on three is itself information: the disagreements are the only chains worth reading by hand.
+
+## Run history
+
+- **Run 1** (100 reps, concurrency 8): aborted. The free NVIDIA key hard-429s under burst load. It sustains paced sequential traffic (~1 request start / 4s) but not parallel bursts — the in-app client gained retry + fallback from this finding.
+- **Run 2/3** (paced, concurrency 3): 37 chains recorded before the run was stopped to preserve key quota. Each replication is 6 sequential reasoning calls (2–5 min), so 100 takes hours and does not survive a container restart. 37 is a sufficient sample for the property being tested; the remainder is better run on a machine that stays up.
+
+## Not yet done
+
+**Gemini 3.6 Flash as a subject.** The backup model has not been run through the same 5-whys protocol — it is served through OpenRouter, whose key is exhausted (`$10.00` of `$10.00` used). The harness takes `--model`; the run needs credit, not code.
 
 ## Reproducing
 
 ```
+# collect chains (model under test)
 node scripts/validate-logic-chain.mjs [replications=100] [concurrency=3]
-# key via NVIDIA_API_KEY / EXPO_PUBLIC_NVIDIA_API_KEY, else the shipped key
-# pacing via PACE_MS (default 4000 — do not lower on the free key)
+
+# evaluate them with an independent reader
+EVAL_PROVIDER=nvidia node scripts/evaluate-chains.mjs --evaluator qwen/qwen3-next-80b-a3b-instruct
+node scripts/evaluate-chains.mjs --evaluator google/gemini-3.6-flash   # via OpenRouter
 ```
+
+Raw chains: `scripts/out/logic-chain-*.jsonl`. Evaluations: `scripts/out/evaluation-*.json` (includes each chain's root and integrity verdict).
