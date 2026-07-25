@@ -49,6 +49,7 @@ import {
 import {
   AppProvider,
   useCollider,
+  useDraft,
   isMessageLimitReached,
   FREE_DAILY_LIMIT,
   FREE_MONTHLY_LIMIT,
@@ -1778,13 +1779,13 @@ export function ReminderEditModal({
   dispatch?: any;
   state?: any;
 }) {
-  const [title, setTitle] = useState(item?.title || "");
+  const [title, setTitle] = useDraft(`reminder:${item?.id}:title`, item?.title || "");
   const [dueText, setDueText] = useState(item?.due ? new Date(item.due).toLocaleDateString() : "");
   const [timeText, setTimeText] = useState(item?.time || "");
   const [calendarTitle, setCalendarTitle] = useState(item?.calendarTitle || "Personal Calendar");
   const [priority, setPriority] = useState<Priority>(item?.priority || "none");
   const [progress, setProgress] = useState<Progress>(item?.progress || "todo");
-  const [tags, setTags] = useState(item?.tags?.join(", ") || "");
+  const [tags, setTags] = useDraft(`reminder:${item?.id}:tags`, item?.tags?.join(", ") || "");
   const [modelId, setModelId] = useState(item?.modelId || "global");
 
   useEffect(() => {
@@ -1802,6 +1803,7 @@ export function ReminderEditModal({
 
   const handleSave = () => {
     const parsedDate = dueText ? Date.parse(dueText) : undefined;
+    linkDispatch?.({ type: "clearDrafts", prefix: `reminder:${item?.id}:` });
     onSave({
       ...item,
       title: title.trim(),
@@ -1908,9 +1910,9 @@ export function MemoryEditModal({
   dispatch?: any;
   state?: any;
 }) {
-  const [content, setContent] = useState(item?.content || "");
+  const [content, setContent] = useDraft(`memory:${item?.id}:content`, item?.content || "");
   const [priority, setPriority] = useState<Priority>(item?.priority || "none");
-  const [tags, setTags] = useState(item?.tags?.join(", ") || "");
+  const [tags, setTags] = useDraft(`memory:${item?.id}:tags`, item?.tags?.join(", ") || "");
   const [modelId, setModelId] = useState(item?.modelId || "global");
   const [projectId, setProjectId] = useState(item?.projectId || "");
 
@@ -1925,6 +1927,7 @@ export function MemoryEditModal({
   }, [item]);
 
   const handleSave = () => {
+    linkDispatch?.({ type: "clearDrafts", prefix: `memory:${item?.id}:` });
     onSave({
       ...item,
       content: content.trim(),
@@ -2013,7 +2016,7 @@ export function ProjectEditModal({
   dispatch: any;
   state?: any;
 }) {
-  const [name, setName] = useState(item?.name || "");
+  const [name, setName] = useDraft(`project:${item?.id}:name`, item?.name || "");
   const [modelId, setModelId] = useState(item?.modelId || "global");
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskPriority, setNewTaskPriority] = useState<Priority>("none");
@@ -2026,6 +2029,7 @@ export function ProjectEditModal({
   }, [item]);
 
   const handleSave = () => {
+    dispatch({ type: "clearDrafts", prefix: `project:${item?.id}:` });
     onSave({
       ...item,
       name: name.trim(),
@@ -2164,8 +2168,8 @@ export function ArtifactEditModal({
   dispatch: any;
   state: any;
 }) {
-  const [title, setTitle] = useState(item?.title || "");
-  const [content, setContent] = useState(item?.content || "");
+  const [title, setTitle] = useDraft(`artifact:${item?.id}:title`, item?.title || "");
+  const [content, setContent] = useDraft(`artifact:${item?.id}:content`, item?.content || "");
   const [kind, setKind] = useState<Artifact["kind"]>(item?.kind || "custom");
   // Research-mode chat content is saved with real markdown structure (the
   // Markdown component already renders it in chat), but this editor only
@@ -2184,7 +2188,7 @@ export function ArtifactEditModal({
   }, [item]);
 
   if (!item) return null;
-  const handleSave = () => onSave({ ...item, title: title.trim(), content: content.trim(), kind });
+  const handleSave = () => { dispatch({ type: "clearDrafts", prefix: `artifact:${item?.id}:` }); return onSave({ ...item, title: title.trim(), content: content.trim(), kind }); };
   const handleExport = () => {
     Share.share({ message: content, title: title || "Artifact" }).catch(() => {});
   };
@@ -2285,7 +2289,8 @@ export function FileEditModal({
   onSave: (updated: any) => void;
   onDelete: (id: string) => void;
 }) {
-  const [name, setName] = useState(item?.name || "");
+  const { dispatch: fileDraftDispatch } = useCollider();
+  const [name, setName] = useDraft(`file:${item?.id}:name`, item?.name || "");
   const [modelId, setModelId] = useState(item?.modelId || "global");
   const [textContent, setTextContent] = useState("");
   const isImage = item?.url?.startsWith("data:image") || item?.url?.startsWith("https://image") || item?.url?.includes(".png") || item?.url?.includes(".jpg") || item?.url?.includes(".jpeg") || item?.name?.endsWith(".jpg") || item?.name?.endsWith(".png");
@@ -2310,6 +2315,7 @@ export function FileEditModal({
     if (isEditableText) {
       finalUrl = `text://${encodeURIComponent(textContent)}`;
     }
+    fileDraftDispatch({ type: "clearDrafts", prefix: `file:${item?.id}:` });
     onSave({
       ...item,
       name: name.trim(),

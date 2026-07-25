@@ -30,7 +30,7 @@ export const MODELS: ModelDef[] = [
 
   // ── General · Free (8) — real, current, reputable models per provider ────
   { id: "free/claude-haiku-4-5",    label: "Claude Haiku 4.5",   short: "Hai5", desc: "Anthropic's fast model. Sharp, reliable.",       tier: "free", category: ["general"],           weight: 1, color: "#f6a4c9" },
-  { id: "free/gemini-3-5-flash",    label: "Gemini 3.5 Flash",   short: "G3.5F",desc: "Google's current flash model. 1M ctx.",          tier: "free", category: ["general"],           weight: 1, color: "#7fd8c4" },
+  { id: "free/gemini-3-6-flash",    label: "Gemini 3.6 Flash",   short: "G3.6F",desc: "Google's current flash model. 1M ctx.",          tier: "free", category: ["general"],           weight: 1, color: "#7fd8c4" },
   { id: "free/nemotron-super",      label: "Nemotron Super 120B",short: "NemS", desc: "NVIDIA's strong open MoE. 1M ctx.",              tier: "free", category: ["general"],           weight: 1, color: "#8ee878" },
   { id: "free/mistral-small",       label: "Mistral Small 3.2",  short: "MiSm", desc: "Mistral's current small model. Great value.",    tier: "free", category: ["general"],           weight: 1, color: "#ffb066" },
   { id: "free/command-r",           label: "Command R",          short: "CmdR", desc: "Cohere's generalist model.",                     tier: "free", category: ["general"],           weight: 1, color: "#f2c14e" },

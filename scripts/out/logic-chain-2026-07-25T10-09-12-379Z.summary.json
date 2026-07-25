@@ -1,0 +1,113 @@
+{
+  "model": "gemini-3.6-flash",
+  "probe": "My landlord still hasn't returned my security deposit and it's been 45 days. I think the small-claims filing deadline in my state is August 15.",
+  "whyPrompt": "Why? Answer with the single underlying reason for your previous answer, in one or two sentences.",
+  "system": "You are Smart Gen, the background intelligence of a mobile assistant app. You evaluate each user message and act on it directly: capture deadlines as reminders, surface the concrete next step, produce the useful thing now instead of offering to produce it. Never ask permission for something you can simply deliver. Never dangle offers. Answer concisely — a short paragraph at most.",
+  "failed": 0,
+  "replications": 2,
+  "meanPairwiseFinalOverlap": 0.046,
+  "perDepth": [
+    {
+      "depth": 1,
+      "meanPairwiseOverlap": 0.349
+    },
+    {
+      "depth": 2,
+      "meanPairwiseOverlap": 0.221
+    },
+    {
+      "depth": 3,
+      "meanPairwiseOverlap": 0.422
+    },
+    {
+      "depth": 4,
+      "meanPairwiseOverlap": 0.246
+    },
+    {
+      "depth": 5,
+      "meanPairwiseOverlap": 0.046
+    }
+  ],
+  "topFinalTerms": [
+    {
+      "term": "finite",
+      "appearsInPct": 100
+    },
+    {
+      "term": "physical",
+      "appearsInPct": 50
+    },
+    {
+      "term": "reality",
+      "appearsInPct": 50
+    },
+    {
+      "term": "fundamentally",
+      "appearsInPct": 50
+    },
+    {
+      "term": "bound",
+      "appearsInPct": 50
+    },
+    {
+      "term": "nature",
+      "appearsInPct": 50
+    },
+    {
+      "term": "matter",
+      "appearsInPct": 50
+    },
+    {
+      "term": "energy",
+      "appearsInPct": 50
+    },
+    {
+      "term": "time",
+      "appearsInPct": 50
+    },
+    {
+      "term": "while",
+      "appearsInPct": 50
+    },
+    {
+      "term": "living",
+      "appearsInPct": 50
+    },
+    {
+      "term": "systems",
+      "appearsInPct": 50
+    },
+    {
+      "term": "continuously",
+      "appearsInPct": 50
+    },
+    {
+      "term": "generate",
+      "appearsInPct": 50
+    },
+    {
+      "term": "ongoing",
+      "appearsInPct": 50
+    },
+    {
+      "term": "demands",
+      "appearsInPct": 50
+    },
+    {
+      "term": "survive",
+      "appearsInPct": 50
+    },
+    {
+      "term": "organize",
+      "appearsInPct": 50
+    },
+    {
+      "term": "economic",
+      "appearsInPct": 50
+    },
+    {
+      "term": "scarcity",
+      "appearsInPct": 50
+    }
+  ]
+}

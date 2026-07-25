@@ -10,7 +10,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View, Text, Pressable, ScrollView, StyleSheet, TextInput,
   LayoutAnimation, Modal, ActivityIndicator, Dimensions, KeyboardAvoidingView, Platform,
-  Animated, PanResponder,
+  Animated, PanResponder, Image,
 } from "react-native";
 import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,6 +18,7 @@ import {
   useCollider, newId, findCard,
   type AppState, type CardEmbed, type LinkKind, type Reminder,
   type BoardGroupBy, type BoardSortBy, type BoardView, type FieldDef, type FieldType,
+  type CardOrigin, type CardMedia,
   collapsePriority,
 } from "../state";
 import { Glass } from "../components/Glass";
@@ -28,7 +29,7 @@ import { useToast } from "../components/Toast";
 import { Markdown } from "../components/Markdown";
 import { smartGenChat, parseBoardActions, type BoardAction, type BoardCardBrief } from "../services/minimax";
 import { friendlyErrorMessage } from "../services/chat";
-import { scheduleReminder } from "../services/media";
+import { scheduleReminder, pickImage, takePhoto } from "../services/media";
 
 const SCREEN_W = Dimensions.get("window").width;
 
@@ -70,6 +71,8 @@ export type BoardCard = {
   ts: number;
   embeds: CardEmbed[];
   customFields: Record<string, string>;
+  origin?: CardOrigin;
+  media?: CardMedia[];
 };
 
 function memoryTitle(content: string): string {
@@ -80,12 +83,23 @@ export function unifyCards(state: AppState): BoardCard[] {
   const cards: BoardCard[] = [];
   for (const p of state.projects) {
     const done = p.tasks.length > 0 && p.tasks.every((t) => t.done);
+    // A project has no deadline of its own, and urgency without a deadline is
+    // a claim with nothing behind it. So a project is urgent only when
+    // something inside it is actually due — and it then shows THAT deadline,
+    // the soonest one, so the countdown is a fact rather than a flag.
+    const inner = state.reminders.filter(
+      (r) => !r.done && r.due != null && (r.projectId === p.id || (p.embeds || []).some((e) => e.kind === "reminder" && e.id === r.id))
+    );
+    const soonestUrgent = inner
+      .filter((r) => collapsePriority(r.priority) === "high")
+      .reduce<number | undefined>((min, r) => (min == null || r.due! < min ? r.due! : min), undefined);
     cards.push({
       ref: { kind: "project", id: p.id }, kind: "project", title: p.name,
       body: p.tasks.length ? `${p.tasks.filter((t) => t.done).length}/${p.tasks.length} tasks done` : "No tasks yet",
-      priority: p.tasks.some((t) => t.priority === "high" && !t.done) ? "high" : "none",
+      due: soonestUrgent,
+      priority: soonestUrgent != null ? "high" : "none",
       progress: done ? "done" : "open",
-      tags: [], ts: 0, embeds: p.embeds || [], customFields: p.customFields || {},
+      tags: [], ts: 0, embeds: p.embeds || [], customFields: p.customFields || {}, origin: p.origin, media: p.media,
     });
   }
   for (const r of state.reminders) {
@@ -93,7 +107,7 @@ export function unifyCards(state: AppState): BoardCard[] {
       ref: { kind: "reminder", id: r.id }, kind: "reminder", title: r.title, body: "",
       due: r.due, recurring: r.recurring, priority: collapsePriority(r.priority),
       progress: r.done ? "done" : "open",
-      tags: r.tags || [], projectId: r.projectId, ts: r.ts, embeds: r.embeds || [], customFields: r.customFields || {},
+      tags: r.tags || [], projectId: r.projectId, ts: r.ts, embeds: r.embeds || [], customFields: r.customFields || {}, origin: r.origin, media: r.media,
     });
   }
   for (const m of state.memories) {
@@ -102,14 +116,14 @@ export function unifyCards(state: AppState): BoardCard[] {
       // text IS its title, and repeating it as body reads as a glitch.
       ref: { kind: "memory", id: m.id }, kind: "memory", title: memoryTitle(m.content), body: m.content.length > 84 ? m.content : "",
       priority: collapsePriority(m.priority), progress: "none",
-      tags: m.tags || [], projectId: m.projectId, ts: m.ts, embeds: m.embeds || [], customFields: m.customFields || {},
+      tags: m.tags || [], projectId: m.projectId, ts: m.ts, embeds: m.embeds || [], customFields: m.customFields || {}, origin: m.origin, media: m.media,
     });
   }
   for (const a of state.artifacts) {
     cards.push({
       ref: { kind: "artifact", id: a.id }, kind: "artifact", title: a.title, body: a.content,
       priority: "none", progress: "none",
-      tags: [], projectId: a.projectId, ts: a.ts, embeds: a.embeds || [], customFields: a.customFields || {},
+      tags: [], projectId: a.projectId, ts: a.ts, embeds: a.embeds || [], customFields: a.customFields || {}, origin: a.origin, media: a.media,
     });
   }
   return cards;
@@ -303,6 +317,21 @@ function BoardCardView({ card, now, all, onOpen, compact, onToggleDone, dragging
             {isUrgent && <Text style={local.urgentWord}>URGENT</Text>}
             {card.customFields["Critical"] === CHECKED && <Text style={local.criticalWord}>CRITICAL</Text>}
           </View>
+          {/* Images live on the card, not behind a tap — a photo IS the
+              content when there is one. */}
+          {!compact && !!card.media?.length && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+              {card.media.filter((m) => m.kind === "image").slice(0, 3).map((m, i) => (
+                <Image key={i} source={{ uri: m.url }} style={local.cardImage} resizeMode="cover" />
+              ))}
+              {card.media.filter((m) => m.kind !== "image").slice(0, 2).map((m, i) => (
+                <View key={`d${i}`} style={local.docPill}>
+                  <Ionicons name={m.kind === "video" ? "videocam-outline" : "document-outline"} size={10} color="rgba(22,22,26,0.6)" />
+                  <Text style={local.docPillText} numberOfLines={1}>{m.name || m.kind}</Text>
+                </View>
+              ))}
+            </View>
+          )}
           {!compact && !!card.body && card.kind !== "reminder" && (
             <Text style={local.cardBody} numberOfLines={2}>{card.body}</Text>
           )}
@@ -600,17 +629,57 @@ function DraggableCard({ card, ctx, children }: { card: BoardCard; ctx: DragCtx 
 
   return (
     <Animated.View
+      // On web a mouse-down on card text starts a native text selection,
+      // which preempts the drag entirely (the card highlights instead of
+      // lifting). Cards are objects to be moved, not passages to be selected.
+      // @ts-expect-error userSelect is a react-native-web style prop
+      dataSet={{ nodrag: "1" }}
       ref={(r: any) => {
         viewRef.current = r;
         if (ctx) ctx.cardRects.current[key] = { ref: r, rect: ctx.cardRects.current[key]?.rect ?? null };
       }}
       collapsable={false}
-      style={{ transform: pan.getTranslateTransform(), zIndex: dragging ? 999 : 0, opacity: dragging ? 0.93 : 1 }}
+      style={[
+        { transform: pan.getTranslateTransform(), zIndex: dragging ? 999 : 0, opacity: dragging ? 0.93 : 1 },
+        Platform.OS === "web" ? ({ userSelect: "none", cursor: "grab" } as any) : null,
+      ]}
       {...(ctx ? responder.panHandlers : {})}
     >
       {children}
     </Animated.View>
   );
+}
+
+// Scans a partially-streamed reply for action objects that have finished
+// arriving (balanced braces inside the action array) and returns them. A
+// half-written object is simply not there yet — it lands on a later token.
+function completeActions(partial: string): BoardAction[] {
+  const start = partial.indexOf("```collider-actions");
+  if (start < 0) return [];
+  const body = partial.slice(start + 19);
+  const arrStart = body.indexOf("[");
+  if (arrStart < 0) return [];
+  const out: BoardAction[] = [];
+  let depth = 0, objStart = -1, inStr = false, esc = false;
+  for (let i = arrStart + 1; i < body.length; i++) {
+    const ch = body[i];
+    if (esc) { esc = false; continue; }
+    if (ch === "\\") { esc = true; continue; }
+    if (ch === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (ch === "{") { if (depth === 0) objStart = i; depth++; }
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0 && objStart >= 0) {
+        try {
+          const obj = JSON.parse(body.slice(objStart, i + 1));
+          if (obj && typeof obj.action === "string") out.push(obj);
+        } catch {}
+        objStart = -1;
+      }
+    }
+  }
+  return out;
 }
 
 // ── Chat message shape (screen-local, session-scoped) ───────────────────────
@@ -692,6 +761,11 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
       if (card.kind === "reminder" && (zoneKey === "done") !== !!item.done) dispatch({ type: "toggleReminder", id: item.id });
       return;
     }
+    if (zoneKey.startsWith("circle-") && state.smartBoard.circleField) {
+      const f = state.smartBoard.circleField;
+      dispatch({ type: "setCardFields", ref: card.ref, fields: { ...(item.customFields || {}), [f]: zoneKey === "circle-in" ? CHECKED : "" } });
+      return;
+    }
     if (groupBy === "priority" || zoneKey === "circle-in" || zoneKey === "circle-out") {
       if (card.kind !== "reminder") return;
       const wantUrgent = zoneKey === "high" || zoneKey === "circle-in";
@@ -730,6 +804,25 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
   };
 
   const handleDrop = (card: BoardCard, pageX: number, pageY: number) => {
+    // A card dropped ON another card goes INSIDE it — the same gesture the
+    // physical act implies. Checked before columns, since a card always sits
+    // within one and the more specific target must win.
+    const myKey = cardKey(card);
+    const onCard = Object.entries(cardRects.current).find(([k, c]) => {
+      const r = c.rect;
+      return k !== myKey && r && pageX >= r.x && pageX <= r.x + r.w && pageY >= r.y && pageY <= r.y + r.h;
+    });
+    if (onCard) {
+      const [k] = onCard;
+      const [hostKind, hostId] = [k.slice(0, k.indexOf(":")), k.slice(k.indexOf(":") + 1)];
+      const host = { kind: hostKind as LinkKind, id: hostId };
+      if (findCard(state, host)) {
+        dispatch({ type: "embedCard", host, card: card.ref });
+        toast(`Embedded in "${allCards.find((c) => cardKey(c) === k)?.title || "card"}"`);
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        return;
+      }
+    }
     const hit = Object.entries(zones.current).find(([, z]) => {
       const r = z.rect;
       return r && pageX >= r.x && pageX <= r.x + r.w && pageY >= r.y && pageY <= r.y + r.h;
@@ -750,6 +843,9 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
     dispatch({ type: "reorderCards", keys });
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
   };
+
+  const circleField = state.smartBoard.circleField || "";
+  const inCircle = (c: BoardCard) => (circleField ? c.customFields[circleField] === CHECKED : c.priority === "high");
 
   const dragCtx: DragCtx = { zones, cardRects, onDrop: handleDrop, onPickUp: measureAll };
   const registerZone = (key: string) => (r: any) => {
@@ -950,20 +1046,35 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
             {/* Circle — in or out. Two zones, one meaning, nothing to read. */}
             {view === "circle" && (
               <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 40, gap: 12 }}>
+                {/* Which attribute divides inside from outside is a choice —
+                    urgency by default, any checkbox field otherwise. */}
+                <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                  <Text style={local.sectionLabel}>CIRCLE IS</Text>
+                  <View style={{ flex: 1 }}>
+                    <Picker
+                      value={state.smartBoard.circleField || ""}
+                      onChange={(v) => dispatch({ type: "setBoardConfig", config: { circleField: v } })}
+                      options={[
+                        { label: "Urgent", value: "" },
+                        ...Object.values(state.fieldDefs || {}).filter((d) => d.type === "checkbox").map((d) => ({ label: d.name, value: d.name })),
+                      ]}
+                    />
+                  </View>
+                </View>
                 <View ref={registerZone("circle-in")} collapsable={false} style={local.circleIn}>
                   <Text style={[local.colTitle, { textAlign: "center", marginBottom: 8 }]}>IN</Text>
                   <View style={{ gap: 8 }}>
-                    {visible.filter((c) => c.priority === "high").map((card) => (
+                    {visible.filter(inCircle).map((card) => (
                       <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
                         <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
                       </DraggableCard>
                     ))}
-                    {visible.every((c) => c.priority !== "high") && <Text style={local.emptyCol}>Drop here</Text>}
+                    {!visible.some(inCircle) && <Text style={local.emptyCol}>Drop here</Text>}
                   </View>
                 </View>
                 <View ref={registerZone("circle-out")} collapsable={false} style={{ gap: 8, paddingTop: 4 }}>
                   <Text style={[local.colTitle, { textAlign: "center", opacity: 0.6 }]}>OUT</Text>
-                  {visible.filter((c) => c.priority !== "high").map((card) => (
+                  {visible.filter((c) => !inCircle(c)).map((card) => (
                     <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
                       <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
                     </DraggableCard>
@@ -1024,7 +1135,8 @@ function BoardChat({ allCards, openDetail }: { allCards: BoardCard[]; openDetail
   const { state, dispatch, getState } = useCollider();
   const { toast } = useToast();
   const [messages, setMessages] = useState<BoardChatMsg[]>([]);
-  const [input, setInput] = useState("");
+  const input = state.drafts["board-chat"] || "";
+  const setInput = (v: string) => dispatch({ type: "setDraft", key: "board-chat", value: v });
   const [busy, setBusy] = useState(false);
   const [useWeb, setUseWeb] = useState(false);
   const scrollRef = useRef<ScrollView>(null);
@@ -1032,7 +1144,7 @@ function BoardChat({ allCards, openDetail }: { allCards: BoardCard[]; openDetail
   const send = async () => {
     const prompt = input.trim();
     if (!prompt || busy) return;
-    setInput("");
+    setInput(""); // the message is committed; its draft is spent
     setBusy(true);
     const userMsg: BoardChatMsg = { id: newId("bc"), role: "user", content: prompt };
     const draftId = newId("bc");
@@ -1040,6 +1152,10 @@ function BoardChat({ allCards, openDetail }: { allCards: BoardCard[]; openDetail
     try {
       const history = messages.map((m) => ({ id: m.id, role: m.role, content: m.content, ts: 0 }));
       const briefs = toBriefs(unifyCards(getState()), getState());
+      // Cards arrive as they are produced, not as one dump at the end: each
+      // complete action object in the streaming block is executed the moment
+      // it closes. Nobody is waiting on a spinner for a stack.
+      let streamedCount = 0;
       const raw = await smartGenChat(history as any, prompt, briefs, {
         webSearch: useWeb,
         fieldDefs: getState().fieldDefs,
@@ -1048,10 +1164,23 @@ function BoardChat({ allCards, openDetail }: { allCards: BoardCard[]; openDetail
           // an "applied" chip once complete, never as raw JSON.
           const visible = partial.split("```collider-actions")[0];
           setMessages((prev) => prev.map((m) => (m.id === draftId ? { ...m, content: visible } : m)));
+          const ready = completeActions(partial);
+          if (ready.length > streamedCount) {
+            const fresh = ready.slice(streamedCount);
+            streamedCount = ready.length;
+            const n = executeBoardActions(fresh, dispatch, getState);
+            if (n) {
+              LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+              setMessages((prev) => prev.map((m) => (m.id === draftId ? { ...m, applied: (m.applied || 0) + n } : m)));
+            }
+          }
         },
       });
       const { prose, actions } = parseBoardActions(raw);
-      const applied = executeBoardActions(actions, dispatch, getState);
+      // Anything already applied mid-stream is not applied twice.
+      const applied = streamedCount > 0
+        ? (getState(), streamedCount) + executeBoardActions(actions.slice(streamedCount), dispatch, getState)
+        : executeBoardActions(actions, dispatch, getState);
       setMessages((prev) => prev.map((m) => (m.id === draftId ? { ...m, content: prose || (applied ? "Done." : ""), applied, streaming: false } : m)));
       if (applied) LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     } catch (e) {
@@ -1134,18 +1263,23 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
   const [embedPickerOpen, setEmbedPickerOpen] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
   const [newFieldType, setNewFieldType] = useState<FieldType>("text");
+  const [originPreview, setOriginPreview] = useState<CardOrigin | null>(null);
   if (!item || !card) return null;
 
   const color = KIND_COLORS[cardRef.kind];
   const typeDefaults = state.cardTypeFields[cardRef.kind] || [];
   const fields: Record<string, string> = { ...Object.fromEntries(typeDefaults.map((k) => [k, ""])), ...(item.customFields || {}) };
 
-  const saveText = () => {
-    if (cardRef.kind === "memory") dispatch({ type: "updateMemory", memory: { ...item, content: body.trim() || item.content } });
-    else if (cardRef.kind === "reminder") dispatch({ type: "updateReminder", reminder: { ...item, title: title.trim() || item.title } });
-    else if (cardRef.kind === "project") dispatch({ type: "updateProject", project: { ...item, name: title.trim() || item.name } });
-    else dispatch({ type: "updateArtifact", artifact: { ...item, title: title.trim() || item.title, content: body } });
+  // Committed on every keystroke, not on blur: a dead battery, a switched
+  // app, or a closed modal must never cost words the user already typed.
+  const saveText = (t = title, b = body) => {
+    if (cardRef.kind === "memory") dispatch({ type: "updateMemory", memory: { ...item, content: b.trim() || item.content } });
+    else if (cardRef.kind === "reminder") dispatch({ type: "updateReminder", reminder: { ...item, title: t.trim() || item.title } });
+    else if (cardRef.kind === "project") dispatch({ type: "updateProject", project: { ...item, name: t.trim() || item.name } });
+    else dispatch({ type: "updateArtifact", artifact: { ...item, title: t.trim() || item.title, content: b } });
   };
+  const media: CardMedia[] = item?.media || [];
+  const addMedia = (m: CardMedia) => dispatch({ type: "setCardMedia", ref: cardRef, media: [...media, m] });
   const setField = (k: string, v: string) => {
     dispatch({ type: "setCardFields", ref: cardRef, fields: { ...(item.customFields || {}), [k]: v } });
   };
@@ -1189,10 +1323,10 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
             </View>
 
             {cardRef.kind !== "memory" && (
-              <TextInput value={title} onChangeText={setTitle} onEndEditing={saveText} style={local.modalTitleInput} placeholder="Title" placeholderTextColor="rgba(255,255,255,0.3)" multiline />
+              <TextInput value={title} onChangeText={(t) => { setTitle(t); saveText(t, body); }} style={local.modalTitleInput} placeholder="Title" placeholderTextColor="rgba(255,255,255,0.3)" multiline />
             )}
             {(cardRef.kind === "memory" || cardRef.kind === "artifact") && (
-              <TextInput value={body} onChangeText={setBody} onEndEditing={saveText} style={local.modalBodyInput} placeholder={cardRef.kind === "memory" ? "Memory content" : "Artifact content"} placeholderTextColor="rgba(255,255,255,0.3)" multiline />
+              <TextInput value={body} onChangeText={(t) => { setBody(t); saveText(title, t); }} style={local.modalBodyInput} placeholder={cardRef.kind === "memory" ? "Memory content" : "Artifact content"} placeholderTextColor="rgba(255,255,255,0.3)" multiline />
             )}
 
             {/* Reminder-specific: urgency, deadline, recurrence. Urgent is a
@@ -1325,6 +1459,51 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
               </View>
             )}
 
+            {/* Photos and documents live on the card. Adding one is two taps,
+                and it renders on the card face, not behind a menu. */}
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={local.sectionLabel}>PHOTOS & FILES</Text>
+              <View style={{ flex: 1 }} />
+              <Pressable onPress={async () => { const img = await takePhoto(); if (img) addMedia({ kind: "image", url: img.dataUri }); }} style={local.iconBtn}>
+                <Ionicons name="camera-outline" size={15} color="rgba(238,241,246,0.7)" />
+              </Pressable>
+              <Pressable onPress={async () => { const img = await pickImage(); if (img) addMedia({ kind: "image", url: img.dataUri }); }} style={local.iconBtn}>
+                <Ionicons name="image-outline" size={15} color="rgba(238,241,246,0.7)" />
+              </Pressable>
+            </View>
+            {!!media.length && (
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                {media.map((m, i) => (
+                  <View key={i}>
+                    {m.kind === "image" ? (
+                      <Image source={{ uri: m.url }} style={{ width: 74, height: 74, borderRadius: 8 }} resizeMode="cover" />
+                    ) : (
+                      <View style={[local.docPill, { paddingVertical: 8 }]}>
+                        <Ionicons name="document-outline" size={12} color="rgba(22,22,26,0.6)" />
+                        <Text style={local.docPillText} numberOfLines={1}>{m.name || "file"}</Text>
+                      </View>
+                    )}
+                    <Pressable onPress={() => dispatch({ type: "setCardMedia", ref: cardRef, media: media.filter((_, j) => j !== i) })} style={{ position: "absolute", top: -4, right: -4 }}>
+                      <Ionicons name="close-circle" size={16} color="rgba(255,255,255,0.75)" />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Origin — where this card came from. Not editable: origin is a
+                fact about how the card exists. Tapping opens the conversation
+                it was born in. */}
+            {!!item.origin && (
+              <Pressable onPress={() => setOriginPreview(item.origin)} style={local.originRow}>
+                <Ionicons name="chatbubble-outline" size={12} color="rgba(238,241,246,0.5)" />
+                <Text style={local.originText} numberOfLines={1}>
+                  {item.origin.title} · {new Date(item.origin.ts).toLocaleDateString()}
+                </Text>
+                <Ionicons name="chevron-forward" size={12} color="rgba(238,241,246,0.4)" />
+              </Pressable>
+            )}
+
             {/* Custom attributes: global type defaults + per-card additions.
                 The type's defaults always show (availability is the point);
                 per-card fields extend them without ceremony. */}
@@ -1417,6 +1596,7 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
         </Glass>
       </View>
 
+      {originPreview && <OriginPreview origin={originPreview} onClose={() => setOriginPreview(null)} />}
       {embedPickerOpen && (
         <EmbedPicker
           host={cardRef}
@@ -1428,6 +1608,55 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
           }}
         />
       )}
+    </Modal>
+  );
+}
+
+// ── Origin preview ──────────────────────────────────────────────────────────
+// A small window onto the conversation the card came from: the last few
+// messages, a way into the full chat, and dismissal by tapping anywhere off
+// it. Read-only — this is a record of what happened, not a place to edit it.
+function OriginPreview({ origin, onClose }: { origin: CardOrigin; onClose: () => void }) {
+  const { state, dispatch } = useCollider();
+  const conv = state.conversations.find((c) => c.id === origin.convId);
+  const messages = conv
+    ? Object.values(conv.threads).flat().sort((a, b) => a.ts - b.ts).slice(-6)
+    : [];
+  return (
+    <Modal visible transparent animationType="fade" onRequestClose={onClose}>
+      <View style={local.modalBackdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Glass style={[local.modalSheet, { maxHeight: "60%" }]}>
+          <View style={{ padding: 16, gap: 10 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <Ionicons name="chatbubble-outline" size={13} color="rgba(238,241,246,0.6)" />
+              <Text style={[local.colTitle, { flex: 1 }]} numberOfLines={1}>{origin.title}</Text>
+              <Pressable onPress={onClose} hitSlop={8}>
+                <Ionicons name="close" size={18} color="rgba(255,255,255,0.7)" />
+              </Pressable>
+            </View>
+            <Text style={local.colCount}>{new Date(origin.ts).toLocaleString()}</Text>
+            <ScrollView style={{ maxHeight: 240 }} contentContainerStyle={{ gap: 8 }}>
+              {messages.length === 0 && <Text style={[styles.muted, { fontSize: 11 }]}>That conversation is no longer in history.</Text>}
+              {messages.map((m) => (
+                <View key={m.id} style={[local.bubble, m.role === "user" ? local.bubbleUser : local.bubbleAssistant, { maxWidth: "100%" }]}>
+                  <Text style={{ color: m.role === "user" ? "#fff" : "rgba(255,255,255,0.85)", fontSize: 11.5, lineHeight: 16 }} numberOfLines={6}>
+                    {m.content}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+            {!!conv && (
+              <Pressable
+                onPress={() => { dispatch({ type: "loadConversation", category: conv.tab, id: conv.id }); onClose(); }}
+                style={[local.quickChip, { alignSelf: "flex-start" }]}
+              >
+                <Text style={local.quickChipText}>Open full conversation</Text>
+              </Pressable>
+            )}
+          </View>
+        </Glass>
+      </View>
     </Modal>
   );
 }
@@ -1707,6 +1936,11 @@ const local = StyleSheet.create(withFont({
   monthPill: { backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1.5 },
   monthPillText: { color: "rgba(255,255,255,0.85)", fontSize: 7.5 },
   monthMore: { color: "rgba(238,241,246,0.4)", fontSize: 7.5, paddingLeft: 3 },
+  cardImage: { width: 62, height: 62, borderRadius: 7, backgroundColor: "rgba(22,22,26,0.06)" },
+  docPill: { flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 7, paddingVertical: 4, borderRadius: 7, backgroundColor: "rgba(22,22,26,0.06)", maxWidth: 130 },
+  docPillText: { color: "rgba(22,22,26,0.7)", fontSize: 9.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
+  originRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 7, paddingHorizontal: 9, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.04)" },
+  originText: { flex: 1, color: "rgba(238,241,246,0.7)", fontSize: 10.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
   pageBody: { marginTop: 12, backgroundColor: "rgba(247,246,243,0.94)", borderRadius: 12, padding: 14 },
   typeChip: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   typeChipText: { color: "rgba(238,241,246,0.65)", fontSize: 9.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },

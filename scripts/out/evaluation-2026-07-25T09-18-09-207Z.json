@@ -1,0 +1,381 @@
+{
+  "evaluator": "qwen/qwen3-next-80b-a3b-instruct",
+  "chains": 37,
+  "integrity": {
+    "holds": 37,
+    "breaks": 0,
+    "other": 0
+  },
+  "distinctRoots": 11,
+  "largestRootShare": 0.351,
+  "groups": [
+    {
+      "claim": "Legal systems require finality to function reliably, fairly, and practically by preventing perpetual disputes and ensuring predictability.",
+      "members": [
+        2,
+        3,
+        4,
+        6,
+        7,
+        9,
+        11,
+        17,
+        21,
+        23,
+        32,
+        33,
+        36
+      ]
+    },
+    {
+      "claim": "Legal systems depend on formal procedures and statutory deadlines to enforce finality, as courts derive authority from legislatures and cannot act outside them.",
+      "members": [
+        5,
+        13,
+        14,
+        15,
+        16,
+        18,
+        24,
+        26,
+        34,
+        37
+      ]
+    },
+    {
+      "claim": "Evidence degrades over time, so legal systems limit claims to periods when evidence is reliable to ensure accurate, evidence-based rulings.",
+      "members": [
+        1,
+        12,
+        20,
+        22,
+        31
+      ]
+    },
+    {
+      "claim": "People act only when faced with enforceable consequences, and legal deadlines create such consequences to compel timely action.",
+      "members": [
+        25,
+        27,
+        29,
+        30
+      ]
+    },
+    {
+      "claim": "Legal systems balance access to justice with practical constraints on resources, evidence reliability, and defendant fairness.",
+      "members": [
+        8,
+        23,
+        33
+      ]
+    },
+    {
+      "claim": "Societies need stable, predictable legal boundaries to function, which statutory deadlines provide by settling past disputes.",
+      "members": [
+        7,
+        17
+      ]
+    },
+    {
+      "claim": "The legal system prioritizes fairness to defendants over compensating plaintiffs who delay, due to evidentiary and procedural fairness concerns.",
+      "members": [
+        11,
+        21,
+        33,
+        36
+      ]
+    },
+    {
+      "claim": "Legal systems are structured by constitutional and legislative hierarchy, requiring courts to enforce statutory deadlines as enacted law.",
+      "members": [
+        13,
+        14,
+        34,
+        35
+      ]
+    },
+    {
+      "claim": "Human behavior is driven by perceived costs and losses, and legal deadlines leverage this psychology to ensure compliance.",
+      "members": [
+        28,
+        29,
+        30
+      ]
+    },
+    {
+      "claim": "The law protects vulnerable parties (e.g., tenants) by ensuring procedural fairness and enforceable consequences, not by extending deadlines indefinitely.",
+      "members": [
+        19,
+        29
+      ]
+    },
+    {
+      "claim": "Systems naturally tend toward stable, low-energy states, which mirrors the legal system’s drive toward finality and closure.",
+      "members": [
+        10
+      ]
+    }
+  ],
+  "perChain": [
+    {
+      "i": 1,
+      "replication": 1,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "The legal system requires verifiable evidence to resolve disputes fairly.",
+      "integrity": "holds"
+    },
+    {
+      "i": 2,
+      "replication": 2,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Legal systems need finality to function reliably.",
+      "integrity": "holds"
+    },
+    {
+      "i": 3,
+      "replication": 3,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "The legal system needs finality to function fairly and practically.",
+      "integrity": "holds"
+    },
+    {
+      "i": 4,
+      "replication": 4,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Legal systems require certainty to function.",
+      "integrity": "holds"
+    },
+    {
+      "i": 5,
+      "replication": 0,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Institutions only respond to recognized formal procedures.",
+      "integrity": "holds"
+    },
+    {
+      "i": 6,
+      "replication": 5,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Legal systems must enforce finality to prevent societal and economic paralysis from perpetual disputes.",
+      "integrity": "holds"
+    },
+    {
+      "i": 7,
+      "replication": 7,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Societies need predictable legal boundaries to function stably.",
+      "integrity": "holds"
+    },
+    {
+      "i": 8,
+      "replication": 9,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Courts prioritize accurate, just outcomes over unlimited time to sue",
+      "integrity": "holds"
+    },
+    {
+      "i": 9,
+      "replication": 11,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "A functioning legal system requires predictability and equal treatment.",
+      "integrity": "holds"
+    },
+    {
+      "i": 10,
+      "replication": 10,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Systems naturally move toward lower-energy, more stable states.",
+      "integrity": "holds"
+    },
+    {
+      "i": 11,
+      "replication": 13,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Courts prioritize finality and reliability over perfect justice to maintain a functional legal system.",
+      "integrity": "holds"
+    },
+    {
+      "i": 12,
+      "replication": 14,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Fair adjudication requires reliable evidence, which degrades over time.",
+      "integrity": "holds"
+    },
+    {
+      "i": 13,
+      "replication": 15,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Courts have no inherent power; their authority to hear cases comes solely from legislative grant.",
+      "integrity": "holds"
+    },
+    {
+      "i": 14,
+      "replication": 17,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Legislatures set statutory deadlines to ensure finality and balance fairness between parties, and courts enforce them strictly to uphold that policy.",
+      "integrity": "holds"
+    },
+    {
+      "i": 15,
+      "replication": 12,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Law only protects those who follow its formal procedures",
+      "integrity": "holds"
+    },
+    {
+      "i": 16,
+      "replication": 16,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "A legal right not exercised by its deadline ceases to exist.",
+      "integrity": "holds"
+    },
+    {
+      "i": 17,
+      "replication": 19,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Society needs settled past dealings to function.",
+      "integrity": "holds"
+    },
+    {
+      "i": 18,
+      "replication": 18,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Legal deadlines create enforceable consequences that compel action.",
+      "integrity": "holds"
+    },
+    {
+      "i": 19,
+      "replication": 20,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "The law protects tenants because they are economically and powerlessly vulnerable compared to landlords.",
+      "integrity": "holds"
+    },
+    {
+      "i": 20,
+      "replication": 23,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Judges decide cases based on evidence, not subjective truth.",
+      "integrity": "holds"
+    },
+    {
+      "i": 21,
+      "replication": 21,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Legal systems must be practical and fair by limiting when claims can be brought, to prevent endless uncertainty and ensure fair defense.",
+      "integrity": "holds"
+    },
+    {
+      "i": 22,
+      "replication": 22,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Courts can only award based on proven evidence, not assumptions.",
+      "integrity": "holds"
+    },
+    {
+      "i": 23,
+      "replication": 24,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "A functioning legal system balances access to justice with practical limits on resources and reliability of evidence over time.",
+      "integrity": "holds"
+    },
+    {
+      "i": 24,
+      "replication": 25,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Courts can only award penalties if the legal requirements for notice and violation are formally documented.",
+      "integrity": "holds"
+    },
+    {
+      "i": 25,
+      "replication": 26,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "The risk of permanently losing your claim outweighs the cost of verifying the deadline.",
+      "integrity": "holds"
+    },
+    {
+      "i": 26,
+      "replication": 27,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Legislatures set fixed deadlines to ensure fair outcomes by preventing litigation based on unreliable evidence.",
+      "integrity": "holds"
+    },
+    {
+      "i": 27,
+      "replication": 28,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "People only act when faced with enforceable consequences",
+      "integrity": "holds",
+      "note": ""
+    },
+    {
+      "i": 28,
+      "replication": 31,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Human psychology treats losses as more impactful than gains.",
+      "integrity": "holds"
+    },
+    {
+      "i": 29,
+      "replication": 29,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Landlords pay when the cost of nonpayment exceeds the cost of paying, and a court deadline makes that cost imbalance real.",
+      "integrity": "holds"
+    },
+    {
+      "i": 30,
+      "replication": 32,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "People act based on visible and unavoidable consequences",
+      "integrity": "holds"
+    },
+    {
+      "i": 31,
+      "replication": 30,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "The legal system prioritizes accurate, evidence-based rulings over late claims to ensure fairness.",
+      "integrity": "holds"
+    },
+    {
+      "i": 32,
+      "replication": 34,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "The legal system must be fair to maintain legitimacy.",
+      "integrity": "holds"
+    },
+    {
+      "i": 33,
+      "replication": 35,
+      "file": "logic-chain-2026-07-24T21-47-00-314Z.jsonl",
+      "root": "Legal systems prioritize finality and fairness to defendants over compensating plaintiffs who delay.",
+      "integrity": "holds"
+    },
+    {
+      "i": 34,
+      "replication": 2,
+      "file": "logic-chain-2026-07-24T22-37-37-735Z.jsonl",
+      "root": "Courts must follow laws made by legislatures because the legal system is structured by constitutional hierarchy.",
+      "integrity": "holds"
+    },
+    {
+      "i": 35,
+      "replication": 1,
+      "file": "logic-chain-2026-07-24T22-37-37-735Z.jsonl",
+      "root": "The U.S. Constitution reserves housing and contract regulation to the states.",
+      "integrity": "holds"
+    },
+    {
+      "i": 36,
+      "replication": 0,
+      "file": "logic-chain-2026-07-24T22-37-37-735Z.jsonl",
+      "root": "The legal system prioritizes reliable verdicts over compensating late claims.",
+      "integrity": "holds"
+    },
+    {
+      "i": 37,
+      "replication": 3,
+      "file": "logic-chain-2026-07-24T22-37-37-735Z.jsonl",
+      "root": "The law only enforces rights when formally invoked within deadlines.",
+      "integrity": "holds"
+    }
+  ]
+}

@@ -45,6 +45,11 @@ const GROQ_KEYS = (process.env.EXPO_PUBLIC_GROQ_API_KEYS || "gsk_pMUYdUxJOBYnLPR
 const OPENROUTER_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || "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";
 const EXA_KEY = process.env.EXPO_PUBLIC_EXA_API_KEY || "324b68a6-2633-4b9e-b3b4-f5cd960d595b";
 const TAVILY_KEY = process.env.EXPO_PUBLIC_TAVILY_API_KEY || "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";
+// Google's key is NOT shipped in source: GitHub's secret scanning blocks the
+// push outright (unlike the other providers' formats, which it doesn't
+// recognise). Put it in .env as EXPO_PUBLIC_GOOGLE_API_KEY — without it, the
+// Gemini routes below fail and the app falls through to its other providers.
+const GOOGLE_KEY = process.env.EXPO_PUBLIC_GOOGLE_API_KEY || "";
 
 // ── Exa search (primary) ─────────────────────────────────────────────────────
 // Exa free tier: 1,000 queries/month, no credits system.
@@ -149,7 +154,7 @@ type Route = {
   // dedicated /api/v1/audio/speech endpoint used by TTS models, which returns a
   // RAW BYTE STREAM rather than JSON — a genuinely different call shape, not a
   // variant of the same one, so it gets its own provider rather than a flag.
-  provider: "groq" | "openrouter" | "pollinations-image" | "openrouter-image" | "openrouter-video" | "openrouter-audio" | "openrouter-speech";
+  provider: "groq" | "google" | "openrouter" | "pollinations-image" | "openrouter-image" | "openrouter-video" | "openrouter-audio" | "openrouter-speech";
   // TTS models require a voice id; each model exposes its own set.
   voice?: string;
   remote: string;
@@ -161,7 +166,7 @@ const ROUTES: Record<string, Route> = {
   // ── General · Free — real current models, verified against OpenRouter's
   // live catalog (fetched directly), not guessed ────────────────────────────
   "free/claude-haiku-4-5":       { provider: "openrouter", remote: "anthropic/claude-haiku-4.5" },
-  "free/gemini-3-5-flash":       { provider: "openrouter", remote: "google/gemini-3.5-flash",       vision: true },
+  "free/gemini-3-6-flash":       { provider: "google",     remote: "gemini-3.6-flash",              vision: true },
   "free/nemotron-super":         { provider: "openrouter", remote: "nvidia/nemotron-3-super-120b-a12b:free" },
   "free/mistral-small":          { provider: "openrouter", remote: "mistralai/mistral-small-3.2-24b-instruct" },
   "free/command-r":              { provider: "openrouter", remote: "cohere/command-r-08-2024" },
@@ -170,7 +175,7 @@ const ROUTES: Record<string, Route> = {
   "free/qwen3-30b":              { provider: "openrouter", remote: "qwen/qwen3-30b-a3b-instruct-2507" },
 
   // ── General · Pro ─────────────────────────────────────────────────────────
-  "pro/gemini-3-1-pro":          { provider: "openrouter", remote: "google/gemini-3.1-pro-preview", vision: true },
+  "pro/gemini-3-1-pro":          { provider: "google",     remote: "gemini-3.1-pro-preview",        vision: true },
   "pro/claude-sonnet-5":         { provider: "openrouter", remote: "anthropic/claude-sonnet-5",      vision: true },
   "pro/gpt-5-6-terra":           { provider: "openrouter", remote: "openai/gpt-5.6-terra",           vision: true },
   "pro/grok-4-5":                { provider: "openrouter", remote: "x-ai/grok-4.5",                 vision: true },
@@ -390,9 +395,12 @@ export async function sendChat(
 
   // Video/music routes append a second generated asset after the text reply —
   // streaming the intro text still helps (storyboard/lyrics are the slow part).
+  const onTok = route.imageAfter ? undefined : opts.onToken;
   const reply = route.provider === "groq"
-    ? await callGroq(route.remote, messages, route.imageAfter ? undefined : opts.onToken)
-    : await callOpenRouter(route.remote, messages, route.imageAfter ? undefined : opts.onToken);
+    ? await callGroq(route.remote, messages, onTok)
+    : route.provider === "google"
+    ? await callGoogle(route.remote, messages, onTok)
+    : await callOpenRouter(route.remote, messages, onTok);
 
   // Video routes: append a rendered reference frame using the storyboard's REFERENCE FRAME line.
   if (route.imageAfter && reply) {
@@ -487,6 +495,52 @@ export async function callOpenRouter(model: string, messages: any[], onToken?: (
     return json.choices?.[0]?.message?.content ?? "";
   }
   return await readSSEStream(res, onToken);
+}
+
+// ── Google Gemini, called directly ─────────────────────────────────────────
+// Not OpenAI-compatible: system text goes in systemInstruction, turns are
+// "contents" with parts, roles use "model" rather than "assistant", and the
+// key is a query parameter (a Bearer header is rejected — verified live).
+// Vision attachments ride along as inlineData parts.
+async function callGoogle(model: string, messages: any[], onToken?: (partial: string) => void) {
+  const sys = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const contents = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => {
+      const parts: any[] = [];
+      if (typeof m.content === "string") parts.push({ text: m.content });
+      else if (Array.isArray(m.content)) {
+        for (const c of m.content) {
+          if (c.type === "text") parts.push({ text: c.text });
+          else if (c.type === "image_url") {
+            const uri: string = c.image_url?.url || "";
+            const match = uri.match(/^data:([^;]+);base64,(.*)$/);
+            if (match) parts.push({ inlineData: { mimeType: match[1], data: match[2] } });
+          }
+        }
+      }
+      return { role: m.role === "assistant" ? "model" : "user", parts };
+    });
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents,
+        ...(sys ? { systemInstruction: { parts: [{ text: sys }] } } : {}),
+        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+      }),
+    }
+  );
+  if (!res.ok) throw new Error(`Google ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const json = await res.json();
+  const text = (json.candidates?.[0]?.content?.parts || []).map((p: any) => p.text || "").join("").trim();
+  // Non-streaming: report the whole answer once so callers that expect
+  // progressive updates still receive one.
+  onToken?.(text);
+  return text;
 }
 
 // ── Image generation via OpenRouter's image-output models ──────────────────
