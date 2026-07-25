@@ -81,12 +81,14 @@ export async function callMiniMax(messages: any[], opts: MiniMaxOptions = {}): P
 // screen parses and dispatches them. Everything the user can do by hand, the
 // model can do in the same reply that explains it — value delivered in the
 // turn, never dangled as an offer.
+type Recurring = "daily" | "weekly" | "monthly" | "yearly" | "weekdays" | "weekends";
 export type BoardAction =
-  | { action: "create"; cardType: "project" | "reminder" | "memory" | "artifact"; title: string; content?: string; due?: string; priority?: "high" | "none"; recurring?: "daily" | "weekly" | "monthly" | "yearly"; tags?: string[]; projectName?: string; isTask?: boolean; fields?: Record<string, string> }
-  | { action: "update"; cardId: string; title?: string; content?: string; due?: string | null; priority?: "high" | "none"; progress?: "todo" | "inprogress" | "done"; recurring?: "daily" | "weekly" | "monthly" | "yearly" | null; tags?: string[]; fields?: Record<string, string> }
+  | { action: "create"; cardType: "project" | "reminder" | "memory" | "artifact"; title: string; content?: string; due?: string; priority?: "high" | "none"; recurring?: Recurring; tags?: string[]; projectName?: string; isTask?: boolean; fields?: Record<string, string> }
+  | { action: "update"; cardId: string; title?: string; content?: string; due?: string | null; priority?: "high" | "none"; progress?: "todo" | "inprogress" | "done"; recurring?: Recurring | null; tags?: string[]; fields?: Record<string, string> }
   | { action: "convert"; cardId: string; toType: "project" | "reminder" | "memory" | "artifact" }
   | { action: "embed"; cardId: string; intoCardId: string }
-  | { action: "board"; view?: "board" | "list" | "calendar"; groupBy?: "type" | "status" | "priority" | "project" | "tag"; sortBy?: "due" | "created" | "priority" | "title" };
+  | { action: "defineField"; name: string; fieldType: "text" | "number" | "date" | "datetime" | "checkbox" | "select"; options?: string[]; cardTypes?: ("project" | "reminder" | "memory" | "artifact")[] }
+  | { action: "board"; view?: "board" | "list" | "calendar"; groupBy?: string; sortBy?: "due" | "created" | "priority" | "title" };
 
 const ACTIONS_FENCE = /```collider-actions\s*([\s\S]*?)```/;
 
@@ -125,8 +127,10 @@ const SMARTGEN_SYSTEM = [
   "```collider-actions",
   '[{"action":"create","cardType":"reminder","title":"...","due":"YYYY-MM-DD","priority":"high","tags":["legal"]}]',
   "```",
-  'Available actions: create (cardType project|reminder|memory|artifact; optional content, due, priority high|none, recurring daily|weekly|monthly|yearly, tags, projectName, isTask, fields), update (cardId + any of title/content/due/priority/progress/recurring/tags/fields), convert (cardId, toType), embed (cardId, intoCardId — either direction, any types), board (view/groupBy/sortBy).',
+  'Available actions: create (cardType project|reminder|memory|artifact; optional content, due "YYYY-MM-DD" or "YYYY-MM-DD HH:MM", priority high|none, recurring daily|weekly|monthly|yearly|weekdays|weekends, tags, projectName, isTask, fields), update (cardId + any of title/content/due/priority/progress/recurring/tags/fields), convert (cardId, toType), embed (cardId, intoCardId — either direction, any types), defineField (name, fieldType text|number|date|datetime|checkbox|select, options for select, cardTypes to attach as a default), board (view/groupBy/sortBy — groupBy accepts status|type|priority|project|tag or "field:<Name>" to swimlane by any attribute).',
+  "URGENT is binary — priority high means urgent-now, and urgency is intrinsically attached to time, so an urgent card MUST carry a deadline. Never leave an urgent card without a due: follow the request's own logic to the actual deadline it implies; only when the conversation genuinely contains no deadline signal use now+12h as the working default, and say you did. CRITICAL is a separate binary attribute (checkbox field 'Critical') — it marks dependency, does not observe time, and never generates a deadline.",
   "Cards embed freely into each other in either direction and convert freely between types — use that to put things where they're relevant (an ingredient-list artifact embedded in the dinner reminder, a filing-form artifact embedded in the deadline card).",
+  "Don't stop at bare description. If an attribute exists that categorizes what you're creating — a select to pick, a checkbox to set, a value to fill — fill it. If a field SHOULD exist to make a set of cards comparable or groupable (e.g. a 'Strength score' number, a 'Category' select whose options become swimlanes), define it with defineField and populate it on every card in the set. Structure is what makes cards usable proactively; description alone is the bare minimum.",
   "Omit the block entirely when nothing on the board should change.",
 ].join("\n");
 
@@ -134,10 +138,13 @@ export async function smartGenChat(
   history: ChatMessage[],
   prompt: string,
   board: BoardCardBrief[],
-  opts: { webSearch?: boolean; onToken?: (partial: string) => void } = {},
+  opts: { webSearch?: boolean; onToken?: (partial: string) => void; fieldDefs?: Record<string, { name: string; type: string; options?: string[] }> } = {},
 ): Promise<string> {
   const boardJson = JSON.stringify(board).slice(0, 24000);
   const sysParts = [SMARTGEN_SYSTEM, `CURRENT BOARD (${board.length} cards):\n${boardJson}`, `Today's date: ${new Date().toISOString().split("T")[0]}`];
+  if (opts.fieldDefs && Object.keys(opts.fieldDefs).length) {
+    sysParts.push(`DEFINED ATTRIBUTES (use these before defining new ones):\n${JSON.stringify(Object.values(opts.fieldDefs))}`);
+  }
   if (opts.webSearch && prompt) {
     const results = await webSearch(prompt, "smartgen");
     if (results) sysParts.push(`Live web search results — source of truth for anything current or outside training data:\n\n${results}`);

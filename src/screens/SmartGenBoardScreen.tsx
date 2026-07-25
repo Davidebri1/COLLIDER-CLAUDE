@@ -15,7 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import {
   useCollider, newId, findCard,
   type AppState, type CardEmbed, type LinkKind, type Reminder,
-  type BoardGroupBy, type BoardSortBy,
+  type BoardGroupBy, type BoardSortBy, type FieldDef, type FieldType,
   collapsePriority,
 } from "../state";
 import { Glass } from "../components/Glass";
@@ -42,7 +42,11 @@ const KIND_ICONS: Record<LinkKind, keyof typeof Ionicons.glyphMap> = {
   artifact: "layers-outline",
 };
 const ALL_KINDS: LinkKind[] = ["project", "reminder", "memory", "artifact"];
-const RECURRING_OPTIONS: NonNullable<Reminder["recurring"]>[] = ["daily", "weekly", "monthly", "yearly"];
+const RECURRING_OPTIONS: NonNullable<Reminder["recurring"]>[] = ["daily", "weekdays", "weekends", "weekly", "monthly", "yearly"];
+const FIELD_TYPES = ["text", "number", "date", "datetime", "checkbox", "select"] as const;
+// Stored on customFields; "yes" = checked so absence and unchecked read the same.
+const CHECKED = "yes";
+const HIDE_COUNTDOWN_FIELD = "Hide countdown";
 
 // ── Unified card shape ──────────────────────────────────────────────────────
 export type BoardCard = {
@@ -116,13 +120,19 @@ function useNow(intervalMs: number): number {
   return now;
 }
 
+// Digital countdown — status, not judgment. Includes y/mo/d components when
+// applicable so "urgent but a month out" reads as exactly that, never as a
+// panic signal.
 export function formatCountdown(due: number, now: number): { text: string; overdue: boolean; urgent: boolean } {
   const diff = due - now;
   const overdue = diff < 0;
   const abs = Math.abs(diff);
   const s = Math.floor(abs / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  const y = Math.floor(d / 365), mo = Math.floor((d % 365) / 30);
   let text: string;
-  if (d >= 2) text = `${d}d ${h % 24}h`;
+  if (y >= 1) text = `${y}y ${mo}mo ${d % 365 % 30}d`;
+  else if (mo >= 1) text = `${mo}mo ${d % 30}d ${h % 24}h`;
+  else if (d >= 2) text = `${d}d ${h % 24}h`;
   else if (h >= 1) text = `${h}h ${m % 60}m`;
   else text = `${m}m ${(s % 60).toString().padStart(2, "0")}s`;
   return { text: overdue ? `${text} overdue` : text, overdue, urgent: !overdue && diff < 3600e3 };
@@ -146,7 +156,7 @@ function groupCards(cards: BoardCard[], groupBy: BoardGroupBy, state: AppState):
     col("todo", "To do", "#5dbdff"); col("inprogress", "In progress", "#a78bfa"); col("done", "Done", "#34d399");
     for (const c of cards) col(c.progress === "none" ? "reference" : c.progress, c.progress === "none" ? "Reference" : c.progress, c.progress === "none" ? "rgba(238,241,246,0.6)" : "#5dbdff").cards.push(c);
   } else if (groupBy === "priority") {
-    col("high", "High priority", "#f87171"); col("none", "Everything else", "rgba(238,241,246,0.6)");
+    col("high", "Urgent", "rgba(238,241,246,0.85)"); col("none", "Everything else", "rgba(238,241,246,0.6)");
     for (const c of cards) col(c.priority, "", "").cards.push(c);
   } else if (groupBy === "project") {
     for (const p of state.projects) col(p.id, p.name, KIND_COLORS.project);
@@ -154,6 +164,22 @@ function groupCards(cards: BoardCard[], groupBy: BoardGroupBy, state: AppState):
     for (const c of cards) {
       if (c.kind === "project") continue; // a project card isn't filed inside itself
       col(c.projectId && state.projects.some((p) => p.id === c.projectId) ? c.projectId! : "__none", "", "rgba(238,241,246,0.6)").cards.push(c);
+    }
+  } else if (groupBy.startsWith("field:")) {
+    // Swimlanes by any typed attribute: the field's defined options are the
+    // prescriptive lanes (in their defined order), values observed on cards
+    // extend them deductively, unset cards pool in "—".
+    const fieldName = groupBy.slice(6);
+    const def = state.fieldDefs?.[fieldName];
+    for (const opt of def?.options || []) col(opt, opt, "#5dbdff");
+    for (const c of cards) {
+      const v = (c.customFields[fieldName] || "").trim();
+      if (v) col(v, v, "#5dbdff");
+    }
+    col("__none", "—", "rgba(238,241,246,0.6)");
+    for (const c of cards) {
+      const v = (c.customFields[fieldName] || "").trim();
+      col(v || "__none", v || "—", "#5dbdff").cards.push(c);
     }
   } else {
     for (const t of Array.from(new Set(cards.flatMap((c) => c.tags))).sort()) col(t, `#${t}`, "#a78bfa");
@@ -205,10 +231,16 @@ function BoardCardView({ card, now, all, onOpen, compact }: {
 }) {
   const color = KIND_COLORS[card.kind];
   const embedded = card.embeds.map((e) => all.find((c) => c.ref.kind === e.kind && c.ref.id === e.id)).filter(Boolean) as BoardCard[];
-  const fieldEntries = Object.entries(card.customFields).filter(([, v]) => v?.trim()).slice(0, 3);
+  const fieldEntries = Object.entries(card.customFields).filter(([k, v]) => v?.trim() && k !== HIDE_COUNTDOWN_FIELD).slice(0, 3);
+  // Urgency's visual is the live countdown itself — status, not judgment.
+  // No red framing (borders are for selection/presentation, not
+  // communication), no glow, no panic. The countdown informs in a vacuum;
+  // hiding it is a per-card choice.
+  const isUrgent = card.priority === "high";
+  const hideCountdown = card.customFields[HIDE_COUNTDOWN_FIELD] === CHECKED;
   return (
     <Pressable onPress={() => onOpen(card.ref)}>
-      <Glass style={[local.card, card.priority === "high" && local.cardHigh]}>
+      <Glass style={local.card}>
         <View style={[local.cardAccent, { backgroundColor: color }]} />
         <View style={{ flex: 1, padding: 10, gap: 5 }}>
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 6 }}>
@@ -216,15 +248,18 @@ function BoardCardView({ card, now, all, onOpen, compact }: {
             <Text style={[local.cardTitle, card.progress === "done" && { textDecorationLine: "line-through", color: "rgba(238,241,246,0.4)" }]} numberOfLines={2}>
               {card.title}
             </Text>
-            {card.priority === "high" && (
-              <Text style={{ color: "#f87171", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textShadowColor: "#f87171", textShadowRadius: 6, textShadowOffset: { width: 0, height: 0 }, marginTop: 2 }}>HIGH</Text>
+            {isUrgent && (
+              <Text style={{ color: "rgba(238,241,246,0.75)", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginTop: 2, letterSpacing: 0.6 }}>URGENT</Text>
+            )}
+            {card.customFields["Critical"] === CHECKED && (
+              <Text style={{ color: "rgba(93,189,255,0.85)", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), marginTop: 2, letterSpacing: 0.6 }}>CRITICAL</Text>
             )}
           </View>
           {!compact && !!card.body && card.kind !== "reminder" && (
             <Text style={local.cardBody} numberOfLines={2}>{card.body}</Text>
           )}
           <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-            {card.due != null && <CountdownChip due={card.due} now={now} />}
+            {card.due != null && !(isUrgent && hideCountdown) && <CountdownChip due={card.due} now={now} />}
             {card.recurring && (
               <View style={[local.chip, { borderColor: "rgba(167,139,250,0.35)", backgroundColor: "rgba(167,139,250,0.1)" }]}>
                 <Ionicons name="repeat-outline" size={10} color="#a78bfa" />
@@ -328,6 +363,9 @@ function executeBoardActions(actions: BoardAction[], dispatch: any, getState: ()
         const cardRef = ALL_KINDS.map((k) => ({ kind: k, id: a.cardId })).find((r) => findCard(state, r));
         const hostRef = ALL_KINDS.map((k) => ({ kind: k, id: a.intoCardId })).find((r) => findCard(state, r));
         if (cardRef && hostRef) { dispatch({ type: "embedCard", host: hostRef, card: cardRef }); applied++; }
+      } else if (a.action === "defineField") {
+        dispatch({ type: "defineField", def: { name: a.name, type: a.fieldType, options: a.options }, cardTypes: a.cardTypes });
+        applied++;
       } else if (a.action === "board") {
         const config: any = {};
         if (a.view) config.view = a.view;
@@ -395,8 +433,11 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
 
   const groupOptions = [
     { label: "Group: Status", value: "status" }, { label: "Group: Type", value: "type" },
-    { label: "Group: Priority", value: "priority" }, { label: "Group: Project", value: "project" },
+    { label: "Group: Urgency", value: "priority" }, { label: "Group: Project", value: "project" },
     { label: "Group: Tag", value: "tag" },
+    // Every defined attribute is a swimlane axis — select fields especially,
+    // but any field's observed values can lane the board.
+    ...Object.values(state.fieldDefs || {}).map((d) => ({ label: `Lanes: ${d.name}`, value: `field:${d.name}` })),
   ];
   const sortOptions = [
     { label: "Sort: Due", value: "due" }, { label: "Sort: Created", value: "created" },
@@ -572,6 +613,7 @@ function BoardChat({ allCards, openDetail }: { allCards: BoardCard[]; openDetail
       const briefs = toBriefs(unifyCards(getState()), getState());
       const raw = await smartGenChat(history as any, prompt, briefs, {
         webSearch: useWeb,
+        fieldDefs: getState().fieldDefs,
         onToken: (partial) => {
           // Hide a half-received action block while streaming; it renders as
           // an "applied" chip once complete, never as raw JSON.
@@ -662,6 +704,7 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
   const [body, setBody] = useState<string>(cardRef.kind === "memory" ? item?.content || "" : cardRef.kind === "artifact" ? item?.content || "" : "");
   const [embedPickerOpen, setEmbedPickerOpen] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldType, setNewFieldType] = useState<FieldType>("text");
   if (!item || !card) return null;
 
   const color = KIND_COLORS[cardRef.kind];
@@ -723,24 +766,88 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
               <TextInput value={body} onChangeText={setBody} onEndEditing={saveText} style={local.modalBodyInput} placeholder={cardRef.kind === "memory" ? "Memory content" : "Artifact content"} placeholderTextColor="rgba(255,255,255,0.3)" multiline />
             )}
 
-            {/* Reminder-specific: due + recurring — present because reminders
-                are usually time-constrained, optional because they aren't
-                logically time-constrained. */}
+            {/* Reminder-specific: urgency, deadline, recurrence. Urgent is a
+                binary checkbox — there is no medium. Urgency is intrinsically
+                attached to time, so checking it REQUIRES a deadline: one is
+                defaulted 12h out if none exists (a working deadline, meant to
+                be corrected), and clearing the deadline removes Urgent — the
+                user is told, not silently overridden. */}
             {cardRef.kind === "reminder" && (
               <View style={{ gap: 8 }}>
-                <Text style={local.sectionLabel}>DUE</Text>
+                <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                  <Pressable
+                    onPress={() => {
+                      const nowUrgent = collapsePriority(item.priority) !== "high";
+                      const due = nowUrgent && !item.due ? now + 12 * 3600e3 : item.due;
+                      dispatch({ type: "updateReminder", reminder: { ...item, priority: nowUrgent ? "high" : "none", due } });
+                      if (nowUrgent && !item.due) toast("Deadline defaulted to 12h from now — adjust it below");
+                    }}
+                    style={[local.quickChip, { flexDirection: "row", alignItems: "center", gap: 5 }, collapsePriority(item.priority) === "high" && { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.35)" }]}
+                  >
+                    <Ionicons name={collapsePriority(item.priority) === "high" ? "checkbox" : "square-outline"} size={13} color={collapsePriority(item.priority) === "high" ? "#fff" : "rgba(238,241,246,0.5)"} />
+                    <Text style={[local.quickChipText, collapsePriority(item.priority) === "high" && { color: "#fff" }]}>Urgent</Text>
+                  </Pressable>
+                  <Pressable onPress={() => dispatch({ type: "cycleReminderProgress", id: item.id })} style={local.quickChip}>
+                    <Text style={local.quickChipText}>Status: {card.progress}</Text>
+                  </Pressable>
+                  {collapsePriority(item.priority) === "high" && item.due != null && (
+                    <Pressable onPress={() => setField(HIDE_COUNTDOWN_FIELD, item.customFields?.[HIDE_COUNTDOWN_FIELD] === CHECKED ? "" : CHECKED)} style={local.quickChip}>
+                      <Text style={local.quickChipText}>{item.customFields?.[HIDE_COUNTDOWN_FIELD] === CHECKED ? "Show countdown" : "Hide countdown"}</Text>
+                    </Pressable>
+                  )}
+                </View>
+
+                <Text style={local.sectionLabel}>DEADLINE — DATE</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                  {([["Tonight 8pm", () => { const d = new Date(now); d.setHours(20, 0, 0, 0); return d.getTime(); }], ["Tomorrow 9am", tomorrow9], ["Next week", nextWeek9]] as const).map(([label, fn]) => (
-                    <Pressable key={label} onPress={() => setDueQuick(fn())} style={local.quickChip}>
+                  {([["Today", 0], ["One week", 7], ["One month", 30], ["One year", 365]] as const).map(([label, days]) => (
+                    <Pressable
+                      key={label}
+                      onPress={() => {
+                        const base = new Date(now); base.setDate(base.getDate() + days);
+                        const prev = item.due ? new Date(item.due) : null;
+                        base.setHours(prev ? prev.getHours() : 17, prev ? prev.getMinutes() : 0, 0, 0);
+                        setDueQuick(base.getTime());
+                      }}
+                      style={local.quickChip}
+                    >
                       <Text style={local.quickChipText}>{label}</Text>
                     </Pressable>
                   ))}
                   {item.due != null && (
-                    <Pressable onPress={() => setDueQuick(undefined)} style={[local.quickChip, { borderColor: "rgba(248,113,113,0.4)" }]}>
+                    <Pressable
+                      onPress={() => {
+                        const wasUrgent = collapsePriority(item.priority) === "high";
+                        dispatch({ type: "updateReminder", reminder: { ...item, due: undefined, priority: "none" } });
+                        if (wasUrgent) toast("Deadline cleared — Urgent removed (urgency requires a deadline)");
+                      }}
+                      style={[local.quickChip, { borderColor: "rgba(248,113,113,0.4)" }]}
+                    >
                       <Text style={[local.quickChipText, { color: "#f87171" }]}>Clear</Text>
                     </Pressable>
                   )}
                 </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={local.fieldName}>Time</Text>
+                  <TextInput
+                    key={`time-${item.due}`}
+                    defaultValue={item.due ? `${new Date(item.due).getHours().toString().padStart(2, "0")}:${new Date(item.due).getMinutes().toString().padStart(2, "0")}` : ""}
+                    placeholder="HH:MM"
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    onEndEditing={(e) => {
+                      const m = e.nativeEvent.text.match(/^(\d{1,2}):(\d{2})$/);
+                      if (!m) return;
+                      const d = new Date(item.due ?? now); d.setHours(Math.min(23, +m[1]), Math.min(59, +m[2]), 0, 0);
+                      setDueQuick(d.getTime());
+                    }}
+                    style={[local.fieldInput, { maxWidth: 90 }]}
+                  />
+                  {item.due != null && (
+                    <Text style={[styles.muted, { fontSize: 10.5 }]}>
+                      {new Date(item.due).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                    </Text>
+                  )}
+                </View>
+
                 <Text style={local.sectionLabel}>REPEATS</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                   {RECURRING_OPTIONS.map((r) => (
@@ -748,17 +855,6 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
                       <Text style={[local.quickChipText, item.recurring === r && { color: "#a78bfa" }]}>{r}</Text>
                     </Pressable>
                   ))}
-                </View>
-                <View style={{ flexDirection: "row", gap: 6 }}>
-                  <Pressable onPress={() => dispatch({ type: "cycleReminderProgress", id: item.id })} style={local.quickChip}>
-                    <Text style={local.quickChipText}>Status: {card.progress}</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => dispatch({ type: "updateReminder", reminder: { ...item, priority: collapsePriority(item.priority) === "high" ? "none" : "high" } })}
-                    style={[local.quickChip, collapsePriority(item.priority) === "high" && { borderColor: "rgba(248,113,113,0.5)", backgroundColor: "rgba(248,113,113,0.12)" }]}
-                  >
-                    <Text style={[local.quickChipText, collapsePriority(item.priority) === "high" && { color: "#f87171" }]}>High priority</Text>
-                  </Pressable>
                 </View>
               </View>
             )}
@@ -768,23 +864,18 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
                 per-card fields extend them without ceremony. */}
             <Text style={local.sectionLabel}>ATTRIBUTES</Text>
             <View style={{ gap: 6 }}>
-              {Object.entries(fields).map(([k, v]) => (
-                <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Text style={[local.fieldName]} numberOfLines={1}>{k}</Text>
-                  <TextInput
-                    defaultValue={v}
-                    onEndEditing={(e) => setField(k, e.nativeEvent.text)}
-                    placeholder="—"
-                    placeholderTextColor="rgba(255,255,255,0.25)"
-                    style={local.fieldInput}
-                  />
-                  {!typeDefaults.includes(k) && (
-                    <Pressable onPress={() => removeField(k)} hitSlop={6}>
-                      <Ionicons name="close-circle-outline" size={14} color="rgba(255,255,255,0.35)" />
-                    </Pressable>
-                  )}
-                </View>
+              {Object.entries(fields).filter(([k]) => k !== HIDE_COUNTDOWN_FIELD).map(([k, v]) => (
+                <FieldRow
+                  key={k}
+                  name={k}
+                  value={v}
+                  def={state.fieldDefs?.[k]}
+                  onChange={(nv) => setField(k, nv)}
+                  onRemove={typeDefaults.includes(k) ? undefined : () => removeField(k)}
+                />
               ))}
+              {/* New attribute: name + type in one step. A field is not just a
+                  label — its type decides how it's entered, shown, and laned. */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <TextInput
                   value={newFieldName}
@@ -792,11 +883,26 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
                   placeholder="Add attribute..."
                   placeholderTextColor="rgba(255,255,255,0.25)"
                   style={[local.fieldInput, { flex: 1 }]}
-                  onSubmitEditing={() => { if (newFieldName.trim()) { setField(newFieldName.trim(), ""); setNewFieldName(""); } }}
                 />
-                <Pressable onPress={() => { if (newFieldName.trim()) { setField(newFieldName.trim(), ""); setNewFieldName(""); } }} style={local.iconBtn}>
+                <Pressable
+                  onPress={() => {
+                    const name = newFieldName.trim();
+                    if (!name) return;
+                    dispatch({ type: "defineField", def: { name, type: newFieldType, options: newFieldType === "select" ? [] : undefined } });
+                    setField(name, "");
+                    setNewFieldName("");
+                  }}
+                  style={local.iconBtn}
+                >
                   <Ionicons name="add" size={15} color="rgba(238,241,246,0.7)" />
                 </Pressable>
+              </View>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                {FIELD_TYPES.map((t) => (
+                  <Pressable key={t} onPress={() => setNewFieldType(t)} style={[local.typeChip, newFieldType === t && { backgroundColor: "rgba(167,139,250,0.16)", borderColor: "rgba(167,139,250,0.5)" }]}>
+                    <Text style={[local.typeChipText, newFieldType === t && { color: "#a78bfa" }]}>{t}</Text>
+                  </Pressable>
+                ))}
               </View>
             </View>
 
@@ -860,6 +966,72 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
   );
 }
 
+// ── Typed field row ─────────────────────────────────────────────────────────
+// One editor per field type. Checkbox is a real toggle (binary attributes
+// like Critical are yes/no, never a scale); select offers its defined
+// options plus free entry, which is how a lane set grows deductively.
+function FieldRow({ name, value, def, onChange, onRemove }: {
+  name: string; value: string; def?: FieldDef; onChange: (v: string) => void; onRemove?: () => void;
+}) {
+  const { dispatch } = useCollider();
+  const type: FieldType = def?.type || "text";
+  const [adding, setAdding] = useState(false);
+  return (
+    <View style={{ gap: 4 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <Text style={local.fieldName} numberOfLines={1}>{name}</Text>
+        {type === "checkbox" ? (
+          <Pressable onPress={() => onChange(value === CHECKED ? "" : CHECKED)} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Ionicons name={value === CHECKED ? "checkbox" : "square-outline"} size={16} color={value === CHECKED ? "#5dbdff" : "rgba(238,241,246,0.45)"} />
+            <Text style={[local.quickChipText, value === CHECKED && { color: "#5dbdff" }]}>{value === CHECKED ? "Yes" : "No"}</Text>
+          </Pressable>
+        ) : type === "select" ? (
+          <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+            {(def?.options || []).map((o) => (
+              <Pressable key={o} onPress={() => onChange(value === o ? "" : o)} style={[local.typeChip, value === o && { backgroundColor: "rgba(93,189,255,0.16)", borderColor: "rgba(93,189,255,0.5)" }]}>
+                <Text style={[local.typeChipText, value === o && { color: "#5dbdff" }]}>{o}</Text>
+              </Pressable>
+            ))}
+            {adding ? (
+              <TextInput
+                autoFocus
+                placeholder="new option"
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                style={[local.fieldInput, { minWidth: 90 }]}
+                onEndEditing={(e) => {
+                  const v = e.nativeEvent.text.trim();
+                  setAdding(false);
+                  if (!v) return;
+                  dispatch({ type: "defineField", def: { name, type: "select", options: [...(def?.options || []), v] } });
+                  onChange(v);
+                }}
+              />
+            ) : (
+              <Pressable onPress={() => setAdding(true)} style={local.typeChip}>
+                <Ionicons name="add" size={11} color="rgba(238,241,246,0.6)" />
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          <TextInput
+            defaultValue={value}
+            onEndEditing={(e) => onChange(e.nativeEvent.text)}
+            placeholder={type === "number" ? "0" : type === "date" ? "YYYY-MM-DD" : type === "datetime" ? "YYYY-MM-DD HH:MM" : "—"}
+            placeholderTextColor="rgba(255,255,255,0.25)"
+            keyboardType={type === "number" ? "numeric" : "default"}
+            style={local.fieldInput}
+          />
+        )}
+        {onRemove && (
+          <Pressable onPress={onRemove} hitSlop={6}>
+            <Ionicons name="close-circle-outline" size={14} color="rgba(255,255,255,0.35)" />
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
 // ── Embed picker ────────────────────────────────────────────────────────────
 function EmbedPicker({ host, allCards, onClose, onPick }: {
   host: CardEmbed; allCards: BoardCard[]; onClose: () => void; onPick: (ref: CardEmbed) => void;
@@ -905,11 +1077,13 @@ function TypeFieldsManager({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useCollider();
   const [kind, setKind] = useState<LinkKind>("reminder");
   const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState<FieldType>("text");
   const fields = state.cardTypeFields[kind] || [];
   const add = () => {
     const name = newName.trim();
     if (!name || fields.includes(name)) return;
-    dispatch({ type: "setTypeFields", kind, fields: [...fields, name] });
+    // Defining and attaching are one action — a field always has a type.
+    dispatch({ type: "defineField", def: { name, type: newType, options: newType === "select" ? [] : undefined }, cardTypes: [kind] });
     setNewName("");
   };
   return (
@@ -932,15 +1106,46 @@ function TypeFieldsManager({ onClose }: { onClose: () => void }) {
                 </Pressable>
               ))}
             </View>
-            <View style={{ gap: 6 }}>
-              {fields.map((f) => (
-                <View key={f} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Text style={[local.fieldName, { flex: 1, maxWidth: undefined }]}>{f}</Text>
-                  <Pressable onPress={() => dispatch({ type: "setTypeFields", kind, fields: fields.filter((x) => x !== f) })} hitSlop={6}>
-                    <Ionicons name="close-circle-outline" size={15} color="rgba(255,255,255,0.35)" />
-                  </Pressable>
-                </View>
-              ))}
+            <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 6 }}>
+              {fields.map((f) => {
+                const def = state.fieldDefs?.[f];
+                return (
+                  <View key={f} style={{ gap: 4 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text style={[local.fieldName, { flex: 1, maxWidth: undefined }]}>{f}</Text>
+                      <Text style={local.typeChipText}>{def?.type || "text"}</Text>
+                      <Pressable onPress={() => dispatch({ type: "setTypeFields", kind, fields: fields.filter((x) => x !== f) })} hitSlop={6}>
+                        <Ionicons name="close-circle-outline" size={15} color="rgba(255,255,255,0.35)" />
+                      </Pressable>
+                    </View>
+                    {/* Select fields carry their lane set — editing options
+                        here is exactly how swimlanes are named and sized. */}
+                    {def?.type === "select" && (
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, paddingLeft: 4 }}>
+                        {(def.options || []).map((o) => (
+                          <Pressable
+                            key={o}
+                            onPress={() => dispatch({ type: "defineField", def: { ...def, options: (def.options || []).filter((x) => x !== o) } })}
+                            style={[local.typeChip, { flexDirection: "row", alignItems: "center", gap: 4 }]}
+                          >
+                            <Text style={local.typeChipText}>{o}</Text>
+                            <Ionicons name="close" size={9} color="rgba(238,241,246,0.4)" />
+                          </Pressable>
+                        ))}
+                        <TextInput
+                          placeholder="+ lane"
+                          placeholderTextColor="rgba(255,255,255,0.25)"
+                          style={[local.fieldInput, { minWidth: 80, paddingVertical: 3 }]}
+                          onEndEditing={(e) => {
+                            const v = e.nativeEvent.text.trim();
+                            if (v) dispatch({ type: "defineField", def: { ...def, options: [...(def.options || []), v] } });
+                          }}
+                        />
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
               {fields.length === 0 && <Text style={[styles.muted, { fontSize: 11 }]}>No defaults for this type — every card of it starts clean.</Text>}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <TextInput
@@ -955,7 +1160,14 @@ function TypeFieldsManager({ onClose }: { onClose: () => void }) {
                   <Ionicons name="add" size={15} color="rgba(238,241,246,0.7)" />
                 </Pressable>
               </View>
-            </View>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                {FIELD_TYPES.map((t) => (
+                  <Pressable key={t} onPress={() => setNewType(t)} style={[local.typeChip, newType === t && { backgroundColor: "rgba(167,139,250,0.16)", borderColor: "rgba(167,139,250,0.5)" }]}>
+                    <Text style={[local.typeChipText, newType === t && { color: "#a78bfa" }]}>{t}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
             <Text style={[styles.muted, { fontSize: 10.5, lineHeight: 15 }]}>
               These appear on every {kind} card automatically. Individual cards can add their own attributes on top.
             </Text>
@@ -1005,5 +1217,7 @@ const local = StyleSheet.create(withFont({
   fieldName: { color: "rgba(238,241,246,0.7)", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700), maxWidth: 110 },
   fieldInput: { flex: 1, color: "#fff", fontSize: 11.5, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 9, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", paddingHorizontal: 9, paddingVertical: 6 },
   quickChip: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
+  typeChip: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  typeChipText: { color: "rgba(238,241,246,0.65)", fontSize: 9.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
   quickChipText: { color: "rgba(238,241,246,0.75)", fontSize: 10.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
 }));
