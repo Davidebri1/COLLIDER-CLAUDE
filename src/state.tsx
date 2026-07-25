@@ -43,7 +43,13 @@ export type SmartLinks = { memories: string[]; reminders: string[]; projects: st
 // serves; a reminder pinned inside a project card). Any kind can embed any
 // kind, both directions, including its own kind — no type bounds by design.
 export type CardEmbed = { kind: LinkKind; id: string };
-export type Memory = { id: string; modelId: string; content: string; ts: number; tags?: string[]; projectId?: string; priority?: Priority; fingerprint?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string> };
+// Where a card came from. Origin is a fact, not a preference — it is written
+// once at creation and never editable, only hideable.
+export type CardOrigin = { convId: string; title: string; ts: number };
+// Anything visual or referential that belongs ON the card rather than beside
+// it: a photo, a clip, a document. Same bag for every card type.
+export type CardMedia = { kind: "image" | "video" | "doc"; url: string; name?: string };
+export type Memory = { id: string; modelId: string; content: string; ts: number; tags?: string[]; projectId?: string; priority?: Priority; fingerprint?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string>; origin?: CardOrigin; media?: CardMedia[] };
 export type Reminder = {
   id: string;
   title: string;
@@ -70,8 +76,10 @@ export type Reminder = {
   recurring?: "daily" | "weekly" | "monthly" | "yearly" | "weekdays" | "weekends";
   embeds?: CardEmbed[];
   customFields?: Record<string, string>;
+  origin?: CardOrigin;
+  media?: CardMedia[];
 };
-export type Project = { id: string; name: string; tasks: { id: string; title: string; done: boolean; priority?: Priority }[]; fingerprint?: string; modelId?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string> };
+export type Project = { id: string; name: string; tasks: { id: string; title: string; done: boolean; priority?: Priority }[]; fingerprint?: string; modelId?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string>; origin?: CardOrigin; media?: CardMedia[] };
 export type Artifact = {
   id: string;
   title: string;
@@ -84,6 +92,8 @@ export type Artifact = {
   customFields?: Record<string, string>;
   links?: SmartLinks;
   embeds?: CardEmbed[];
+  origin?: CardOrigin;
+  media?: CardMedia[];
 };
 export type ColliderFile = { id: string; name: string; kind: "uploaded" | "generated"; url: string; ts: number; modelId?: string };
 export type GenerationItem = {
@@ -244,6 +254,10 @@ export type AppState = {
   // the opt-out for that — off means the bar goes back to a plain "tap to
   // compare" button.
   autoConsensusSummary: boolean;
+  // Anything the user has typed but not committed, keyed by field. The user's
+  // effort was transferred into this app; losing it is the one failure that
+  // cannot be undone, so it persists to disk with everything else.
+  drafts: Record<string, string>;
   smartBoard: BoardConfig;
   cardTypeFields: CardTypeFields;
   fieldDefs: Record<string, FieldDef>;
@@ -317,6 +331,8 @@ type Action =
   | { type: "removeFieldDef"; name: string }
   | { type: "setBoardConfig"; config: Partial<BoardConfig> }
   | { type: "reorderCards"; keys: string[] }
+  | { type: "setDraft"; key: string; value: string }
+  | { type: "setCardMedia"; ref: CardEmbed; media: CardMedia[] }
   | { type: "convertCard"; ref: CardEmbed; toKind: LinkKind }
   | { type: "applySmartBatch"; batch: LLMBatch; modelId?: string; convId?: string }
   | { type: "task"; projectId: string; title: string; priority?: Priority }
@@ -641,6 +657,7 @@ function initialState(): AppState {
     autoArchiveOnNew: true,
     gridRows: 2,
     autoConsensusSummary: true,
+    drafts: {},
     smartBoard: { view: "board", groupBy: "status", sortBy: "manual", filter: "", order: {}, hideDone: false, circleField: "", page: 0 },
     cardTypeFields: { ...DEFAULT_CARD_TYPE_FIELDS },
     fieldDefs: { ...DEFAULT_FIELD_DEFS },
@@ -656,6 +673,20 @@ function initialState(): AppState {
   };
 }
 
+// Origin is captured at creation from the conversation that produced the
+// card — its title and latest activity, mirroring what the History panel
+// shows, so the two always agree.
+function originOf(state: AppState, convId?: string): CardOrigin | undefined {
+  if (!convId) return undefined;
+  const conv = state.conversations.find((c) => c.id === convId);
+  if (!conv) return undefined;
+  let latest = conv.createdAt;
+  for (const thread of Object.values(conv.threads)) {
+    for (const m of thread) if (m.ts > latest) latest = m.ts;
+  }
+  return { convId, title: conv.title, ts: latest };
+}
+
 function applySmart(state: AppState, batch: SmartBatch, modelId?: string, convId?: string): AppState {
   let next = state;
   const seen = { ...state.seen };
@@ -665,6 +696,7 @@ function applySmart(state: AppState, batch: SmartBatch, modelId?: string, convId
     if (convId && pid && !convProjectId) convProjectId = pid;
   };
 
+  const origin = originOf(state, convId);
   for (const p of batch.projects) {
     if (seen[p.fingerprint]) continue;
     seen[p.fingerprint] = true;
@@ -678,7 +710,7 @@ function applySmart(state: AppState, batch: SmartBatch, modelId?: string, convId
     if (dupe) { projectIdMap[p.fingerprint] = dupe.id; recordConvProject(dupe.id); continue; }
     const id = `p_${ids()}`;
     projectIdMap[p.fingerprint] = id;
-    next = { ...next, projects: [{ id, name: p.name, tasks: [], fingerprint: p.fingerprint, modelId: modelId || "global" }, ...next.projects] };
+    next = { ...next, projects: [{ id, name: p.name, tasks: [], fingerprint: p.fingerprint, modelId: modelId || "global", origin }, ...next.projects] };
     recordConvProject(id);
   }
   for (const m of batch.memories) {
@@ -686,7 +718,7 @@ function applySmart(state: AppState, batch: SmartBatch, modelId?: string, convId
     seen[m.fingerprint] = true;
     if (isSemanticDuplicate(m.content, next.memories.map((x) => x.content))) continue;
     const projectId = m.projectId?.startsWith("virt_") ? projectIdMap[m.projectId.slice(5)] : m.projectId;
-    next = { ...next, memories: [{ id: `m_${ids()}`, modelId: modelId || "global", content: m.content, ts: Date.now(), tags: m.tags, projectId, priority: m.priority || "none", fingerprint: m.fingerprint }, ...next.memories] };
+    next = { ...next, memories: [{ id: `m_${ids()}`, modelId: modelId || "global", content: m.content, ts: Date.now(), tags: m.tags, projectId, priority: m.priority || "none", fingerprint: m.fingerprint, origin }, ...next.memories] };
     recordConvProject(projectId);
   }
   for (const r of batch.reminders) {
@@ -697,7 +729,7 @@ function applySmart(state: AppState, batch: SmartBatch, modelId?: string, convId
     if (r.isTask && projectId) {
       next = { ...next, projects: next.projects.map((p) => p.id === projectId ? { ...p, tasks: [{ id: `t_${ids()}`, title: r.title, done: false, priority: r.priority || "none" }, ...p.tasks] } : p) };
     } else {
-      next = { ...next, reminders: [{ id: `r_${ids()}`, title: r.title, due: r.due, done: false, ts: Date.now(), priority: r.priority || "none", projectId, progress: r.progress, tags: r.tags, fingerprint: r.fingerprint, isTask: r.isTask, modelId: modelId || "global", calendarTitle: "Personal Calendar" }, ...next.reminders] };
+      next = { ...next, reminders: [{ id: `r_${ids()}`, title: r.title, due: r.due, done: false, ts: Date.now(), priority: r.priority || "none", projectId, progress: r.progress, tags: r.tags, fingerprint: r.fingerprint, isTask: r.isTask, modelId: modelId || "global", calendarTitle: "Personal Calendar", origin }, ...next.reminders] };
     }
     recordConvProject(projectId);
   }
@@ -720,6 +752,7 @@ function applyLLMBatch(state: AppState, batch: LLMBatch, modelId?: string, convI
     if (convId && pid && !convProjectId) convProjectId = pid;
   };
 
+  const origin = originOf(state, convId);
   for (const p of batch.projects) {
     if (seen[p.fingerprint]) continue;
     seen[p.fingerprint] = true;
@@ -731,7 +764,7 @@ function applyLLMBatch(state: AppState, batch: LLMBatch, modelId?: string, convI
     if (dupe) { projectIdMap[p.fingerprint] = dupe.id; recordConvProject(dupe.id); continue; }
     const id = `p_${ids()}`;
     projectIdMap[p.fingerprint] = id;
-    next = { ...next, projects: [{ id, name: p.name, tasks: [], fingerprint: p.fingerprint, modelId: modelId || "global" }, ...next.projects] };
+    next = { ...next, projects: [{ id, name: p.name, tasks: [], fingerprint: p.fingerprint, modelId: modelId || "global", origin }, ...next.projects] };
     recordConvProject(id);
   }
   const resolveProjectId = (pid?: string) => (pid?.startsWith("virt_") ? projectIdMap[pid.slice(5)] : pid);
@@ -741,7 +774,7 @@ function applyLLMBatch(state: AppState, batch: LLMBatch, modelId?: string, convI
     seen[m.fingerprint] = true;
     if (isSemanticDuplicate(m.content, next.memories.map((x) => x.content))) continue;
     const projectId = resolveProjectId(m.projectId);
-    next = { ...next, memories: [{ id: `m_${ids()}`, modelId: modelId || "global", content: m.content, ts: Date.now(), tags: m.tags, projectId, priority: m.priority || "none", fingerprint: m.fingerprint }, ...next.memories] };
+    next = { ...next, memories: [{ id: `m_${ids()}`, modelId: modelId || "global", content: m.content, ts: Date.now(), tags: m.tags, projectId, priority: m.priority || "none", fingerprint: m.fingerprint, origin }, ...next.memories] };
     recordConvProject(projectId);
   }
   for (const r of batch.reminders) {
@@ -752,7 +785,7 @@ function applyLLMBatch(state: AppState, batch: LLMBatch, modelId?: string, convI
     if (r.isTask && projectId) {
       next = { ...next, projects: next.projects.map((p) => p.id === projectId ? { ...p, tasks: [{ id: `t_${ids()}`, title: r.title, done: false, priority: r.priority || "none" }, ...p.tasks] } : p) };
     } else {
-      next = { ...next, reminders: [{ id: `r_${ids()}`, title: r.title, due: r.due, done: false, ts: Date.now(), priority: r.priority || "none", projectId, progress: r.progress, tags: r.tags, fingerprint: r.fingerprint, isTask: r.isTask, modelId: modelId || "global", calendarTitle: "Personal Calendar" }, ...next.reminders] };
+      next = { ...next, reminders: [{ id: `r_${ids()}`, title: r.title, due: r.due, done: false, ts: Date.now(), priority: r.priority || "none", projectId, progress: r.progress, tags: r.tags, fingerprint: r.fingerprint, isTask: r.isTask, modelId: modelId || "global", calendarTitle: "Personal Calendar", origin }, ...next.reminders] };
     }
     recordConvProject(projectId);
   }
@@ -761,7 +794,7 @@ function applyLLMBatch(state: AppState, batch: LLMBatch, modelId?: string, convI
     seen[a.fingerprint] = true;
     if (isSemanticDuplicate(a.title, next.artifacts.map((x) => x.title))) continue;
     const projectId = resolveProjectId(a.projectId);
-    next = { ...next, artifacts: [{ id: `art_${ids()}`, title: a.title, content: a.content, kind: a.kind, modelId: modelId || "global", projectId, ts: Date.now(), fingerprint: a.fingerprint }, ...next.artifacts] };
+    next = { ...next, artifacts: [{ id: `art_${ids()}`, title: a.title, content: a.content, kind: a.kind, modelId: modelId || "global", projectId, ts: Date.now(), fingerprint: a.fingerprint, origin }, ...next.artifacts] };
     recordConvProject(projectId);
   }
   if (convId && convProjectId && convProjectId !== state.conversationProjectId[convId]) {
@@ -798,7 +831,7 @@ function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "hydrate": {
       const base = initialState();
-      return { ...base, ...action.state, cardPrompts: { ...base.cardPrompts, ...(action.state.cardPrompts || {}) }, chatMode: { ...base.chatMode, ...(action.state.chatMode || {}) }, webSearch: { ...base.webSearch, ...(action.state.webSearch || {}) }, smartBoard: { ...base.smartBoard, ...(action.state.smartBoard || {}) }, cardTypeFields: { ...base.cardTypeFields, ...(action.state.cardTypeFields || {}) }, fieldDefs: { ...base.fieldDefs, ...(action.state.fieldDefs || {}) }, seen: { ...(action.state.seen || {}) }, hydrated: true };
+      return { ...base, ...action.state, cardPrompts: { ...base.cardPrompts, ...(action.state.cardPrompts || {}) }, chatMode: { ...base.chatMode, ...(action.state.chatMode || {}) }, webSearch: { ...base.webSearch, ...(action.state.webSearch || {}) }, smartBoard: { ...base.smartBoard, ...(action.state.smartBoard || {}) }, cardTypeFields: { ...base.cardTypeFields, ...(action.state.cardTypeFields || {}) }, fieldDefs: { ...base.fieldDefs, ...(action.state.fieldDefs || {}) }, drafts: { ...(action.state.drafts || {}) }, seen: { ...(action.state.seen || {}) }, hydrated: true };
     }
     case "category": return { ...state, activeCategory: action.category };
     case "tier": return { ...state, tier: action.tier, credits: Math.max(state.credits, TIER_INFO[action.tier].pool) };
@@ -996,6 +1029,13 @@ function reducer(state: AppState, action: Action): AppState {
     }
     case "setBoardConfig":
       return { ...state, smartBoard: { ...state.smartBoard, ...action.config } };
+    case "setDraft": {
+      const drafts = { ...state.drafts };
+      if (action.value) drafts[action.key] = action.value; else delete drafts[action.key];
+      return { ...state, drafts };
+    }
+    case "setCardMedia":
+      return mutateCard(state, action.ref, (item) => ({ ...item, media: action.media }));
     case "reorderCards": {
       const order = { ...state.smartBoard.order };
       action.keys.forEach((k, i) => { order[k] = i; });
