@@ -10,12 +10,14 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View, Text, Pressable, ScrollView, StyleSheet, TextInput,
   LayoutAnimation, Modal, ActivityIndicator, Dimensions, KeyboardAvoidingView, Platform,
+  Animated, PanResponder,
 } from "react-native";
+import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import {
   useCollider, newId, findCard,
   type AppState, type CardEmbed, type LinkKind, type Reminder,
-  type BoardGroupBy, type BoardSortBy,
+  type BoardGroupBy, type BoardSortBy, type BoardView, type FieldDef, type FieldType,
   collapsePriority,
 } from "../state";
 import { Glass } from "../components/Glass";
@@ -26,6 +28,7 @@ import { useToast } from "../components/Toast";
 import { Markdown } from "../components/Markdown";
 import { smartGenChat, parseBoardActions, type BoardAction, type BoardCardBrief } from "../services/minimax";
 import { friendlyErrorMessage } from "../services/chat";
+import { scheduleReminder } from "../services/media";
 
 const SCREEN_W = Dimensions.get("window").width;
 
@@ -42,7 +45,11 @@ const KIND_ICONS: Record<LinkKind, keyof typeof Ionicons.glyphMap> = {
   artifact: "layers-outline",
 };
 const ALL_KINDS: LinkKind[] = ["project", "reminder", "memory", "artifact"];
-const RECURRING_OPTIONS: NonNullable<Reminder["recurring"]>[] = ["daily", "weekly", "monthly", "yearly"];
+const RECURRING_OPTIONS: NonNullable<Reminder["recurring"]>[] = ["daily", "weekdays", "weekends", "weekly", "monthly", "yearly"];
+const FIELD_TYPES = ["text", "number", "date", "datetime", "checkbox", "select"] as const;
+// Stored on customFields; "yes" = checked so absence and unchecked read the same.
+const CHECKED = "yes";
+const HIDE_COUNTDOWN_FIELD = "Hide countdown";
 
 // ── Unified card shape ──────────────────────────────────────────────────────
 export type BoardCard = {
@@ -53,9 +60,11 @@ export type BoardCard = {
   due?: number;
   recurring?: Reminder["recurring"];
   priority: "high" | "none";
-  // "none" = the kind has no meaningful progress (memories/artifacts) —
-  // grouped as Reference, never forced into a fake todo state.
-  progress: "todo" | "inprogress" | "done" | "none";
+  // Binary by design: the only state that changes anything is done or not.
+  // "none" = the kind has no completion semantics (memories/artifacts) —
+  // grouped as Reference, never forced into a fake task state. Intermediate
+  // states live in the write-in "Status" attribute for anyone who needs them.
+  progress: "open" | "done" | "none";
   tags: string[];
   projectId?: string;
   ts: number;
@@ -75,7 +84,7 @@ export function unifyCards(state: AppState): BoardCard[] {
       ref: { kind: "project", id: p.id }, kind: "project", title: p.name,
       body: p.tasks.length ? `${p.tasks.filter((t) => t.done).length}/${p.tasks.length} tasks done` : "No tasks yet",
       priority: p.tasks.some((t) => t.priority === "high" && !t.done) ? "high" : "none",
-      progress: done ? "done" : p.tasks.some((t) => t.done) ? "inprogress" : "todo",
+      progress: done ? "done" : "open",
       tags: [], ts: 0, embeds: p.embeds || [], customFields: p.customFields || {},
     });
   }
@@ -83,7 +92,7 @@ export function unifyCards(state: AppState): BoardCard[] {
     cards.push({
       ref: { kind: "reminder", id: r.id }, kind: "reminder", title: r.title, body: "",
       due: r.due, recurring: r.recurring, priority: collapsePriority(r.priority),
-      progress: r.done ? "done" : r.progress === "inprogress" ? "inprogress" : "todo",
+      progress: r.done ? "done" : "open",
       tags: r.tags || [], projectId: r.projectId, ts: r.ts, embeds: r.embeds || [], customFields: r.customFields || {},
     });
   }
@@ -116,13 +125,19 @@ function useNow(intervalMs: number): number {
   return now;
 }
 
+// Digital countdown — status, not judgment. Includes y/mo/d components when
+// applicable so "urgent but a month out" reads as exactly that, never as a
+// panic signal.
 export function formatCountdown(due: number, now: number): { text: string; overdue: boolean; urgent: boolean } {
   const diff = due - now;
   const overdue = diff < 0;
   const abs = Math.abs(diff);
   const s = Math.floor(abs / 1000), m = Math.floor(s / 60), h = Math.floor(m / 60), d = Math.floor(h / 24);
+  const y = Math.floor(d / 365), mo = Math.floor((d % 365) / 30);
   let text: string;
-  if (d >= 2) text = `${d}d ${h % 24}h`;
+  if (y >= 1) text = `${y}y ${mo}mo ${d % 365 % 30}d`;
+  else if (mo >= 1) text = `${mo}mo ${d % 30}d ${h % 24}h`;
+  else if (d >= 2) text = `${d}d ${h % 24}h`;
   else if (h >= 1) text = `${h}h ${m % 60}m`;
   else text = `${m}m ${(s % 60).toString().padStart(2, "0")}s`;
   return { text: overdue ? `${text} overdue` : text, overdue, urgent: !overdue && diff < 3600e3 };
@@ -143,10 +158,13 @@ function groupCards(cards: BoardCard[], groupBy: BoardGroupBy, state: AppState):
     col("memory", "Memories", KIND_COLORS.memory); col("artifact", "Artifacts", KIND_COLORS.artifact);
     for (const c of cards) col(c.kind, c.kind, KIND_COLORS[c.kind]).cards.push(c);
   } else if (groupBy === "status") {
-    col("todo", "To do", "#5dbdff"); col("inprogress", "In progress", "#a78bfa"); col("done", "Done", "#34d399");
-    for (const c of cards) col(c.progress === "none" ? "reference" : c.progress, c.progress === "none" ? "Reference" : c.progress, c.progress === "none" ? "rgba(238,241,246,0.6)" : "#5dbdff").cards.push(c);
+    col("open", "Open", "#5dbdff"); col("done", "Done", "#34d399");
+    for (const c of cards) {
+      if (c.progress === "none") col("reference", "Reference", "rgba(238,241,246,0.6)").cards.push(c);
+      else col(c.progress, c.progress === "done" ? "Done" : "Open", c.progress === "done" ? "#34d399" : "#5dbdff").cards.push(c);
+    }
   } else if (groupBy === "priority") {
-    col("high", "High priority", "#f87171"); col("none", "Everything else", "rgba(238,241,246,0.6)");
+    col("high", "Urgent", "rgba(238,241,246,0.85)"); col("none", "Everything else", "rgba(238,241,246,0.6)");
     for (const c of cards) col(c.priority, "", "").cards.push(c);
   } else if (groupBy === "project") {
     for (const p of state.projects) col(p.id, p.name, KIND_COLORS.project);
@@ -154,6 +172,22 @@ function groupCards(cards: BoardCard[], groupBy: BoardGroupBy, state: AppState):
     for (const c of cards) {
       if (c.kind === "project") continue; // a project card isn't filed inside itself
       col(c.projectId && state.projects.some((p) => p.id === c.projectId) ? c.projectId! : "__none", "", "rgba(238,241,246,0.6)").cards.push(c);
+    }
+  } else if (groupBy.startsWith("field:")) {
+    // Swimlanes by any typed attribute: the field's defined options are the
+    // prescriptive lanes (in their defined order), values observed on cards
+    // extend them deductively, unset cards pool in "—".
+    const fieldName = groupBy.slice(6);
+    const def = state.fieldDefs?.[fieldName];
+    for (const opt of def?.options || []) col(opt, opt, "#5dbdff");
+    for (const c of cards) {
+      const v = (c.customFields[fieldName] || "").trim();
+      if (v) col(v, v, "#5dbdff");
+    }
+    col("__none", "—", "rgba(238,241,246,0.6)");
+    for (const c of cards) {
+      const v = (c.customFields[fieldName] || "").trim();
+      col(v || "__none", v || "—", "#5dbdff").cards.push(c);
     }
   } else {
     for (const t of Array.from(new Set(cards.flatMap((c) => c.tags))).sort()) col(t, `#${t}`, "#a78bfa");
@@ -169,21 +203,54 @@ function groupCards(cards: BoardCard[], groupBy: BoardGroupBy, state: AppState):
   return cols.filter((c) => c.cards.length > 0 || groupBy === "status" || groupBy === "type");
 }
 
-function sortCards(cards: BoardCard[], sortBy: BoardSortBy): BoardCard[] {
+export const cardKey = (c: { ref: CardEmbed }) => `${c.ref.kind}:${c.ref.id}`;
+
+function sortCards(cards: BoardCard[], sortBy: BoardSortBy, order: Record<string, number>): BoardCard[] {
   const arr = [...cards];
-  if (sortBy === "due") arr.sort((a, b) => (a.due ?? Infinity) - (b.due ?? Infinity) || b.ts - a.ts);
+  // Manual is the default and the point: where you put a card is the sort.
+  // Cards never placed by hand keep arriving at the top (newest first), so a
+  // fresh card is visible without disturbing anything already positioned.
+  if (sortBy === "manual") {
+    arr.sort((a, b) => {
+      const oa = order[cardKey(a)], ob = order[cardKey(b)];
+      if (oa != null && ob != null) return oa - ob;
+      if (oa != null) return -1;
+      if (ob != null) return 1;
+      return b.ts - a.ts;
+    });
+  }
+  else if (sortBy === "due") arr.sort((a, b) => (a.due ?? Infinity) - (b.due ?? Infinity) || b.ts - a.ts);
   else if (sortBy === "created") arr.sort((a, b) => b.ts - a.ts);
+  else if (sortBy === "updated") arr.sort((a, b) => b.ts - a.ts);
+  else if (sortBy === "type") arr.sort((a, b) => a.kind.localeCompare(b.kind) || a.title.localeCompare(b.title));
   else if (sortBy === "priority") arr.sort((a, b) => (a.priority === b.priority ? (a.due ?? Infinity) - (b.due ?? Infinity) : a.priority === "high" ? -1 : 1));
+  else if (sortBy.startsWith("field:")) {
+    // Numeric when the values are numbers (a score), alphabetical otherwise;
+    // blanks always sink rather than leading the column.
+    const f = sortBy.slice(6);
+    arr.sort((a, b) => {
+      const va = (a.customFields[f] || "").trim(), vb = (b.customFields[f] || "").trim();
+      if (!va && !vb) return 0;
+      if (!va) return 1;
+      if (!vb) return -1;
+      const na = parseFloat(va), nb = parseFloat(vb);
+      if (!isNaN(na) && !isNaN(nb)) return nb - na;
+      return va.localeCompare(vb);
+    });
+  }
   else arr.sort((a, b) => a.title.localeCompare(b.title));
   return arr;
 }
 
 // ── Small visual pieces ─────────────────────────────────────────────────────
-function CountdownChip({ due, now }: { due: number; now: number }) {
+// onLight: chips sitting on the card's paper face need their own contrast;
+// the same chip on a dark surface (embedded rows, modal header) keeps the
+// original treatment.
+function CountdownChip({ due, now, onLight }: { due: number; now: number; onLight?: boolean }) {
   const { text, overdue, urgent } = formatCountdown(due, now);
-  const color = overdue ? "#f87171" : urgent ? "#fbbf24" : "#5dbdff";
+  const color = overdue ? (onLight ? "#b4413c" : "#f87171") : urgent ? (onLight ? "#946200" : "#fbbf24") : onLight ? "#2f6d9e" : "#5dbdff";
   return (
-    <View style={[local.chip, { borderColor: `${color}55`, backgroundColor: `${color}14` }]}>
+    <View style={[local.chip, { borderColor: `${color}${onLight ? "44" : "55"}`, backgroundColor: `${color}${onLight ? "12" : "14"}` }]}>
       <Ionicons name="time-outline" size={10} color={color} />
       <Text style={[local.chipText, { color }]}>{text}</Text>
     </View>
@@ -200,46 +267,70 @@ function KindBadge({ kind }: { kind: LinkKind }) {
   );
 }
 
-function BoardCardView({ card, now, all, onOpen, compact }: {
+function BoardCardView({ card, now, all, onOpen, compact, onToggleDone, dragging }: {
   card: BoardCard; now: number; all: BoardCard[]; onOpen: (ref: CardEmbed) => void; compact?: boolean;
+  onToggleDone?: (card: BoardCard) => void; dragging?: boolean;
 }) {
   const color = KIND_COLORS[card.kind];
   const embedded = card.embeds.map((e) => all.find((c) => c.ref.kind === e.kind && c.ref.id === e.id)).filter(Boolean) as BoardCard[];
-  const fieldEntries = Object.entries(card.customFields).filter(([, v]) => v?.trim()).slice(0, 3);
+  const fieldEntries = Object.entries(card.customFields).filter(([k, v]) => v?.trim() && k !== HIDE_COUNTDOWN_FIELD).slice(0, 3);
+  // Urgency's visual is the live countdown itself — status, not judgment.
+  // No red framing (borders are for selection/presentation, not
+  // communication), no glow, no panic. The countdown informs in a vacuum;
+  // hiding it is a per-card choice.
+  const isUrgent = card.priority === "high";
+  const hideCountdown = card.customFields[HIDE_COUNTDOWN_FIELD] === CHECKED;
+  const isDone = card.progress === "done";
+  const writtenStatus = (card.customFields["Status"] || "").trim();
   return (
     <Pressable onPress={() => onOpen(card.ref)}>
-      <Glass style={[local.card, card.priority === "high" && local.cardHigh]}>
+      <View style={[local.card, dragging && local.cardDragging]}>
         <View style={[local.cardAccent, { backgroundColor: color }]} />
-        <View style={{ flex: 1, padding: 10, gap: 5 }}>
-          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 6 }}>
-            <Ionicons name={KIND_ICONS[card.kind]} size={12} color={color} style={{ marginTop: 2 }} />
-            <Text style={[local.cardTitle, card.progress === "done" && { textDecorationLine: "line-through", color: "rgba(238,241,246,0.4)" }]} numberOfLines={2}>
+        <View style={{ flex: 1, padding: 11, gap: 6 }}>
+          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 7 }}>
+            {/* Done is the only state that changes anything — one checkbox,
+                right where the hand already is. */}
+            {onToggleDone && card.progress !== "none" ? (
+              <Pressable onPress={() => onToggleDone(card)} hitSlop={8} style={{ marginTop: 1 }}>
+                <Ionicons name={isDone ? "checkbox" : "square-outline"} size={16} color={isDone ? "#3f7a52" : "rgba(22,22,26,0.3)"} />
+              </Pressable>
+            ) : (
+              <Ionicons name={KIND_ICONS[card.kind]} size={13} color={color} style={{ marginTop: 2 }} />
+            )}
+            <Text style={[local.cardTitle, isDone && { textDecorationLine: "line-through", color: "rgba(22,22,26,0.4)" }]} numberOfLines={2}>
               {card.title}
             </Text>
-            {card.priority === "high" && (
-              <Text style={{ color: "#f87171", fontSize: 9, fontWeight: "900", fontFamily: fontFamilyForWeight(900), textShadowColor: "#f87171", textShadowRadius: 6, textShadowOffset: { width: 0, height: 0 }, marginTop: 2 }}>HIGH</Text>
-            )}
+            {isUrgent && <Text style={local.urgentWord}>URGENT</Text>}
+            {card.customFields["Critical"] === CHECKED && <Text style={local.criticalWord}>CRITICAL</Text>}
           </View>
           {!compact && !!card.body && card.kind !== "reminder" && (
             <Text style={local.cardBody} numberOfLines={2}>{card.body}</Text>
           )}
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, alignItems: "center" }}>
-            {card.due != null && <CountdownChip due={card.due} now={now} />}
-            {card.recurring && (
-              <View style={[local.chip, { borderColor: "rgba(167,139,250,0.35)", backgroundColor: "rgba(167,139,250,0.1)" }]}>
-                <Ionicons name="repeat-outline" size={10} color="#a78bfa" />
-                <Text style={[local.chipText, { color: "#a78bfa" }]}>{card.recurring}</Text>
-              </View>
-            )}
-            {card.tags.slice(0, 3).map((t) => (
-              <Text key={t} style={local.tagText}>#{t}</Text>
-            ))}
-          </View>
+          {/* Only what's actually there gets space. */}
+          {(card.due != null || card.recurring || card.tags.length > 0 || !!writtenStatus) && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, alignItems: "center" }}>
+              {card.due != null && !(isUrgent && hideCountdown) && <CountdownChip due={card.due} now={now} onLight />}
+              {card.recurring && (
+                <View style={[local.chip, { borderColor: "rgba(109,90,168,0.3)", backgroundColor: "rgba(109,90,168,0.09)" }]}>
+                  <Ionicons name="repeat-outline" size={10} color="#6d5aa8" />
+                  <Text style={[local.chipText, { color: "#6d5aa8" }]}>{card.recurring}</Text>
+                </View>
+              )}
+              {!!writtenStatus && (
+                <View style={[local.chip, { borderColor: "rgba(22,22,26,0.14)", backgroundColor: "rgba(22,22,26,0.05)" }]}>
+                  <Text style={[local.chipText, { color: "rgba(22,22,26,0.6)" }]}>{writtenStatus}</Text>
+                </View>
+              )}
+              {card.tags.slice(0, 3).map((t) => (
+                <Text key={t} style={local.tagText}>#{t}</Text>
+              ))}
+            </View>
+          )}
           {!compact && fieldEntries.length > 0 && (
             <View style={{ gap: 1 }}>
               {fieldEntries.map(([k, v]) => (
                 <Text key={k} style={local.fieldLine} numberOfLines={1}>
-                  <Text style={{ color: "rgba(238,241,246,0.45)" }}>{k}: </Text>{v}
+                  <Text style={{ color: "rgba(22,22,26,0.42)" }}>{k}: </Text>{v}
                 </Text>
               ))}
             </View>
@@ -249,18 +340,18 @@ function BoardCardView({ card, now, all, onOpen, compact }: {
               recipe in the dinner reminder — reference at the point of
               relevance, no app-hopping. */}
           {embedded.length > 0 && (
-            <View style={{ gap: 4, marginTop: 2 }}>
+            <View style={{ gap: 4, marginTop: 1 }}>
               {embedded.map((e) => (
-                <Pressable key={`${e.ref.kind}:${e.ref.id}`} onPress={() => onOpen(e.ref)} style={[local.embedRow, { borderColor: `${KIND_COLORS[e.kind]}30` }]}>
+                <Pressable key={`${e.ref.kind}:${e.ref.id}`} onPress={() => onOpen(e.ref)} style={local.cardEmbedRow}>
                   <Ionicons name={KIND_ICONS[e.kind]} size={11} color={KIND_COLORS[e.kind]} />
-                  <Text style={local.embedTitle} numberOfLines={1}>{e.title}</Text>
-                  {e.due != null && <CountdownChip due={e.due} now={now} />}
+                  <Text style={local.cardEmbedTitle} numberOfLines={1}>{e.title}</Text>
+                  {e.due != null && <CountdownChip due={e.due} now={now} onLight />}
                 </Pressable>
               ))}
             </View>
           )}
         </View>
-      </Glass>
+      </View>
     </Pressable>
   );
 }
@@ -316,7 +407,7 @@ function executeBoardActions(actions: BoardAction[], dispatch: any, getState: ()
         if (!ref) continue;
         const item: any = findCard(state, ref)!;
         if (ref.kind === "memory") dispatch({ type: "updateMemory", memory: { ...item, content: a.content ?? a.title ?? item.content, tags: a.tags ?? item.tags, priority: a.priority ?? item.priority } });
-        else if (ref.kind === "reminder") dispatch({ type: "updateReminder", reminder: { ...item, title: a.title ?? item.title, due: a.due === null ? undefined : a.due !== undefined ? parseDueString(a.due) : item.due, priority: a.priority ?? item.priority, progress: a.progress ?? item.progress, done: (a.progress ?? item.progress) === "done", recurring: a.recurring === null ? undefined : a.recurring ?? item.recurring, tags: a.tags ?? item.tags } });
+        else if (ref.kind === "reminder") dispatch({ type: "updateReminder", reminder: { ...item, title: a.title ?? item.title, due: a.due === null ? undefined : a.due !== undefined ? parseDueString(a.due) : item.due, priority: a.priority ?? item.priority, progress: a.progress ?? item.progress, done: a.progress ? a.progress === "done" : item.done, recurring: a.recurring === null ? undefined : a.recurring ?? item.recurring, tags: a.tags ?? item.tags } });
         else if (ref.kind === "project") dispatch({ type: "updateProject", project: { ...item, name: a.title ?? item.name } });
         else dispatch({ type: "updateArtifact", artifact: { ...item, title: a.title ?? item.title, content: a.content ?? item.content } });
         if (a.fields) dispatch({ type: "setCardFields", ref, fields: { ...(item.customFields || {}), ...a.fields } });
@@ -328,6 +419,9 @@ function executeBoardActions(actions: BoardAction[], dispatch: any, getState: ()
         const cardRef = ALL_KINDS.map((k) => ({ kind: k, id: a.cardId })).find((r) => findCard(state, r));
         const hostRef = ALL_KINDS.map((k) => ({ kind: k, id: a.intoCardId })).find((r) => findCard(state, r));
         if (cardRef && hostRef) { dispatch({ type: "embedCard", host: hostRef, card: cardRef }); applied++; }
+      } else if (a.action === "defineField") {
+        dispatch({ type: "defineField", def: { name: a.name, type: a.fieldType, options: a.options }, cardTypes: a.cardTypes });
+        applied++;
       } else if (a.action === "board") {
         const config: any = {};
         if (a.view) config.view = a.view;
@@ -356,6 +450,167 @@ function toBriefs(cards: BoardCard[], state: AppState): BoardCardBrief[] {
     embeds: c.embeds.length || undefined,
     fields: Object.keys(c.customFields).length ? c.customFields : undefined,
   }));
+}
+
+// ── Shared view pieces ──────────────────────────────────────────────────────
+function ColumnHeader({ color, label, count }: { color: string; label: string; count: number }) {
+  return (
+    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8, paddingHorizontal: 2 }}>
+      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: color }} />
+      <Text style={local.colTitle}>{label}</Text>
+      <Text style={local.colCount}>{count}</Text>
+    </View>
+  );
+}
+
+const startOfDay = (t: number) => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
+export const sameDay = (a: number, b: number) => startOfDay(a) === startOfDay(b);
+// Week starts Monday — the working week people actually plan against.
+function weekDays(now: number): number[] {
+  const d = new Date(startOfDay(now));
+  d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => { const x = new Date(d); x.setDate(x.getDate() + i); return x.getTime(); });
+}
+
+function MonthGrid({ cards, now, onOpen }: { cards: BoardCard[]; now: number; onOpen: (r: CardEmbed) => void }) {
+  const first = new Date(now); first.setDate(1); first.setHours(0, 0, 0, 0);
+  const lead = (first.getDay() + 6) % 7;
+  const daysInMonth = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+  const cells: (number | null)[] = [
+    ...Array.from({ length: lead }, () => null),
+    ...Array.from({ length: daysInMonth }, (_, i) => new Date(first.getFullYear(), first.getMonth(), i + 1).getTime()),
+  ];
+  const cellW = (SCREEN_W - 24 - 6 * 3) / 7;
+  return (
+    <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 40 }}>
+      <Text style={[local.colTitle, { marginBottom: 8 }]}>{first.toLocaleDateString(undefined, { month: "long", year: "numeric" })}</Text>
+      <View style={{ flexDirection: "row", marginBottom: 4 }}>
+        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+          <Text key={i} style={[local.colCount, { width: cellW + 3, textAlign: "center" }]}>{d}</Text>
+        ))}
+      </View>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 3 }}>
+        {cells.map((t, i) => {
+          const dayCards = t ? cards.filter((c) => c.due != null && sameDay(c.due, t)) : [];
+          const isToday = t ? sameDay(t, now) : false;
+          return (
+            <View key={i} style={[local.monthCell, { width: cellW }, isToday && { borderColor: "rgba(251,191,36,0.5)" }]}>
+              {t && <Text style={[local.monthDayNum, isToday && { color: "#fbbf24" }]}>{new Date(t).getDate()}</Text>}
+              {dayCards.slice(0, 3).map((c) => (
+                <Pressable key={cardKey(c)} onPress={() => onOpen(c.ref)} style={[local.monthPill, c.priority === "high" && { backgroundColor: "rgba(255,255,255,0.22)" }]}>
+                  <Text style={local.monthPillText} numberOfLines={1}>{c.title}</Text>
+                </Pressable>
+              ))}
+              {dayCards.length > 3 && <Text style={local.monthMore}>+{dayCards.length - 3}</Text>}
+            </View>
+          );
+        })}
+      </View>
+    </ScrollView>
+  );
+}
+
+function PagesView({ cards, now, all, onOpen, onToggleDone }: {
+  cards: BoardCard[]; now: number; all: BoardCard[]; onOpen: (r: CardEmbed) => void; onToggleDone: (c: BoardCard) => void;
+}) {
+  const { state, dispatch } = useCollider();
+  const page = Math.min(state.smartBoard.page || 0, Math.max(0, cards.length - 1));
+  const card = cards[page];
+  const go = (delta: number) => {
+    dispatch({ type: "setBoardConfig", config: { page: Math.max(0, Math.min(cards.length - 1, page + delta)) } });
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  };
+  if (!card) return <Text style={[styles.muted, { textAlign: "center", marginTop: 60 }]}>No cards to page through.</Text>;
+  return (
+    <View style={{ flex: 1, padding: 14, gap: 12 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 12 }}>
+        <BoardCardView card={card} now={now} all={all} onOpen={onOpen} onToggleDone={onToggleDone} />
+        {!!card.body && (
+          <View style={local.pageBody}>
+            <Text style={{ color: "rgba(22,22,26,0.8)", fontSize: 13, lineHeight: 20 }}>{card.body}</Text>
+          </View>
+        )}
+      </ScrollView>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+        <Pressable onPress={() => go(-1)} disabled={page === 0} style={[local.iconBtn, page === 0 && { opacity: 0.3 }]}>
+          <Ionicons name="chevron-back" size={16} color="rgba(238,241,246,0.8)" />
+        </Pressable>
+        <Text style={local.colCount}>{page + 1} / {cards.length}</Text>
+        <Pressable onPress={() => go(1)} disabled={page >= cards.length - 1} style={[local.iconBtn, page >= cards.length - 1 && { opacity: 0.3 }]}>
+          <Ionicons name="chevron-forward" size={16} color="rgba(238,241,246,0.8)" />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ── Drag & drop ─────────────────────────────────────────────────────────────
+// A card's position on screen is the user's own decision, and reading it back
+// is how the board reflects their reasoning rather than an imposed order. So
+// cards are picked up and put down directly. A short movement threshold keeps
+// taps opening the card; anything past it becomes a drag.
+type Rect = { x: number; y: number; w: number; h: number };
+type DragCtx = {
+  zones: React.MutableRefObject<Record<string, { ref: View | null; rect: Rect | null }>>;
+  cardRects: React.MutableRefObject<Record<string, { ref: View | null; rect: Rect | null }>>;
+  onDrop: (card: BoardCard, pageX: number, pageY: number) => void;
+  onPickUp: () => void;
+};
+
+function DraggableCard({ card, ctx, children }: { card: BoardCard; ctx: DragCtx | null; children: React.ReactNode }) {
+  const pan = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
+  const [dragging, setDragging] = useState(false);
+  const viewRef = useRef<View | null>(null);
+  const key = cardKey(card);
+
+  const responder = useMemo(
+    () =>
+      PanResponder.create({
+        // Capture-phase: the card's own Pressable becomes the responder on
+        // touch-down, so a plain onMoveShouldSetPanResponder would never be
+        // consulted and the card could never be dragged. Capturing on move
+        // lets the drag take over from the tap once the finger travels past
+        // the threshold — below it, taps still open the card.
+        onMoveShouldSetPanResponderCapture: (_e, g) => !!ctx && (Math.abs(g.dx) > 8 || Math.abs(g.dy) > 8),
+        onPanResponderGrant: () => {
+          setDragging(true);
+          ctx?.onPickUp();
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+        },
+        // The surrounding ScrollViews ask for the responder as soon as the
+        // finger moves sideways; granting it (the default) cancels the drag
+        // mid-flight and the drop never lands. A drag in progress keeps the
+        // responder until the finger lifts.
+        onPanResponderTerminationRequest: () => false,
+        onShouldBlockNativeResponder: () => true,
+        onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], { useNativeDriver: false }),
+        onPanResponderRelease: (e, g) => {
+          setDragging(false);
+          const pageX = e.nativeEvent.pageX || g.moveX;
+          const pageY = e.nativeEvent.pageY || g.moveY;
+          ctx?.onDrop(card, pageX, pageY);
+          // Snap home immediately — the card's real new position comes from
+          // state on the next render, not from where the finger let go.
+          pan.setValue({ x: 0, y: 0 });
+        },
+        onPanResponderTerminate: () => { setDragging(false); pan.setValue({ x: 0, y: 0 }); },
+      }),
+    [ctx, card]
+  );
+
+  return (
+    <Animated.View
+      ref={(r: any) => {
+        viewRef.current = r;
+        if (ctx) ctx.cardRects.current[key] = { ref: r, rect: ctx.cardRects.current[key]?.rect ?? null };
+      }}
+      collapsable={false}
+      style={{ transform: pan.getTranslateTransform(), zIndex: dragging ? 999 : 0, opacity: dragging ? 0.93 : 1 }}
+      {...(ctx ? responder.panHandlers : {})}
+    >
+      {children}
+    </Animated.View>
+  );
 }
 
 // ── Chat message shape (screen-local, session-scoped) ───────────────────────
@@ -387,20 +642,134 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
     // always reaches everything, embedded or not.
     let list = allCards.filter((c) => (f ? true : !embeddedIds.has(`${c.ref.kind}:${c.ref.id}`)));
     if (f) list = list.filter((c) => `${c.title} ${c.body} ${c.tags.join(" ")} ${Object.entries(c.customFields).flat().join(" ")}`.toLowerCase().includes(f));
-    return sortCards(list, sortBy);
-  }, [allCards, embeddedIds, filter, sortBy]);
+    if (state.smartBoard.hideDone) list = list.filter((c) => c.progress !== "done");
+    return sortCards(list, sortBy, state.smartBoard.order || {});
+  }, [allCards, embeddedIds, filter, sortBy, state.smartBoard.order, state.smartBoard.hideDone]);
 
   const columns = useMemo(() => groupCards(visible, groupBy, state), [visible, groupBy, state.projects]);
   const openDetail = (ref: CardEmbed) => setDetailRef(ref);
 
+  // ── Drop targets ──────────────────────────────────────────────────────────
+  const zones = useRef<Record<string, { ref: View | null; rect: Rect | null }>>({});
+  const cardRects = useRef<Record<string, { ref: View | null; rect: Rect | null }>>({});
+  const measureAll = () => {
+    for (const entry of Object.values(zones.current)) {
+      entry.ref?.measureInWindow?.((x, y, w, h) => { entry.rect = { x, y, w, h }; });
+    }
+    for (const entry of Object.values(cardRects.current)) {
+      entry.ref?.measureInWindow?.((x, y, w, h) => { entry.rect = { x, y, w, h }; });
+    }
+  };
+
+  const toggleDone = (card: BoardCard) => {
+    if (card.kind === "reminder") dispatch({ type: "toggleReminder", id: card.ref.id });
+    else if (card.kind === "project") {
+      const p = state.projects.find((x) => x.id === card.ref.id);
+      if (p) {
+        const allDone = p.tasks.length > 0 && p.tasks.every((t) => t.done);
+        dispatch({ type: "updateProject", project: { ...p, tasks: p.tasks.map((t) => ({ ...t, done: !allDone })) } });
+      }
+    }
+  };
+
+  // Dropping a card into a column means the column's own truth now applies to
+  // it — that is the whole grammar of a board. Nothing else is implied.
+  const applyZone = (card: BoardCard, zoneKey: string) => {
+    const item: any = findCard(state, card.ref);
+    if (!item) return;
+    if (zoneKey.startsWith("day:")) {
+      // Week/month grid: the lane IS the date.
+      const day = parseInt(zoneKey.slice(4), 10);
+      if (card.kind === "reminder") {
+        const d = new Date(day);
+        const prev = item.due ? new Date(item.due) : null;
+        d.setHours(prev ? prev.getHours() : 9, prev ? prev.getMinutes() : 0, 0, 0);
+        dispatch({ type: "updateReminder", reminder: { ...item, due: d.getTime() } });
+      } else toast("Only reminders carry a date — convert this card first");
+      return;
+    }
+    if (groupBy === "status") {
+      if (card.kind === "reminder" && (zoneKey === "done") !== !!item.done) dispatch({ type: "toggleReminder", id: item.id });
+      return;
+    }
+    if (groupBy === "priority" || zoneKey === "circle-in" || zoneKey === "circle-out") {
+      if (card.kind !== "reminder") return;
+      const wantUrgent = zoneKey === "high" || zoneKey === "circle-in";
+      if (wantUrgent) {
+        dispatch({ type: "updateReminder", reminder: { ...item, priority: "high", due: item.due ?? Date.now() + 12 * 3600e3 } });
+        if (!item.due) toast("Deadline defaulted to 12h from now — adjust it on the card");
+      } else if (collapsePriority(item.priority) === "high") {
+        dispatch({ type: "updateReminder", reminder: { ...item, priority: "none" } });
+        toast("Moved out of Urgent");
+      }
+      return;
+    }
+    if (groupBy === "type") {
+      if (zoneKey !== card.kind) dispatch({ type: "convertCard", ref: card.ref, toKind: zoneKey as LinkKind });
+      return;
+    }
+    if (groupBy === "project") {
+      if (card.kind === "project") return;
+      const projectId = zoneKey === "__none" ? undefined : zoneKey;
+      const actionType = card.kind === "reminder" ? "updateReminder" : card.kind === "memory" ? "updateMemory" : "updateArtifact";
+      const payloadKey = card.kind === "reminder" ? "reminder" : card.kind === "memory" ? "memory" : "artifact";
+      dispatch({ type: actionType, [payloadKey]: { ...item, projectId } } as any);
+      return;
+    }
+    if (groupBy === "tag") {
+      const tag = zoneKey === "__none" ? null : zoneKey;
+      const tags = tag ? Array.from(new Set([...(item.tags || []), tag])) : [];
+      const actionType = card.kind === "reminder" ? "updateReminder" : card.kind === "memory" ? "updateMemory" : null;
+      if (actionType) dispatch({ type: actionType, [card.kind === "reminder" ? "reminder" : "memory"]: { ...item, tags } } as any);
+      return;
+    }
+    if (groupBy.startsWith("field:")) {
+      const f = groupBy.slice(6);
+      dispatch({ type: "setCardFields", ref: card.ref, fields: { ...(item.customFields || {}), [f]: zoneKey === "__none" ? "" : zoneKey } });
+    }
+  };
+
+  const handleDrop = (card: BoardCard, pageX: number, pageY: number) => {
+    const hit = Object.entries(zones.current).find(([, z]) => {
+      const r = z.rect;
+      return r && pageX >= r.x && pageX <= r.x + r.w && pageY >= r.y && pageY <= r.y + r.h;
+    });
+    if (!hit) return;
+    const [zoneKey] = hit;
+    applyZone(card, zoneKey);
+    // Position within the destination: insert above the first card whose
+    // midpoint sits below the drop point.
+    const target = columns.find((c) => c.key === zoneKey);
+    const keys = (target?.cards || []).map(cardKey).filter((k) => k !== cardKey(card));
+    let index = keys.length;
+    for (let i = 0; i < keys.length; i++) {
+      const r = cardRects.current[keys[i]]?.rect;
+      if (r && pageY < r.y + r.h / 2) { index = i; break; }
+    }
+    keys.splice(index, 0, cardKey(card));
+    dispatch({ type: "reorderCards", keys });
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  };
+
+  const dragCtx: DragCtx = { zones, cardRects, onDrop: handleDrop, onPickUp: measureAll };
+  const registerZone = (key: string) => (r: any) => {
+    zones.current[key] = { ref: r, rect: zones.current[key]?.rect ?? null };
+  };
+
+
   const groupOptions = [
     { label: "Group: Status", value: "status" }, { label: "Group: Type", value: "type" },
-    { label: "Group: Priority", value: "priority" }, { label: "Group: Project", value: "project" },
+    { label: "Group: Urgency", value: "priority" }, { label: "Group: Project", value: "project" },
     { label: "Group: Tag", value: "tag" },
+    // Every defined attribute is a swimlane axis — select fields especially,
+    // but any field's observed values can lane the board.
+    ...Object.values(state.fieldDefs || {}).map((d) => ({ label: `Lanes: ${d.name}`, value: `field:${d.name}` })),
   ];
   const sortOptions = [
-    { label: "Sort: Due", value: "due" }, { label: "Sort: Created", value: "created" },
-    { label: "Sort: Priority", value: "priority" }, { label: "Sort: Title", value: "title" },
+    { label: "Sort: Manual", value: "manual" }, { label: "Sort: Due", value: "due" },
+    { label: "Sort: Created", value: "created" }, { label: "Sort: Urgency", value: "priority" },
+    { label: "Sort: Title", value: "title" }, { label: "Sort: Type", value: "type" },
+    ...Object.values(state.fieldDefs || {}).map((d) => ({ label: `Sort: ${d.name}`, value: `field:${d.name}` })),
   ];
 
   const colW = Math.min(SCREEN_W * 0.72, 300);
@@ -411,23 +780,33 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
         {/* View switcher — the board type is itself an adjustable attribute,
             for the user and for the model alike (board action "board"). */}
         <View style={local.switcherRow}>
-          {([["board", "grid-outline", "Board"], ["list", "list-outline", "List"], ["calendar", "calendar-outline", "Calendar"], ["ask", "chatbubble-ellipses-outline", "Ask"]] as const).map(([v, icon, label]) => {
-            const active = v === "ask" ? askMode : !askMode && view === v;
-            return (
-              <Pressable
-                key={v}
-                onPress={() => {
-                  LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                  if (v === "ask") setAskMode(true);
-                  else { setAskMode(false); dispatch({ type: "setBoardConfig", config: { view: v } }); }
-                }}
-                style={[local.switcherBtn, active && local.switcherBtnActive]}
-              >
-                <Ionicons name={icon} size={13} color={active ? "#a78bfa" : "rgba(238,241,246,0.5)"} />
-                <Text style={[local.switcherText, active && { color: "#fff" }]}>{label}</Text>
-              </Pressable>
-            );
-          })}
+          <View style={{ flex: 1 }}>
+            <Picker
+              value={askMode ? "__ask" : view}
+              onChange={(v) => {
+                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                if (v === "__ask") setAskMode(true);
+                else { setAskMode(false); dispatch({ type: "setBoardConfig", config: { view: v as BoardView } }); }
+              }}
+              options={[
+                { label: "Board — vertical lanes", value: "board" },
+                { label: "Lanes — horizontal", value: "lanes" },
+                { label: "List", value: "list" },
+                { label: "Agenda", value: "calendar" },
+                { label: "Week", value: "week" },
+                { label: "Month", value: "month" },
+                { label: "Pages — storyboard / journal", value: "pages" },
+                { label: "Circle — in or out", value: "circle" },
+                { label: "Ask", value: "__ask" },
+              ]}
+            />
+          </View>
+          <Pressable
+            onPress={() => { setAskMode(true); LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut); }}
+            style={[local.iconBtn, askMode && { backgroundColor: "rgba(167,139,250,0.16)", borderWidth: 1, borderColor: "rgba(167,139,250,0.45)" }]}
+          >
+            <Ionicons name="chatbubble-ellipses-outline" size={15} color={askMode ? "#a78bfa" : "rgba(238,241,246,0.6)"} />
+          </Pressable>
         </View>
 
         {!askMode && (
@@ -440,6 +819,12 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
               <View style={{ flex: 1 }}>
                 <Picker value={sortBy} onChange={(v) => dispatch({ type: "setBoardConfig", config: { sortBy: v as BoardSortBy } })} options={sortOptions} />
               </View>
+              <Pressable
+                onPress={() => dispatch({ type: "setBoardConfig", config: { hideDone: !state.smartBoard.hideDone } })}
+                style={[local.iconBtn, state.smartBoard.hideDone && { backgroundColor: "rgba(52,211,153,0.15)" }]}
+              >
+                <Ionicons name={state.smartBoard.hideDone ? "eye-off-outline" : "checkmark-done-outline"} size={15} color={state.smartBoard.hideDone ? "#34d399" : "rgba(238,241,246,0.7)"} />
+              </Pressable>
               <Pressable onPress={() => setFieldsManagerOpen(true)} style={local.iconBtn}>
                 <Ionicons name="options-outline" size={15} color="rgba(238,241,246,0.7)" />
               </Pressable>
@@ -464,20 +849,45 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
               </View>
             </View>
 
+            {/* Vertical swimlanes. Columns are drop zones; a card put in one
+                takes on that column's meaning and keeps the position you
+                gave it. */}
             {view === "board" && (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10, gap: 10 }}>
                 {columns.map((c) => (
-                  <View key={c.key} style={{ width: colW }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 8, paddingHorizontal: 2 }}>
-                      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.color, shadowColor: c.color, shadowOpacity: 0.8, shadowRadius: 5, shadowOffset: { width: 0, height: 0 } }} />
-                      <Text style={local.colTitle}>{c.label}</Text>
-                      <Text style={local.colCount}>{c.cards.length}</Text>
-                    </View>
-                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 30 }}>
+                  <View key={c.key} ref={registerZone(c.key)} collapsable={false} style={{ width: colW }}>
+                    <ColumnHeader color={c.color} label={c.label} count={c.cards.length} />
+                    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 30, minHeight: 90 }}>
                       {c.cards.map((card) => (
-                        <BoardCardView key={`${card.ref.kind}:${card.ref.id}`} card={card} now={now} all={allCards} onOpen={openDetail} />
+                        <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
+                          <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} />
+                        </DraggableCard>
                       ))}
-                      {c.cards.length === 0 && <Text style={local.emptyCol}>Nothing here</Text>}
+                      {c.cards.length === 0 && <Text style={local.emptyCol}>Drop here</Text>}
+                    </ScrollView>
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Horizontal swimlanes — same lanes, laid across instead of down.
+                Better when lanes are few and cards per lane are many. */}
+            {view === "lanes" && (
+              <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 10, paddingBottom: 40, gap: 12 }}>
+                {columns.map((c) => (
+                  <View key={c.key} ref={registerZone(c.key)} collapsable={false} style={{ gap: 7 }}>
+                    <View style={{ paddingHorizontal: 12 }}>
+                      <ColumnHeader color={c.color} label={c.label} count={c.cards.length} />
+                    </View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, gap: 8, minWidth: SCREEN_W }}>
+                      {c.cards.map((card) => (
+                        <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
+                          <View style={{ width: colW * 0.86 }}>
+                            <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} />
+                          </View>
+                        </DraggableCard>
+                      ))}
+                      {c.cards.length === 0 && <Text style={[local.emptyCol, { paddingVertical: 24 }]}>Drop here</Text>}
                     </ScrollView>
                   </View>
                 ))}
@@ -488,17 +898,77 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
               <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10, paddingBottom: 40, gap: 8 }}>
                 {columns.map((c) => (
                   <View key={c.key} style={{ gap: 8 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 }}>
-                      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: c.color }} />
-                      <Text style={local.colTitle}>{c.label}</Text>
-                      <Text style={local.colCount}>{c.cards.length}</Text>
-                    </View>
+                    <ColumnHeader color={c.color} label={c.label} count={c.cards.length} />
                     {c.cards.map((card) => (
-                      <BoardCardView key={`${card.ref.kind}:${card.ref.id}`} card={card} now={now} all={allCards} onOpen={openDetail} compact />
+                      <BoardCardView key={cardKey(card)} card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
                     ))}
                   </View>
                 ))}
                 {visible.length === 0 && <Text style={[styles.muted, { textAlign: "center", marginTop: 60 }]}>No cards yet — Smart Gen fills this board from your conversations.</Text>}
+              </ScrollView>
+            )}
+
+            {/* Week — seven day lanes. Dropping a card on a day IS scheduling
+                it; no date picker in between. */}
+            {view === "week" && (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 12, paddingVertical: 10, gap: 8 }}>
+                {weekDays(now).map((d) => {
+                  const dayCards = visible.filter((c) => c.due != null && sameDay(c.due, d));
+                  const isToday = sameDay(now, d);
+                  return (
+                    <View key={d} ref={registerZone(`day:${d}`)} collapsable={false} style={{ width: colW * 0.78 }}>
+                      <ColumnHeader
+                        color={isToday ? "#fbbf24" : "#5dbdff"}
+                        label={new Date(d).toLocaleDateString(undefined, { weekday: "short", day: "numeric" })}
+                        count={dayCards.length}
+                      />
+                      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 30, minHeight: 90 }}>
+                        {dayCards.map((card) => (
+                          <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
+                            <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
+                          </DraggableCard>
+                        ))}
+                        {dayCards.length === 0 && <Text style={local.emptyCol}>Drop here</Text>}
+                      </ScrollView>
+                    </View>
+                  );
+                })}
+              </ScrollView>
+            )}
+
+            {/* Month — the shape of the month itself; a day's load is legible
+                at a glance from how full its cell is. */}
+            {view === "month" && <MonthGrid cards={visible} now={now} onOpen={openDetail} />}
+
+            {/* Pages — one card at a time, full width. This is the storyboard,
+                the photobook, the lore book, the daily journal: same cards,
+                read as a sequence instead of a pile. */}
+            {view === "pages" && (
+              <PagesView cards={visible} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} />
+            )}
+
+            {/* Circle — in or out. Two zones, one meaning, nothing to read. */}
+            {view === "circle" && (
+              <ScrollView contentContainerStyle={{ padding: 12, paddingBottom: 40, gap: 12 }}>
+                <View ref={registerZone("circle-in")} collapsable={false} style={local.circleIn}>
+                  <Text style={[local.colTitle, { textAlign: "center", marginBottom: 8 }]}>IN</Text>
+                  <View style={{ gap: 8 }}>
+                    {visible.filter((c) => c.priority === "high").map((card) => (
+                      <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
+                        <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
+                      </DraggableCard>
+                    ))}
+                    {visible.every((c) => c.priority !== "high") && <Text style={local.emptyCol}>Drop here</Text>}
+                  </View>
+                </View>
+                <View ref={registerZone("circle-out")} collapsable={false} style={{ gap: 8, paddingTop: 4 }}>
+                  <Text style={[local.colTitle, { textAlign: "center", opacity: 0.6 }]}>OUT</Text>
+                  {visible.filter((c) => c.priority !== "high").map((card) => (
+                    <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
+                      <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
+                    </DraggableCard>
+                  ))}
+                </View>
               </ScrollView>
             )}
 
@@ -572,6 +1042,7 @@ function BoardChat({ allCards, openDetail }: { allCards: BoardCard[]; openDetail
       const briefs = toBriefs(unifyCards(getState()), getState());
       const raw = await smartGenChat(history as any, prompt, briefs, {
         webSearch: useWeb,
+        fieldDefs: getState().fieldDefs,
         onToken: (partial) => {
           // Hide a half-received action block while streaming; it renders as
           // an "applied" chip once complete, never as raw JSON.
@@ -662,6 +1133,7 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
   const [body, setBody] = useState<string>(cardRef.kind === "memory" ? item?.content || "" : cardRef.kind === "artifact" ? item?.content || "" : "");
   const [embedPickerOpen, setEmbedPickerOpen] = useState(false);
   const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldType, setNewFieldType] = useState<FieldType>("text");
   if (!item || !card) return null;
 
   const color = KIND_COLORS[cardRef.kind];
@@ -723,24 +1195,125 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
               <TextInput value={body} onChangeText={setBody} onEndEditing={saveText} style={local.modalBodyInput} placeholder={cardRef.kind === "memory" ? "Memory content" : "Artifact content"} placeholderTextColor="rgba(255,255,255,0.3)" multiline />
             )}
 
-            {/* Reminder-specific: due + recurring — present because reminders
-                are usually time-constrained, optional because they aren't
-                logically time-constrained. */}
+            {/* Reminder-specific: urgency, deadline, recurrence. Urgent is a
+                binary checkbox — there is no medium. Urgency is intrinsically
+                attached to time, so checking it REQUIRES a deadline: one is
+                defaulted 12h out if none exists (a working deadline, meant to
+                be corrected), and clearing the deadline removes Urgent — the
+                user is told, not silently overridden. */}
             {cardRef.kind === "reminder" && (
               <View style={{ gap: 8 }}>
-                <Text style={local.sectionLabel}>DUE</Text>
+                <View style={{ flexDirection: "row", gap: 6, alignItems: "center" }}>
+                  <Pressable
+                    onPress={() => {
+                      const nowUrgent = collapsePriority(item.priority) !== "high";
+                      const due = nowUrgent && !item.due ? now + 12 * 3600e3 : item.due;
+                      dispatch({ type: "updateReminder", reminder: { ...item, priority: nowUrgent ? "high" : "none", due } });
+                      if (nowUrgent && !item.due) toast("Deadline defaulted to 12h from now — adjust it below");
+                    }}
+                    style={[local.quickChip, { flexDirection: "row", alignItems: "center", gap: 5 }, collapsePriority(item.priority) === "high" && { backgroundColor: "rgba(255,255,255,0.1)", borderColor: "rgba(255,255,255,0.35)" }]}
+                  >
+                    <Ionicons name={collapsePriority(item.priority) === "high" ? "checkbox" : "square-outline"} size={13} color={collapsePriority(item.priority) === "high" ? "#fff" : "rgba(238,241,246,0.5)"} />
+                    <Text style={[local.quickChipText, collapsePriority(item.priority) === "high" && { color: "#fff" }]}>Urgent</Text>
+                  </Pressable>
+                  <Pressable
+                    onPress={() => dispatch({ type: "toggleReminder", id: item.id })}
+                    style={[local.quickChip, { flexDirection: "row", alignItems: "center", gap: 5 }, item.done && { backgroundColor: "rgba(52,211,153,0.14)", borderColor: "rgba(52,211,153,0.45)" }]}
+                  >
+                    <Ionicons name={item.done ? "checkbox" : "square-outline"} size={13} color={item.done ? "#34d399" : "rgba(238,241,246,0.5)"} />
+                    <Text style={[local.quickChipText, item.done && { color: "#34d399" }]}>Done</Text>
+                  </Pressable>
+                  {collapsePriority(item.priority) === "high" && item.due != null && (
+                    <Pressable onPress={() => setField(HIDE_COUNTDOWN_FIELD, item.customFields?.[HIDE_COUNTDOWN_FIELD] === CHECKED ? "" : CHECKED)} style={local.quickChip}>
+                      <Text style={local.quickChipText}>{item.customFields?.[HIDE_COUNTDOWN_FIELD] === CHECKED ? "Show countdown" : "Hide countdown"}</Text>
+                    </Pressable>
+                  )}
+                </View>
+
+                <Text style={local.sectionLabel}>DEADLINE — DATE</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                  {([["Tonight 8pm", () => { const d = new Date(now); d.setHours(20, 0, 0, 0); return d.getTime(); }], ["Tomorrow 9am", tomorrow9], ["Next week", nextWeek9]] as const).map(([label, fn]) => (
-                    <Pressable key={label} onPress={() => setDueQuick(fn())} style={local.quickChip}>
+                  {([["Today", 0], ["One week", 7], ["One month", 30], ["One year", 365]] as const).map(([label, days]) => (
+                    <Pressable
+                      key={label}
+                      onPress={() => {
+                        const base = new Date(now); base.setDate(base.getDate() + days);
+                        const prev = item.due ? new Date(item.due) : null;
+                        base.setHours(prev ? prev.getHours() : 17, prev ? prev.getMinutes() : 0, 0, 0);
+                        setDueQuick(base.getTime());
+                      }}
+                      style={local.quickChip}
+                    >
                       <Text style={local.quickChipText}>{label}</Text>
                     </Pressable>
                   ))}
                   {item.due != null && (
-                    <Pressable onPress={() => setDueQuick(undefined)} style={[local.quickChip, { borderColor: "rgba(248,113,113,0.4)" }]}>
+                    <Pressable
+                      onPress={() => {
+                        const wasUrgent = collapsePriority(item.priority) === "high";
+                        dispatch({ type: "updateReminder", reminder: { ...item, due: undefined, priority: "none" } });
+                        if (wasUrgent) toast("Deadline cleared — Urgent removed (urgency requires a deadline)");
+                      }}
+                      style={[local.quickChip, { borderColor: "rgba(248,113,113,0.4)" }]}
+                    >
                       <Text style={[local.quickChipText, { color: "#f87171" }]}>Clear</Text>
                     </Pressable>
                   )}
                 </View>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text style={local.fieldName}>Time</Text>
+                  <TextInput
+                    key={`time-${item.due}`}
+                    defaultValue={item.due ? `${new Date(item.due).getHours().toString().padStart(2, "0")}:${new Date(item.due).getMinutes().toString().padStart(2, "0")}` : ""}
+                    placeholder="HH:MM"
+                    placeholderTextColor="rgba(255,255,255,0.25)"
+                    onEndEditing={(e) => {
+                      const m = e.nativeEvent.text.match(/^(\d{1,2}):(\d{2})$/);
+                      if (!m) return;
+                      const d = new Date(item.due ?? now); d.setHours(Math.min(23, +m[1]), Math.min(59, +m[2]), 0, 0);
+                      setDueQuick(d.getTime());
+                    }}
+                    style={[local.fieldInput, { maxWidth: 90 }]}
+                  />
+                  {item.due != null && (
+                    <Text style={[styles.muted, { fontSize: 10.5 }]}>
+                      {new Date(item.due).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+                    </Text>
+                  )}
+                </View>
+
+                {/* Notification lead time — optional, and only meaningful
+                    once a deadline exists. Stored on the card so it survives
+                    and can be changed; scheduling is fire-and-forget. */}
+                {item.due != null && (
+                  <>
+                    <Text style={local.sectionLabel}>NOTIFY BEFORE</Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                      {([["At time", 0], ["10 min", 10], ["1 hour", 60], ["1 day", 1440], ["1 week", 10080]] as const).map(([label, mins]) => {
+                        const active = (item.customFields?.["Notify before"] || "") === String(mins);
+                        return (
+                          <Pressable
+                            key={label}
+                            onPress={() => {
+                              const next = active ? "" : String(mins);
+                              setField("Notify before", next);
+                              if (next) {
+                                const at = item.due - mins * 60000;
+                                if (at > Date.now()) {
+                                  scheduleReminder(item.title, at, `card_${item.id}`);
+                                  toast(`Notifying ${mins ? label.toLowerCase() + " before" : "at the deadline"}`);
+                                } else toast("That lead time has already passed");
+                              }
+                            }}
+                            style={[local.quickChip, active && { backgroundColor: "rgba(93,189,255,0.15)", borderColor: "rgba(93,189,255,0.45)" }]}
+                          >
+                            <Text style={[local.quickChipText, active && { color: "#5dbdff" }]}>{label}</Text>
+                          </Pressable>
+                        );
+                      })}
+                    </View>
+                  </>
+                )}
+
                 <Text style={local.sectionLabel}>REPEATS</Text>
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                   {RECURRING_OPTIONS.map((r) => (
@@ -748,17 +1321,6 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
                       <Text style={[local.quickChipText, item.recurring === r && { color: "#a78bfa" }]}>{r}</Text>
                     </Pressable>
                   ))}
-                </View>
-                <View style={{ flexDirection: "row", gap: 6 }}>
-                  <Pressable onPress={() => dispatch({ type: "cycleReminderProgress", id: item.id })} style={local.quickChip}>
-                    <Text style={local.quickChipText}>Status: {card.progress}</Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => dispatch({ type: "updateReminder", reminder: { ...item, priority: collapsePriority(item.priority) === "high" ? "none" : "high" } })}
-                    style={[local.quickChip, collapsePriority(item.priority) === "high" && { borderColor: "rgba(248,113,113,0.5)", backgroundColor: "rgba(248,113,113,0.12)" }]}
-                  >
-                    <Text style={[local.quickChipText, collapsePriority(item.priority) === "high" && { color: "#f87171" }]}>High priority</Text>
-                  </Pressable>
                 </View>
               </View>
             )}
@@ -768,23 +1330,18 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
                 per-card fields extend them without ceremony. */}
             <Text style={local.sectionLabel}>ATTRIBUTES</Text>
             <View style={{ gap: 6 }}>
-              {Object.entries(fields).map(([k, v]) => (
-                <View key={k} style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                  <Text style={[local.fieldName]} numberOfLines={1}>{k}</Text>
-                  <TextInput
-                    defaultValue={v}
-                    onEndEditing={(e) => setField(k, e.nativeEvent.text)}
-                    placeholder="—"
-                    placeholderTextColor="rgba(255,255,255,0.25)"
-                    style={local.fieldInput}
-                  />
-                  {!typeDefaults.includes(k) && (
-                    <Pressable onPress={() => removeField(k)} hitSlop={6}>
-                      <Ionicons name="close-circle-outline" size={14} color="rgba(255,255,255,0.35)" />
-                    </Pressable>
-                  )}
-                </View>
+              {Object.entries(fields).filter(([k]) => k !== HIDE_COUNTDOWN_FIELD).map(([k, v]) => (
+                <FieldRow
+                  key={k}
+                  name={k}
+                  value={v}
+                  def={state.fieldDefs?.[k]}
+                  onChange={(nv) => setField(k, nv)}
+                  onRemove={typeDefaults.includes(k) ? undefined : () => removeField(k)}
+                />
               ))}
+              {/* New attribute: name + type in one step. A field is not just a
+                  label — its type decides how it's entered, shown, and laned. */}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <TextInput
                   value={newFieldName}
@@ -792,11 +1349,26 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
                   placeholder="Add attribute..."
                   placeholderTextColor="rgba(255,255,255,0.25)"
                   style={[local.fieldInput, { flex: 1 }]}
-                  onSubmitEditing={() => { if (newFieldName.trim()) { setField(newFieldName.trim(), ""); setNewFieldName(""); } }}
                 />
-                <Pressable onPress={() => { if (newFieldName.trim()) { setField(newFieldName.trim(), ""); setNewFieldName(""); } }} style={local.iconBtn}>
+                <Pressable
+                  onPress={() => {
+                    const name = newFieldName.trim();
+                    if (!name) return;
+                    dispatch({ type: "defineField", def: { name, type: newFieldType, options: newFieldType === "select" ? [] : undefined } });
+                    setField(name, "");
+                    setNewFieldName("");
+                  }}
+                  style={local.iconBtn}
+                >
                   <Ionicons name="add" size={15} color="rgba(238,241,246,0.7)" />
                 </Pressable>
+              </View>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                {FIELD_TYPES.map((t) => (
+                  <Pressable key={t} onPress={() => setNewFieldType(t)} style={[local.typeChip, newFieldType === t && { backgroundColor: "rgba(167,139,250,0.16)", borderColor: "rgba(167,139,250,0.5)" }]}>
+                    <Text style={[local.typeChipText, newFieldType === t && { color: "#a78bfa" }]}>{t}</Text>
+                  </Pressable>
+                ))}
               </View>
             </View>
 
@@ -860,6 +1432,72 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
   );
 }
 
+// ── Typed field row ─────────────────────────────────────────────────────────
+// One editor per field type. Checkbox is a real toggle (binary attributes
+// like Critical are yes/no, never a scale); select offers its defined
+// options plus free entry, which is how a lane set grows deductively.
+function FieldRow({ name, value, def, onChange, onRemove }: {
+  name: string; value: string; def?: FieldDef; onChange: (v: string) => void; onRemove?: () => void;
+}) {
+  const { dispatch } = useCollider();
+  const type: FieldType = def?.type || "text";
+  const [adding, setAdding] = useState(false);
+  return (
+    <View style={{ gap: 4 }}>
+      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+        <Text style={local.fieldName} numberOfLines={1}>{name}</Text>
+        {type === "checkbox" ? (
+          <Pressable onPress={() => onChange(value === CHECKED ? "" : CHECKED)} style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 6 }}>
+            <Ionicons name={value === CHECKED ? "checkbox" : "square-outline"} size={16} color={value === CHECKED ? "#5dbdff" : "rgba(238,241,246,0.45)"} />
+            <Text style={[local.quickChipText, value === CHECKED && { color: "#5dbdff" }]}>{value === CHECKED ? "Yes" : "No"}</Text>
+          </Pressable>
+        ) : type === "select" ? (
+          <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 4 }}>
+            {(def?.options || []).map((o) => (
+              <Pressable key={o} onPress={() => onChange(value === o ? "" : o)} style={[local.typeChip, value === o && { backgroundColor: "rgba(93,189,255,0.16)", borderColor: "rgba(93,189,255,0.5)" }]}>
+                <Text style={[local.typeChipText, value === o && { color: "#5dbdff" }]}>{o}</Text>
+              </Pressable>
+            ))}
+            {adding ? (
+              <TextInput
+                autoFocus
+                placeholder="new option"
+                placeholderTextColor="rgba(255,255,255,0.25)"
+                style={[local.fieldInput, { minWidth: 90 }]}
+                onEndEditing={(e) => {
+                  const v = e.nativeEvent.text.trim();
+                  setAdding(false);
+                  if (!v) return;
+                  dispatch({ type: "defineField", def: { name, type: "select", options: [...(def?.options || []), v] } });
+                  onChange(v);
+                }}
+              />
+            ) : (
+              <Pressable onPress={() => setAdding(true)} style={local.typeChip}>
+                <Ionicons name="add" size={11} color="rgba(238,241,246,0.6)" />
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          <TextInput
+            defaultValue={value}
+            onEndEditing={(e) => onChange(e.nativeEvent.text)}
+            placeholder={type === "number" ? "0" : type === "date" ? "YYYY-MM-DD" : type === "datetime" ? "YYYY-MM-DD HH:MM" : "—"}
+            placeholderTextColor="rgba(255,255,255,0.25)"
+            keyboardType={type === "number" ? "numeric" : "default"}
+            style={local.fieldInput}
+          />
+        )}
+        {onRemove && (
+          <Pressable onPress={onRemove} hitSlop={6}>
+            <Ionicons name="close-circle-outline" size={14} color="rgba(255,255,255,0.35)" />
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
 // ── Embed picker ────────────────────────────────────────────────────────────
 function EmbedPicker({ host, allCards, onClose, onPick }: {
   host: CardEmbed; allCards: BoardCard[]; onClose: () => void; onPick: (ref: CardEmbed) => void;
@@ -905,11 +1543,13 @@ function TypeFieldsManager({ onClose }: { onClose: () => void }) {
   const { state, dispatch } = useCollider();
   const [kind, setKind] = useState<LinkKind>("reminder");
   const [newName, setNewName] = useState("");
+  const [newType, setNewType] = useState<FieldType>("text");
   const fields = state.cardTypeFields[kind] || [];
   const add = () => {
     const name = newName.trim();
     if (!name || fields.includes(name)) return;
-    dispatch({ type: "setTypeFields", kind, fields: [...fields, name] });
+    // Defining and attaching are one action — a field always has a type.
+    dispatch({ type: "defineField", def: { name, type: newType, options: newType === "select" ? [] : undefined }, cardTypes: [kind] });
     setNewName("");
   };
   return (
@@ -932,15 +1572,46 @@ function TypeFieldsManager({ onClose }: { onClose: () => void }) {
                 </Pressable>
               ))}
             </View>
-            <View style={{ gap: 6 }}>
-              {fields.map((f) => (
-                <View key={f} style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                  <Text style={[local.fieldName, { flex: 1, maxWidth: undefined }]}>{f}</Text>
-                  <Pressable onPress={() => dispatch({ type: "setTypeFields", kind, fields: fields.filter((x) => x !== f) })} hitSlop={6}>
-                    <Ionicons name="close-circle-outline" size={15} color="rgba(255,255,255,0.35)" />
-                  </Pressable>
-                </View>
-              ))}
+            <ScrollView style={{ maxHeight: 260 }} contentContainerStyle={{ gap: 6 }}>
+              {fields.map((f) => {
+                const def = state.fieldDefs?.[f];
+                return (
+                  <View key={f} style={{ gap: 4 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text style={[local.fieldName, { flex: 1, maxWidth: undefined }]}>{f}</Text>
+                      <Text style={local.typeChipText}>{def?.type || "text"}</Text>
+                      <Pressable onPress={() => dispatch({ type: "setTypeFields", kind, fields: fields.filter((x) => x !== f) })} hitSlop={6}>
+                        <Ionicons name="close-circle-outline" size={15} color="rgba(255,255,255,0.35)" />
+                      </Pressable>
+                    </View>
+                    {/* Select fields carry their lane set — editing options
+                        here is exactly how swimlanes are named and sized. */}
+                    {def?.type === "select" && (
+                      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 4, paddingLeft: 4 }}>
+                        {(def.options || []).map((o) => (
+                          <Pressable
+                            key={o}
+                            onPress={() => dispatch({ type: "defineField", def: { ...def, options: (def.options || []).filter((x) => x !== o) } })}
+                            style={[local.typeChip, { flexDirection: "row", alignItems: "center", gap: 4 }]}
+                          >
+                            <Text style={local.typeChipText}>{o}</Text>
+                            <Ionicons name="close" size={9} color="rgba(238,241,246,0.4)" />
+                          </Pressable>
+                        ))}
+                        <TextInput
+                          placeholder="+ lane"
+                          placeholderTextColor="rgba(255,255,255,0.25)"
+                          style={[local.fieldInput, { minWidth: 80, paddingVertical: 3 }]}
+                          onEndEditing={(e) => {
+                            const v = e.nativeEvent.text.trim();
+                            if (v) dispatch({ type: "defineField", def: { ...def, options: [...(def.options || []), v] } });
+                          }}
+                        />
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
               {fields.length === 0 && <Text style={[styles.muted, { fontSize: 11 }]}>No defaults for this type — every card of it starts clean.</Text>}
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <TextInput
@@ -955,7 +1626,14 @@ function TypeFieldsManager({ onClose }: { onClose: () => void }) {
                   <Ionicons name="add" size={15} color="rgba(238,241,246,0.7)" />
                 </Pressable>
               </View>
-            </View>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+                {FIELD_TYPES.map((t) => (
+                  <Pressable key={t} onPress={() => setNewType(t)} style={[local.typeChip, newType === t && { backgroundColor: "rgba(167,139,250,0.16)", borderColor: "rgba(167,139,250,0.5)" }]}>
+                    <Text style={[local.typeChipText, newType === t && { color: "#a78bfa" }]}>{t}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            </ScrollView>
             <Text style={[styles.muted, { fontSize: 10.5, lineHeight: 15 }]}>
               These appear on every {kind} card automatically. Individual cards can add their own attributes on top.
             </Text>
@@ -979,17 +1657,35 @@ const local = StyleSheet.create(withFont({
   colCount: { color: "rgba(238,241,246,0.4)", fontSize: 10.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800) },
   emptyCol: { color: "rgba(238,241,246,0.3)", fontSize: 11, textAlign: "center", paddingVertical: 20 },
   calDate: { color: "rgba(238,241,246,0.5)", fontSize: 10, fontWeight: "700", fontFamily: fontFamilyForWeight(700), marginBottom: 3, marginLeft: 2 },
-  card: { borderRadius: 14, overflow: "hidden", backgroundColor: "rgba(18,18,22,0.5)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)", flexDirection: "row" },
-  cardHigh: { borderColor: "rgba(248,113,113,0.35)", shadowColor: "#f87171", shadowOpacity: 0.25, shadowRadius: 8, shadowOffset: { width: 0, height: 0 }, elevation: 4 },
+  // Cards read as paper, not chrome: a light face, soft shadow, generous
+  // radius. The dark tech-glass treatment fought the whole conceit — a card
+  // is a simple object you move with your hand, not an instrument panel.
+  card: {
+    borderRadius: 12,
+    overflow: "hidden",
+    backgroundColor: "rgba(247,246,243,0.94)",
+    borderWidth: 0,
+    flexDirection: "row",
+    shadowColor: "#000",
+    shadowOpacity: 0.3,
+    shadowRadius: 7,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+  },
   cardAccent: { width: 3.5 },
-  cardTitle: { flex: 1, color: "#fff", fontSize: 12.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), lineHeight: 16 },
-  cardBody: { color: "rgba(255,255,255,0.65)", fontSize: 11, lineHeight: 15 },
+  cardTitle: { flex: 1, color: "#16161a", fontSize: 13, fontWeight: "700", fontFamily: fontFamilyForWeight(700), lineHeight: 17 },
+  cardBody: { color: "rgba(22,22,26,0.62)", fontSize: 11.5, lineHeight: 16 },
+  cardDragging: { shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 10 }, elevation: 12 },
+  urgentWord: { color: "rgba(22,22,26,0.55)", fontSize: 8.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), marginTop: 3, letterSpacing: 0.7 },
+  criticalWord: { color: "rgba(47,109,158,0.85)", fontSize: 8.5, fontWeight: "800", fontFamily: fontFamilyForWeight(800), marginTop: 3, letterSpacing: 0.7 },
   chip: { flexDirection: "row", alignItems: "center", gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 7, borderWidth: 1 },
   chipText: { fontSize: 9, fontWeight: "800", fontFamily: fontFamilyForWeight(800), fontVariant: ["tabular-nums"] },
-  tagText: { color: "rgba(167,139,250,0.85)", fontSize: 9.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
-  fieldLine: { color: "rgba(238,241,246,0.8)", fontSize: 10 },
+  tagText: { color: "rgba(109,90,168,0.9)", fontSize: 9.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
+  fieldLine: { color: "rgba(22,22,26,0.75)", fontSize: 10.5 },
   embedRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 8, paddingVertical: 6, borderRadius: 9, borderWidth: 1, backgroundColor: "rgba(255,255,255,0.03)" },
   embedTitle: { flex: 1, color: "rgba(255,255,255,0.85)", fontSize: 10.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
+  cardEmbedRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 7, paddingVertical: 5, borderRadius: 8, backgroundColor: "rgba(22,22,26,0.05)" },
+  cardEmbedTitle: { flex: 1, color: "rgba(22,22,26,0.78)", fontSize: 10.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
   bubble: { maxWidth: "88%", borderRadius: 14, paddingHorizontal: 12, paddingVertical: 9 },
   bubbleUser: { alignSelf: "flex-end", backgroundColor: "rgba(167,139,250,0.16)", borderWidth: 1, borderColor: "rgba(167,139,250,0.3)" },
   bubbleAssistant: { alignSelf: "flex-start", backgroundColor: "rgba(255,255,255,0.05)", borderWidth: 1, borderColor: "rgba(255,255,255,0.08)" },
@@ -1005,5 +1701,14 @@ const local = StyleSheet.create(withFont({
   fieldName: { color: "rgba(238,241,246,0.7)", fontSize: 11, fontWeight: "700", fontFamily: fontFamilyForWeight(700), maxWidth: 110 },
   fieldInput: { flex: 1, color: "#fff", fontSize: 11.5, backgroundColor: "rgba(255,255,255,0.04)", borderRadius: 9, borderWidth: 1, borderColor: "rgba(255,255,255,0.07)", paddingHorizontal: 9, paddingVertical: 6 },
   quickChip: { paddingHorizontal: 9, paddingVertical: 6, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.12)" },
+  circleIn: { borderWidth: 1.5, borderColor: "rgba(167,139,250,0.4)", borderRadius: 999, paddingVertical: 22, paddingHorizontal: 14, backgroundColor: "rgba(167,139,250,0.05)", minHeight: 150, justifyContent: "center" },
+  monthCell: { minHeight: 62, borderRadius: 7, borderWidth: 1, borderColor: "rgba(255,255,255,0.06)", backgroundColor: "rgba(255,255,255,0.02)", padding: 3, gap: 2 },
+  monthDayNum: { color: "rgba(238,241,246,0.5)", fontSize: 9, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
+  monthPill: { backgroundColor: "rgba(255,255,255,0.12)", borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1.5 },
+  monthPillText: { color: "rgba(255,255,255,0.85)", fontSize: 7.5 },
+  monthMore: { color: "rgba(238,241,246,0.4)", fontSize: 7.5, paddingLeft: 3 },
+  pageBody: { marginTop: 12, backgroundColor: "rgba(247,246,243,0.94)", borderRadius: 12, padding: 14 },
+  typeChip: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
+  typeChipText: { color: "rgba(238,241,246,0.65)", fontSize: 9.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
   quickChipText: { color: "rgba(238,241,246,0.75)", fontSize: 10.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
 }));

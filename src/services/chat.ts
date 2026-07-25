@@ -37,10 +37,14 @@ export function friendlyErrorMessage(error: unknown): string {
 // extractable by anyone who unpacks the app — this keeps keys out of git
 // source, it does not make them a real secret. A server-side proxy (see
 // TASKS.md B1) is the only fix for that; out of scope for this pass.
-const GROQ_KEYS = (process.env.EXPO_PUBLIC_GROQ_API_KEYS || "").split(",").filter(Boolean);
-const OPENROUTER_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || "";
-const EXA_KEY = process.env.EXPO_PUBLIC_EXA_API_KEY || "";
-const TAVILY_KEY = process.env.EXPO_PUBLIC_TAVILY_API_KEY || "";
+// Keys ship in-app by explicit owner decision (same stance as minimax.ts).
+// The env var still wins when set, so a rotated key never needs a code
+// change — but an environment without a .env no longer silently loses every
+// provider, which is what an env-only setup caused.
+const GROQ_KEYS = (process.env.EXPO_PUBLIC_GROQ_API_KEYS || "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,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").split(",").filter(Boolean);
+const OPENROUTER_KEY = process.env.EXPO_PUBLIC_OPENROUTER_API_KEY || "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";
+const EXA_KEY = process.env.EXPO_PUBLIC_EXA_API_KEY || "324b68a6-2633-4b9e-b3b4-f5cd960d595b";
+const TAVILY_KEY = process.env.EXPO_PUBLIC_TAVILY_API_KEY || "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";
 
 // ── Exa search (primary) ─────────────────────────────────────────────────────
 // Exa free tier: 1,000 queries/month, no credits system.

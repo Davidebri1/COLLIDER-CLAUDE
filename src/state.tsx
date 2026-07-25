@@ -66,7 +66,8 @@ export type Reminder = {
   googleTaskId?: string;
   // Optional by design — many reminders are logically unconstrained by time
   // ("eventually"); the field's availability is what matters, not its use.
-  recurring?: "daily" | "weekly" | "monthly" | "yearly";
+  // weekdays/weekends give calendar-app parity without a full RRULE engine.
+  recurring?: "daily" | "weekly" | "monthly" | "yearly" | "weekdays" | "weekends";
   embeds?: CardEmbed[];
   customFields?: Record<string, string>;
 };
@@ -103,19 +104,65 @@ export type AuthUser = { kind: "guest" } | { kind: "email"; email: string } | { 
 export type ChatMode = "default" | "research" | "deep";
 
 // ── Smart Gen board (kanban) ────────────────────────────────────────────────
-export type BoardView = "board" | "list" | "calendar";
-export type BoardGroupBy = "type" | "status" | "priority" | "project" | "tag";
-export type BoardSortBy = "due" | "created" | "priority" | "title";
-export type BoardConfig = { view: BoardView; groupBy: BoardGroupBy; sortBy: BoardSortBy; filter: string };
+// The board is many things depending on what the content is: vertical
+// swimlanes (board), horizontal swimlanes (lanes), a week or month calendar,
+// a paged sequence (storyboard / photobook / lore book / journal — one
+// primitive, different content), or an inside/outside circle. All of them
+// render the same cards through the same grouping engine.
+export type BoardView = "board" | "lanes" | "list" | "calendar" | "week" | "month" | "pages" | "circle";
+// "field:<Name>" groups by any typed custom attribute — that IS a swimlane
+// view: a select field's options are the prescriptive lanes, values observed
+// on cards extend them deductively, and renaming/adding lanes is just
+// editing the field definition.
+export type BoardGroupBy = "type" | "status" | "priority" | "project" | "tag" | `field:${string}`;
+// "manual" is the default: where you put a card IS the sort. The others are
+// there for anyone who wants them, and dragging a card switches back to
+// manual so a sort never silently undoes a placement.
+export type BoardSortBy = "manual" | "due" | "created" | "priority" | "title" | "updated" | "type" | `field:${string}`;
+export type BoardConfig = {
+  view: BoardView;
+  groupBy: BoardGroupBy;
+  sortBy: BoardSortBy;
+  filter: string;
+  // Card placement, by "<kind>:<id>". Physical position is the user's own
+  // decision and reads back as their reasoning — so it persists.
+  order: Record<string, number>;
+  hideDone: boolean;
+  circleField: string;
+  page: number;
+};
 // Global per-type attribute availability — which custom-field names a card
 // of each type presents by default. Per-card customFields extend/override
 // these. Editable by the user AND by the model (setTypeFields).
 export type CardTypeFields = Record<LinkKind, string[]>;
+// Deliberately sparse. A field that is present but empty is dead weight on a
+// card — availability comes from the attribute registry and the model, not
+// from pre-seeding every card with blanks.
 export const DEFAULT_CARD_TYPE_FIELDS: CardTypeFields = {
-  project: ["Goal"],
-  reminder: ["Location"],
+  project: [],
+  reminder: ["Critical"],
   memory: [],
-  artifact: ["Source"],
+  artifact: [],
+};
+
+// Typed attribute definitions — a field is not just a label, it has a type
+// that defines how it's entered, displayed, and grouped on. "select" carries
+// its options (prescriptive swimlanes); values observed on cards extend them
+// (deductive). Values are stored as strings on customFields regardless of
+// type; checkbox uses "yes"/"" so absence and unchecked read the same.
+export type FieldType = "text" | "number" | "date" | "datetime" | "checkbox" | "select";
+export type FieldDef = { name: string; type: FieldType; options?: string[] };
+export const DEFAULT_FIELD_DEFS: Record<string, FieldDef> = {
+  // Critical is binary by nature — a dependency exists or it doesn't. Unlike
+  // Urgent it does not observe time, so it never generates a deadline.
+  Critical: { name: "Critical", type: "checkbox" },
+  // Intermediate states are write-in on purpose. "Started" says nothing the
+  // card's existence doesn't, and "in progress" is a status report, not a
+  // fact about the work — the only state that changes anything is done or
+  // not. This field stays available for anyone whose workplace needs it.
+  Status: { name: "Status", type: "text" },
+  Goal: { name: "Goal", type: "text" },
+  Source: { name: "Source", type: "text" },
 };
 
 function upsertAsset(state: { savedAssets: SavedAsset[] }, asset: SavedAsset): SavedAsset[] {
@@ -199,6 +246,7 @@ export type AppState = {
   autoConsensusSummary: boolean;
   smartBoard: BoardConfig;
   cardTypeFields: CardTypeFields;
+  fieldDefs: Record<string, FieldDef>;
   customAgents: { id: string; name: string; modelId: string; instructions: string }[];
   customInstructions: string;
   activeSkills: string[];
@@ -265,7 +313,10 @@ type Action =
   | { type: "unembedCard"; host: CardEmbed; card: CardEmbed }
   | { type: "setCardFields"; ref: CardEmbed; fields: Record<string, string> }
   | { type: "setTypeFields"; kind: LinkKind; fields: string[] }
+  | { type: "defineField"; def: FieldDef; cardTypes?: LinkKind[] }
+  | { type: "removeFieldDef"; name: string }
   | { type: "setBoardConfig"; config: Partial<BoardConfig> }
+  | { type: "reorderCards"; keys: string[] }
   | { type: "convertCard"; ref: CardEmbed; toKind: LinkKind }
   | { type: "applySmartBatch"; batch: LLMBatch; modelId?: string; convId?: string }
   | { type: "task"; projectId: string; title: string; priority?: Priority }
@@ -590,8 +641,9 @@ function initialState(): AppState {
     autoArchiveOnNew: true,
     gridRows: 2,
     autoConsensusSummary: true,
-    smartBoard: { view: "board", groupBy: "status", sortBy: "due", filter: "" },
+    smartBoard: { view: "board", groupBy: "status", sortBy: "manual", filter: "", order: {}, hideDone: false, circleField: "", page: 0 },
     cardTypeFields: { ...DEFAULT_CARD_TYPE_FIELDS },
+    fieldDefs: { ...DEFAULT_FIELD_DEFS },
     customAgents: [],
     customInstructions: "",
     activeSkills: [],
@@ -729,6 +781,8 @@ function advanceDue(due: number, recurring: NonNullable<Reminder["recurring"]>, 
     if (recurring === "daily") d.setDate(d.getDate() + 1);
     else if (recurring === "weekly") d.setDate(d.getDate() + 7);
     else if (recurring === "monthly") d.setMonth(d.getMonth() + 1);
+    else if (recurring === "weekdays") { do { d.setDate(d.getDate() + 1); } while (d.getDay() === 0 || d.getDay() === 6); }
+    else if (recurring === "weekends") { do { d.setDate(d.getDate() + 1); } while (d.getDay() !== 0 && d.getDay() !== 6); }
     else d.setFullYear(d.getFullYear() + 1);
   } while (d.getTime() <= now);
   return d.getTime();
@@ -744,7 +798,7 @@ function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "hydrate": {
       const base = initialState();
-      return { ...base, ...action.state, cardPrompts: { ...base.cardPrompts, ...(action.state.cardPrompts || {}) }, chatMode: { ...base.chatMode, ...(action.state.chatMode || {}) }, webSearch: { ...base.webSearch, ...(action.state.webSearch || {}) }, smartBoard: { ...base.smartBoard, ...(action.state.smartBoard || {}) }, cardTypeFields: { ...base.cardTypeFields, ...(action.state.cardTypeFields || {}) }, seen: { ...(action.state.seen || {}) }, hydrated: true };
+      return { ...base, ...action.state, cardPrompts: { ...base.cardPrompts, ...(action.state.cardPrompts || {}) }, chatMode: { ...base.chatMode, ...(action.state.chatMode || {}) }, webSearch: { ...base.webSearch, ...(action.state.webSearch || {}) }, smartBoard: { ...base.smartBoard, ...(action.state.smartBoard || {}) }, cardTypeFields: { ...base.cardTypeFields, ...(action.state.cardTypeFields || {}) }, fieldDefs: { ...base.fieldDefs, ...(action.state.fieldDefs || {}) }, seen: { ...(action.state.seen || {}) }, hydrated: true };
     }
     case "category": return { ...state, activeCategory: action.category };
     case "tier": return { ...state, tier: action.tier, credits: Math.max(state.credits, TIER_INFO[action.tier].pool) };
@@ -922,8 +976,33 @@ function reducer(state: AppState, action: Action): AppState {
       return mutateCard(state, action.ref, (item) => ({ ...item, customFields: action.fields }));
     case "setTypeFields":
       return { ...state, cardTypeFields: { ...state.cardTypeFields, [action.kind]: action.fields } };
+    case "defineField": {
+      const name = action.def.name.trim();
+      if (!name) return state;
+      let next: AppState = { ...state, fieldDefs: { ...state.fieldDefs, [name]: { ...action.def, name } } };
+      for (const k of action.cardTypes || []) {
+        const list = next.cardTypeFields[k] || [];
+        if (!list.includes(name)) next = { ...next, cardTypeFields: { ...next.cardTypeFields, [k]: [...list, name] } };
+      }
+      return next;
+    }
+    case "removeFieldDef": {
+      const defs = { ...state.fieldDefs };
+      delete defs[action.name];
+      const cardTypeFields = Object.fromEntries(
+        Object.entries(state.cardTypeFields).map(([k, list]) => [k, list.filter((f) => f !== action.name)])
+      ) as CardTypeFields;
+      return { ...state, fieldDefs: defs, cardTypeFields };
+    }
     case "setBoardConfig":
       return { ...state, smartBoard: { ...state.smartBoard, ...action.config } };
+    case "reorderCards": {
+      const order = { ...state.smartBoard.order };
+      action.keys.forEach((k, i) => { order[k] = i; });
+      // A drag is a decision; it must not be silently undone by an active
+      // sort, so placing a card also returns the board to manual order.
+      return { ...state, smartBoard: { ...state.smartBoard, order, sortBy: "manual" } };
+    }
     case "convertCard":
       return convertCardInState(state, action.ref, action.toKind);
     case "applySmartBatch": return applyLLMBatch(state, action.batch, action.modelId, action.convId);
