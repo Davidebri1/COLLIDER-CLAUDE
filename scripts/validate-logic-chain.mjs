@@ -34,6 +34,9 @@ const KEY = PROVIDER === "openrouter"
   process.env.EXPO_PUBLIC_NVIDIA_API_KEY ||
   "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";
 
+// Supplied via env, never committed — GitHub's secret scanning rejects a
+// pushed Google key. Export GOOGLE_API_KEY before running.
+const GOOGLE_KEY = process.env.GOOGLE_API_KEY || process.env.EXPO_PUBLIC_GOOGLE_API_KEY || "";
 const REPLICATIONS = parseInt(process.argv[2] || "100", 10);
 const CONCURRENCY = parseInt(process.argv[3] || "8", 10);
 const WHYS = 5;
@@ -69,6 +72,7 @@ async function pace() {
 
 async function callModel(messages, attempt = 0) {
   await pace();
+  if (PROVIDER === "google") return callGoogle(MODEL, messages, { temperature: 0.7, maxTokens: 4096 });
   const res = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${KEY}` },
@@ -82,6 +86,36 @@ async function callModel(messages, attempt = 0) {
   if (!res.ok) throw new Error(`HTTP ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = await res.json();
   return (json.choices?.[0]?.message?.content || "").trim();
+}
+
+
+// Google's own API speaks a different shape than OpenAI-compatible hosts:
+// system text goes in systemInstruction, turns are "contents" with parts, and
+// the key is a query param (a Bearer header is rejected — verified live).
+async function callGoogle(model, messages, { temperature = 0.7, maxTokens = 4096 } = {}, attempt = 0) {
+  const sys = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
+  const contents = messages
+    .filter((m) => m.role !== "system")
+    .map((m) => ({ role: m.role === "assistant" ? "model" : "user", parts: [{ text: m.content }] }));
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GOOGLE_KEY}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents,
+        ...(sys ? { systemInstruction: { parts: [{ text: sys }] } } : {}),
+        generationConfig: { temperature, maxOutputTokens: maxTokens },
+      }),
+    }
+  );
+  if ((res.status === 429 || res.status >= 500) && attempt < 6) {
+    await new Promise((r) => setTimeout(r, Math.min(60000, 2000 * 2 ** attempt) + Math.random() * 1500));
+    return callGoogle(model, messages, { temperature, maxTokens }, attempt + 1);
+  }
+  if (!res.ok) throw new Error(`google ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const json = await res.json();
+  return (json.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "").trim();
 }
 
 async function runReplication(i) {
