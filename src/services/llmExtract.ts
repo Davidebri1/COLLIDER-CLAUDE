@@ -7,6 +7,7 @@
 // resolves to an empty batch. Nothing in the UI ever waits on it.
 import type { Artifact, Memory, Project, Reminder } from "../state";
 import { callGroq } from "./chat";
+import { callMiniMax } from "./minimax";
 import { fingerprint } from "./smartgen";
 
 // Binary by design — "if it's not urgent now, it's not a priority."
@@ -98,7 +99,16 @@ export async function smartGenLLM(
       { role: "user", content: conversationText.slice(0, 4000) },
     ];
 
-    const raw = await callGroq("llama-3.3-70b-versatile", messages);
+    // MiniMax M3 first — the one model whose logical chain is validated
+    // (scripts/validate-logic-chain.mjs), so every Smart Gen judgment comes
+    // from the same qualified judge. Groq llama stays as the fallback so a
+    // MiniMax rate-limit never silently costs the user a capture.
+    let raw: string;
+    try {
+      raw = await callMiniMax(messages, { temperature: 0.3 });
+    } catch {
+      raw = await callGroq("llama-3.3-70b-versatile", messages);
+    }
     const cleaned = raw.replace(/```json/gi, "").replace(/```/g, "").trim();
     const parsed = JSON.parse(cleaned);
     if (!parsed || typeof parsed !== "object") return EMPTY_BATCH;

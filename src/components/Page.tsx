@@ -22,7 +22,11 @@ function BackButton({ onPress }: { onPress: () => void }) {
 // short gradient instead of a hard border line — keeps every "‹ Title"
 // screen (History included) visually consistent with the Card view's own
 // header.
-export function Page({ title, goBack, children }: { title: string; goBack: () => void; children?: ReactNode }) {
+// noScroll: screens that manage their own scroll surfaces (the Smart Gen
+// board has horizontal columns, per-column vertical scroll, and a pinned
+// chat input) get a plain flex container — nesting those inside this outer
+// ScrollView breaks both scrolling and bottom-pinning.
+export function Page({ title, goBack, children, noScroll }: { title: string; goBack: () => void; children?: ReactNode; noScroll?: boolean }) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.flex, { backgroundColor: "rgba(4, 4, 4, 0.45)" }]}>
@@ -37,7 +41,7 @@ export function Page({ title, goBack, children }: { title: string; goBack: () =>
         style={{ height: 10, marginTop: -1 }}
         pointerEvents="none"
       />
-      <ScrollView contentContainerStyle={styles.page}>{children}</ScrollView>
+      {noScroll ? <View style={styles.flex}>{children}</View> : <ScrollView contentContainerStyle={styles.page}>{children}</ScrollView>}
     </View>
   );
 }

@@ -38,7 +38,12 @@ export type Conversation = { id: string; title: string; tab: Category; createdAt
 // Cross-linking bag shared by Memory/Reminder/Project/Artifact — optional so
 // existing items don't need to carry it; use linkItems() to populate it.
 export type SmartLinks = { memories: string[]; reminders: string[]; projects: string[]; artifacts: string[] };
-export type Memory = { id: string; modelId: string; content: string; ts: number; tags?: string[]; projectId?: string; priority?: Priority; fingerprint?: string; links?: SmartLinks };
+// Directional containment, distinct from links: an embed puts card B *inside*
+// card A's body (a form artifact living inside the deadline reminder it
+// serves; a reminder pinned inside a project card). Any kind can embed any
+// kind, both directions, including its own kind — no type bounds by design.
+export type CardEmbed = { kind: LinkKind; id: string };
+export type Memory = { id: string; modelId: string; content: string; ts: number; tags?: string[]; projectId?: string; priority?: Priority; fingerprint?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string> };
 export type Reminder = {
   id: string;
   title: string;
@@ -59,8 +64,13 @@ export type Reminder = {
   links?: SmartLinks;
   googleEventId?: string;
   googleTaskId?: string;
+  // Optional by design — many reminders are logically unconstrained by time
+  // ("eventually"); the field's availability is what matters, not its use.
+  recurring?: "daily" | "weekly" | "monthly" | "yearly";
+  embeds?: CardEmbed[];
+  customFields?: Record<string, string>;
 };
-export type Project = { id: string; name: string; tasks: { id: string; title: string; done: boolean; priority?: Priority }[]; fingerprint?: string; modelId?: string; links?: SmartLinks };
+export type Project = { id: string; name: string; tasks: { id: string; title: string; done: boolean; priority?: Priority }[]; fingerprint?: string; modelId?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string> };
 export type Artifact = {
   id: string;
   title: string;
@@ -72,6 +82,7 @@ export type Artifact = {
   fingerprint?: string;
   customFields?: Record<string, string>;
   links?: SmartLinks;
+  embeds?: CardEmbed[];
 };
 export type ColliderFile = { id: string; name: string; kind: "uploaded" | "generated"; url: string; ts: number; modelId?: string };
 export type GenerationItem = {
@@ -90,6 +101,22 @@ export type ConsensusRun = {
 };
 export type AuthUser = { kind: "guest" } | { kind: "email"; email: string } | { kind: "google"; email: string } | { kind: "apple"; email: string };
 export type ChatMode = "default" | "research" | "deep";
+
+// ── Smart Gen board (kanban) ────────────────────────────────────────────────
+export type BoardView = "board" | "list" | "calendar";
+export type BoardGroupBy = "type" | "status" | "priority" | "project" | "tag";
+export type BoardSortBy = "due" | "created" | "priority" | "title";
+export type BoardConfig = { view: BoardView; groupBy: BoardGroupBy; sortBy: BoardSortBy; filter: string };
+// Global per-type attribute availability — which custom-field names a card
+// of each type presents by default. Per-card customFields extend/override
+// these. Editable by the user AND by the model (setTypeFields).
+export type CardTypeFields = Record<LinkKind, string[]>;
+export const DEFAULT_CARD_TYPE_FIELDS: CardTypeFields = {
+  project: ["Goal"],
+  reminder: ["Location"],
+  memory: [],
+  artifact: ["Source"],
+};
 
 function upsertAsset(state: { savedAssets: SavedAsset[] }, asset: SavedAsset): SavedAsset[] {
   return state.savedAssets.some((a) => a.id === asset.id)
@@ -170,6 +197,8 @@ export type AppState = {
   // the opt-out for that — off means the bar goes back to a plain "tap to
   // compare" button.
   autoConsensusSummary: boolean;
+  smartBoard: BoardConfig;
+  cardTypeFields: CardTypeFields;
   customAgents: { id: string; name: string; modelId: string; instructions: string }[];
   customInstructions: string;
   activeSkills: string[];
@@ -216,7 +245,7 @@ type Action =
   | { type: "removeMemory"; id: string }
   | { type: "removeMemories"; ids: string[] }
   | { type: "updateMemory"; memory: Memory }
-  | { type: "reminder"; id?: string; title: string; due?: number; priority?: Priority; projectId?: string; progress?: Progress; tags?: string[]; fingerprint?: string; isTask?: boolean; modelId?: string; calendarId?: string; calendarTitle?: string; time?: string; date?: string; linkFrom?: LinkRef }
+  | { type: "reminder"; id?: string; title: string; due?: number; priority?: Priority; projectId?: string; progress?: Progress; tags?: string[]; fingerprint?: string; isTask?: boolean; modelId?: string; calendarId?: string; calendarTitle?: string; time?: string; date?: string; recurring?: Reminder["recurring"]; linkFrom?: LinkRef }
   | { type: "toggleReminder"; id: string }
   | { type: "cycleReminderProgress"; id: string }
   | { type: "removeReminder"; id: string }
@@ -232,6 +261,12 @@ type Action =
   | { type: "updateArtifact"; artifact: Artifact }
   | { type: "linkItems"; a: { kind: LinkKind; id: string }; b: { kind: LinkKind; id: string } }
   | { type: "unlinkItems"; a: { kind: LinkKind; id: string }; b: { kind: LinkKind; id: string } }
+  | { type: "embedCard"; host: CardEmbed; card: CardEmbed }
+  | { type: "unembedCard"; host: CardEmbed; card: CardEmbed }
+  | { type: "setCardFields"; ref: CardEmbed; fields: Record<string, string> }
+  | { type: "setTypeFields"; kind: LinkKind; fields: string[] }
+  | { type: "setBoardConfig"; config: Partial<BoardConfig> }
+  | { type: "convertCard"; ref: CardEmbed; toKind: LinkKind }
   | { type: "applySmartBatch"; batch: LLMBatch; modelId?: string; convId?: string }
   | { type: "task"; projectId: string; title: string; priority?: Priority }
   | { type: "updateTask"; projectId: string; task: { id: string; title: string; done: boolean; priority?: Priority } }
@@ -365,6 +400,94 @@ export function unlinkItems(state: AppState, a: LinkRef, b: LinkRef): AppState {
   return next;
 }
 
+// ── Card lookup / embedding / conversion ────────────────────────────────────
+export function findCard(state: AppState, ref: CardEmbed): Memory | Reminder | Project | Artifact | undefined {
+  const list = (state as any)[arrayKeyFor(ref.kind)] as any[];
+  return list.find((x) => x.id === ref.id);
+}
+
+function mutateCard(state: AppState, ref: CardEmbed, fn: (item: any) => any): AppState {
+  const arrKey = arrayKeyFor(ref.kind);
+  const list = (state as any)[arrKey] as any[];
+  return { ...state, [arrKey]: list.map((item) => (item.id === ref.id ? fn(item) : item)) } as AppState;
+}
+
+const ID_PREFIX: Record<LinkKind, string> = { memory: "m", reminder: "r", project: "p", artifact: "art" };
+
+function cardTitle(kind: LinkKind, item: any): string {
+  return kind === "memory" ? String(item.content || "").split(/[.!?\n]/)[0].trim().slice(0, 80) || "Memory"
+    : kind === "project" ? item.name
+    : item.title;
+}
+
+// Full-fidelity type conversion: any card kind becomes any other kind with
+// nothing silently dropped. Links, embeds, custom fields, tags, priority and
+// due all carry over; content the target kind has no native slot for lands in
+// customFields.Notes; a converted-away project's tasks are serialized the
+// same way. Every reference to the old card anywhere on the board (links
+// bags, embeds arrays, projectId pointers) is rewritten to the new identity —
+// conversion changes a card's form, never its place in the web around it.
+export function convertCardInState(state: AppState, ref: CardEmbed, toKind: LinkKind): AppState {
+  if (ref.kind === toKind) return state;
+  const src: any = findCard(state, ref);
+  if (!src) return state;
+
+  const title = cardTitle(ref.kind, src);
+  const content: string = ref.kind === "project"
+    ? (src.tasks || []).map((t: any) => `${t.done ? "[x]" : "[ ]"} ${t.title}`).join("\n")
+    : (src.content ?? "");
+  const carried = {
+    tags: src.tags,
+    priority: src.priority,
+    projectId: toKind === "project" ? undefined : src.projectId,
+    links: src.links,
+    embeds: src.embeds,
+    modelId: src.modelId || "global",
+    customFields: { ...(src.customFields || {}) } as Record<string, string>,
+  };
+  // Content with no native slot in the target kind is preserved, not dropped.
+  const targetHoldsContent = toKind === "memory" || toKind === "artifact";
+  if (content && !targetHoldsContent && content !== title) carried.customFields["Notes"] = content.slice(0, 2000);
+
+  const newId = `${ID_PREFIX[toKind]}_${ids()}`;
+  const ts = Date.now();
+  let created: any;
+  if (toKind === "memory") created = { id: newId, modelId: carried.modelId, content: content || title, ts, tags: carried.tags, projectId: carried.projectId, priority: carried.priority, links: carried.links, embeds: carried.embeds, customFields: carried.customFields };
+  if (toKind === "reminder") created = { id: newId, title, due: src.due, done: false, ts, priority: carried.priority, projectId: carried.projectId, progress: src.progress || "todo", tags: carried.tags, isTask: !!src.isTask, modelId: carried.modelId, calendarTitle: "Personal Calendar", recurring: src.recurring, links: carried.links, embeds: carried.embeds, customFields: carried.customFields };
+  if (toKind === "project") created = { id: newId, name: title, tasks: ref.kind === "project" ? src.tasks : [], modelId: carried.modelId, links: carried.links, embeds: carried.embeds, customFields: carried.customFields };
+  if (toKind === "artifact") created = { id: newId, title, content: content || title, kind: "custom", modelId: carried.modelId, projectId: carried.projectId, ts, links: carried.links, embeds: carried.embeds, customFields: carried.customFields };
+
+  const fromArr = arrayKeyFor(ref.kind);
+  const toArr = arrayKeyFor(toKind);
+  let next: AppState = { ...state, [fromArr]: ((state as any)[fromArr] as any[]).filter((x) => x.id !== ref.id) } as AppState;
+  next = { ...next, [toArr]: [created, ...((next as any)[toArr] as any[])] } as AppState;
+
+  // Rewrite every reference to the old identity across all four card arrays.
+  const fromBag = bagKeyFor(ref.kind);
+  const toBag = bagKeyFor(toKind);
+  for (const arrKey of ["memories", "reminders", "projects", "artifacts"] as const) {
+    next = {
+      ...next,
+      [arrKey]: ((next as any)[arrKey] as any[]).map((item) => {
+        let changed = item;
+        if (changed.links?.[fromBag]?.includes(ref.id)) {
+          const links: SmartLinks = { ...changed.links, [fromBag]: changed.links[fromBag].filter((i: string) => i !== ref.id) };
+          links[toBag] = links[toBag].includes(newId) ? links[toBag] : [...links[toBag], newId];
+          changed = { ...changed, links };
+        }
+        if (changed.embeds?.some((e: CardEmbed) => e.kind === ref.kind && e.id === ref.id)) {
+          changed = { ...changed, embeds: changed.embeds.map((e: CardEmbed) => (e.kind === ref.kind && e.id === ref.id ? { kind: toKind, id: newId } : e)) };
+        }
+        if (ref.kind === "project" && changed.projectId === ref.id) {
+          changed = { ...changed, projectId: toKind === "project" ? newId : undefined };
+        }
+        return changed;
+      }),
+    } as AppState;
+  }
+  return next;
+}
+
 export const DEFAULT_MARKET_ITEMS: MarketItem[] = [
   // ── Images ──
   { id: "img1", kind: "image", prompt: "A glowing orange nebula shaped like a mechanical butterfly, unreal engine rendering", model: "img/flux-2-klein", author: "@cosmic_render", likes: 1420, likedByUser: false },
@@ -467,6 +590,8 @@ function initialState(): AppState {
     autoArchiveOnNew: true,
     gridRows: 2,
     autoConsensusSummary: true,
+    smartBoard: { view: "board", groupBy: "status", sortBy: "due", filter: "" },
+    cardTypeFields: { ...DEFAULT_CARD_TYPE_FIELDS },
     customAgents: [],
     customInstructions: "",
     activeSkills: [],
@@ -593,11 +718,33 @@ function applyLLMBatch(state: AppState, batch: LLMBatch, modelId?: string, convI
   return { ...next, seen };
 }
 
+// Completing a recurring reminder finishes this occurrence and rolls the
+// card to the next one — the reminder itself never "dies" while it repeats.
+// The next due is advanced past now (catching up across missed intervals),
+// progress resets, and the Google-event linkage is cleared so the auto-sync
+// effect books the new occurrence as its own calendar event.
+function advanceDue(due: number, recurring: NonNullable<Reminder["recurring"]>, now = Date.now()): number {
+  const d = new Date(due);
+  do {
+    if (recurring === "daily") d.setDate(d.getDate() + 1);
+    else if (recurring === "weekly") d.setDate(d.getDate() + 7);
+    else if (recurring === "monthly") d.setMonth(d.getMonth() + 1);
+    else d.setFullYear(d.getFullYear() + 1);
+  } while (d.getTime() <= now);
+  return d.getTime();
+}
+function completeReminder(r: Reminder): Reminder {
+  if (r.recurring && r.due) {
+    return { ...r, due: advanceDue(r.due, r.recurring), done: false, progress: "todo", googleEventId: undefined, googleTaskId: undefined };
+  }
+  return { ...r, done: true, progress: "done" };
+}
+
 function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "hydrate": {
       const base = initialState();
-      return { ...base, ...action.state, cardPrompts: { ...base.cardPrompts, ...(action.state.cardPrompts || {}) }, chatMode: { ...base.chatMode, ...(action.state.chatMode || {}) }, webSearch: { ...base.webSearch, ...(action.state.webSearch || {}) }, seen: { ...(action.state.seen || {}) }, hydrated: true };
+      return { ...base, ...action.state, cardPrompts: { ...base.cardPrompts, ...(action.state.cardPrompts || {}) }, chatMode: { ...base.chatMode, ...(action.state.chatMode || {}) }, webSearch: { ...base.webSearch, ...(action.state.webSearch || {}) }, smartBoard: { ...base.smartBoard, ...(action.state.smartBoard || {}) }, cardTypeFields: { ...base.cardTypeFields, ...(action.state.cardTypeFields || {}) }, seen: { ...(action.state.seen || {}) }, hydrated: true };
     }
     case "category": return { ...state, activeCategory: action.category };
     case "tier": return { ...state, tier: action.tier, credits: Math.max(state.credits, TIER_INFO[action.tier].pool) };
@@ -699,18 +846,19 @@ function reducer(state: AppState, action: Action): AppState {
       const fp = action.fingerprint || `manual::${action.title.toLowerCase().slice(0, 40)}::${action.due ? Math.floor(action.due / 86400000) : ""}`;
       if (state.seen[fp]) return state;
       const newId = action.id || `r_${ids()}`;
-      let next: AppState = { ...state, seen: { ...state.seen, [fp]: true }, reminders: [{ id: newId, title: action.title, due: action.due, done: false, ts: Date.now(), priority: action.priority || "none", projectId: action.projectId, progress: action.progress || "todo", tags: action.tags, fingerprint: fp, isTask: action.isTask, modelId: action.modelId || state.selectedModelIds[state.activeCategory]?.[0] || "global", calendarId: action.calendarId, calendarTitle: action.calendarTitle || "Personal Calendar", time: action.time, date: action.date }, ...state.reminders] };
+      let next: AppState = { ...state, seen: { ...state.seen, [fp]: true }, reminders: [{ id: newId, title: action.title, due: action.due, done: false, ts: Date.now(), priority: action.priority || "none", projectId: action.projectId, progress: action.progress || "todo", tags: action.tags, fingerprint: fp, isTask: action.isTask, modelId: action.modelId || state.selectedModelIds[state.activeCategory]?.[0] || "global", calendarId: action.calendarId, calendarTitle: action.calendarTitle || "Personal Calendar", time: action.time, date: action.date, recurring: action.recurring }, ...state.reminders] };
       if (action.linkFrom) next = linkItems(next, action.linkFrom, { kind: "reminder", id: newId });
       return next;
     }
-    case "toggleReminder": return { ...state, reminders: state.reminders.map((r) => r.id === action.id ? { ...r, done: !r.done, progress: !r.done ? "done" : "todo" } : r) };
+    case "toggleReminder": return { ...state, reminders: state.reminders.map((r) => r.id === action.id ? (!r.done ? completeReminder(r) : { ...r, done: false, progress: "todo" }) : r) };
     case "cycleReminderProgress": {
       const order: Progress[] = ["todo", "inprogress", "done"];
       return { ...state, reminders: state.reminders.map((r) => {
         if (r.id !== action.id) return r;
         const cur = r.progress || "todo";
         const next = order[(order.indexOf(cur) + 1) % order.length];
-        return { ...r, progress: next, done: next === "done" };
+        if (next === "done") return completeReminder(r);
+        return { ...r, progress: next, done: false };
       }) };
     }
     case "removeReminder": return { ...state, reminders: state.reminders.filter((r) => r.id !== action.id) };
@@ -753,6 +901,31 @@ function reducer(state: AppState, action: Action): AppState {
     case "updateArtifact": return { ...state, artifacts: state.artifacts.map((a) => a.id === action.artifact.id ? action.artifact : a) };
     case "linkItems": return linkItems(state, action.a, action.b);
     case "unlinkItems": return unlinkItems(state, action.a, action.b);
+    case "embedCard": {
+      // A card can't embed itself, and a direct two-card cycle (A in B while
+      // B is in A) would render forever — refuse both, allow everything else.
+      if (action.host.kind === action.card.kind && action.host.id === action.card.id) return state;
+      const target = findCard(state, action.card);
+      if ((target as any)?.embeds?.some((e: CardEmbed) => e.kind === action.host.kind && e.id === action.host.id)) return state;
+      return mutateCard(state, action.host, (item) => {
+        const embeds: CardEmbed[] = item.embeds || [];
+        if (embeds.some((e) => e.kind === action.card.kind && e.id === action.card.id)) return item;
+        return { ...item, embeds: [...embeds, action.card] };
+      });
+    }
+    case "unembedCard":
+      return mutateCard(state, action.host, (item) => ({
+        ...item,
+        embeds: (item.embeds || []).filter((e: CardEmbed) => !(e.kind === action.card.kind && e.id === action.card.id)),
+      }));
+    case "setCardFields":
+      return mutateCard(state, action.ref, (item) => ({ ...item, customFields: action.fields }));
+    case "setTypeFields":
+      return { ...state, cardTypeFields: { ...state.cardTypeFields, [action.kind]: action.fields } };
+    case "setBoardConfig":
+      return { ...state, smartBoard: { ...state.smartBoard, ...action.config } };
+    case "convertCard":
+      return convertCardInState(state, action.ref, action.toKind);
     case "applySmartBatch": return applyLLMBatch(state, action.batch, action.modelId, action.convId);
     case "task": return { ...state, projects: state.projects.map((p) => p.id === action.projectId ? { ...p, tasks: [...p.tasks, { id: `t_${ids()}`, title: action.title, done: false, priority: action.priority || "none" }] } : p) };
     case "toggleTask": return { ...state, projects: state.projects.map((p) => p.id === action.projectId ? { ...p, tasks: p.tasks.map((t) => t.id === action.taskId ? { ...t, done: !t.done } : t) } : p) };

@@ -136,6 +136,7 @@ import { MemoryScreen } from "./src/screens/MemoryScreen";
 import { RemindersScreen } from "./src/screens/RemindersScreen";
 import { ProjectsScreen } from "./src/screens/ProjectsScreen";
 import { ArtifactsScreen } from "./src/screens/ArtifactsScreen";
+import { SmartGenBoardScreen } from "./src/screens/SmartGenBoardScreen";
 import { FilesScreen } from "./src/screens/FilesScreen";
 import { MarketScreen } from "./src/screens/MarketScreen";
 import { WallpapersScreen } from "./src/screens/WallpapersScreen";
@@ -226,6 +227,7 @@ type Screen =
   | "reminders"
   | "projects"
   | "artifacts"
+  | "smartboard"
   | "files"
   | "market"
   | "wallpapers"
@@ -602,6 +604,11 @@ function Shell() {
           {screen === "artifacts" && (
             <ScreenTransition screenKey="artifacts">
               <ArtifactsScreen goBack={() => setScreen("home")} />
+            </ScreenTransition>
+          )}
+          {screen === "smartboard" && (
+            <ScreenTransition screenKey="smartboard">
+              <SmartGenBoardScreen goBack={() => setScreen("home")} />
             </ScreenTransition>
           )}
           {screen === "files" && (
@@ -3337,6 +3344,10 @@ function RightDrawer({ close, nav, onRemix, onInsertSource, onInsertContext, sco
                   already say; the thing actually worth tagging is "this
                   belongs to Smart Gen," consistently. */}
               {([
+                // The Board leads: it's the one surface where every Smart Gen
+                // item lives as a card — the four type screens below are the
+                // per-type views of the same content.
+                { screen: "smartboard" as Screen, label: "Board", count: state.projects.length + state.reminders.length + state.memories.length + state.artifacts.length },
                 { screen: "projects" as Screen, label: "Projects & Tasks", count: state.projects.length },
                 { screen: "reminders" as Screen, label: "Reminders", count: state.reminders.length },
                 { screen: "memory" as Screen, label: "Memories", count: state.memories.length },
