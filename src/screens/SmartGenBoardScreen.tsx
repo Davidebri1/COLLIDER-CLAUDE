@@ -318,33 +318,25 @@ function BoardCardView({ card, now, all, onOpen, compact, onToggleDone, dragging
         );
       case "countdown":
         if (card.due == null || (isUrgent && hideCountdown)) return null;
-        return <View key="countdown" style={{ flexDirection: "row" }}><CountdownChip due={card.due} now={now} onLight /></View>;
+        return <CountdownChip key="countdown" due={card.due} now={now} onLight />;
       case "recurring":
         if (!card.recurring) return null;
         return (
-          <View key="recurring" style={{ flexDirection: "row" }}>
-            <View style={[local.chip, { borderColor: "rgba(109,90,168,0.3)", backgroundColor: "rgba(109,90,168,0.09)" }]}>
-              <Ionicons name="repeat-outline" size={10} color="#6d5aa8" />
-              <Text style={[local.chipText, { color: "#6d5aa8" }]}>{card.recurring}</Text>
-            </View>
+          <View key="recurring" style={[local.chip, { borderColor: "rgba(109,90,168,0.3)", backgroundColor: "rgba(109,90,168,0.09)" }]}>
+            <Ionicons name="repeat-outline" size={10} color="#6d5aa8" />
+            <Text style={[local.chipText, { color: "#6d5aa8" }]}>{card.recurring}</Text>
           </View>
         );
       case "status":
         if (!writtenStatus) return null;
         return (
-          <View key="status" style={{ flexDirection: "row" }}>
-            <View style={[local.chip, { borderColor: "rgba(22,22,26,0.14)", backgroundColor: "rgba(22,22,26,0.05)" }]}>
-              <Text style={[local.chipText, { color: "rgba(22,22,26,0.6)" }]}>{writtenStatus}</Text>
-            </View>
+          <View key="status" style={[local.chip, { borderColor: "rgba(22,22,26,0.14)", backgroundColor: "rgba(22,22,26,0.05)" }]}>
+            <Text style={[local.chipText, { color: "rgba(22,22,26,0.6)" }]}>{writtenStatus}</Text>
           </View>
         );
       case "tags":
         if (!card.tags.length) return null;
-        return (
-          <View key="tags" style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
-            {card.tags.slice(0, 4).map((t) => <Text key={t} style={local.tagText}>#{t}</Text>)}
-          </View>
-        );
+        return <React.Fragment key="tags">{card.tags.slice(0, 4).map((t) => <Text key={t} style={local.tagText}>#{t}</Text>)}</React.Fragment>;
       case "media": {
         if (compact || !card.media?.length) return null;
         const imgs = card.media.filter((m) => m.kind === "image").slice(0, 3);
@@ -398,13 +390,29 @@ function BoardCardView({ card, now, all, onOpen, compact, onToggleDone, dragging
     }
   };
 
+  // Chip-sized fields share a line instead of stacking; anything larger gets
+  // its own row. Order still decides position either way.
+  const INLINE = new Set(["countdown", "recurring", "status", "tags"]);
+  const rows: React.ReactNode[] = [];
+  let run: React.ReactNode[] = [];
+  const flush = () => {
+    if (!run.length) return;
+    rows.push(<View key={`run${rows.length}`} style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, alignItems: "center" }}>{run}</View>);
+    run = [];
+  };
+  for (const key of order) {
+    const node = render(key);
+    if (!node) continue;
+    if (INLINE.has(key)) run.push(node);
+    else { flush(); rows.push(node); }
+  }
+  flush();
+
   return (
     <Pressable onPress={() => onOpen(card.ref)}>
       <View style={[local.card, dragging && local.cardDragging]}>
         <View style={[local.cardAccent, { backgroundColor: color }]} />
-        <View style={{ flex: 1, padding: 11, gap: 6 }}>
-          {order.map(render).filter(Boolean)}
-        </View>
+        <View style={{ flex: 1, padding: 11, gap: 6 }}>{rows}</View>
       </View>
     </Pressable>
   );

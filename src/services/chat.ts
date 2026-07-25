@@ -502,7 +502,16 @@ export async function callOpenRouter(model: string, messages: any[], onToken?: (
 // "contents" with parts, roles use "model" rather than "assistant", and the
 // key is a query parameter (a Bearer header is rejected — verified live).
 // Vision attachments ride along as inlineData parts.
-async function callGoogle(model: string, messages: any[], onToken?: (partial: string) => void) {
+export async function callGoogleModel(
+  model: string,
+  messages: any[],
+  onToken?: (partial: string) => void,
+  opts?: { temperature?: number; maxTokens?: number },
+) {
+  return callGoogle(model, messages, onToken, opts);
+}
+
+async function callGoogle(model: string, messages: any[], onToken?: (partial: string) => void, opts?: { temperature?: number; maxTokens?: number }) {
   const sys = messages.filter((m) => m.role === "system").map((m) => m.content).join("\n\n");
   const contents = messages
     .filter((m) => m.role !== "system")
@@ -530,7 +539,7 @@ async function callGoogle(model: string, messages: any[], onToken?: (partial: st
       body: JSON.stringify({
         contents,
         ...(sys ? { systemInstruction: { parts: [{ text: sys }] } } : {}),
-        generationConfig: { temperature: 0.7, maxOutputTokens: 2048 },
+        generationConfig: { temperature: opts?.temperature ?? 0.7, maxOutputTokens: opts?.maxTokens ?? 2048 },
       }),
     }
   );
