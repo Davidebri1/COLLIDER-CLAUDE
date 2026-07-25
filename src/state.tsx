@@ -49,7 +49,7 @@ export type CardOrigin = { convId: string; title: string; ts: number };
 // Anything visual or referential that belongs ON the card rather than beside
 // it: a photo, a clip, a document. Same bag for every card type.
 export type CardMedia = { kind: "image" | "video" | "doc"; url: string; name?: string };
-export type Memory = { id: string; modelId: string; content: string; ts: number; tags?: string[]; projectId?: string; priority?: Priority; fingerprint?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string>; origin?: CardOrigin; media?: CardMedia[] };
+export type Memory = { id: string; modelId: string; content: string; ts: number; tags?: string[]; projectId?: string; priority?: Priority; fingerprint?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string>; origin?: CardOrigin; media?: CardMedia[]; layout?: string[] };
 export type Reminder = {
   id: string;
   title: string;
@@ -78,8 +78,9 @@ export type Reminder = {
   customFields?: Record<string, string>;
   origin?: CardOrigin;
   media?: CardMedia[];
+  layout?: string[];
 };
-export type Project = { id: string; name: string; tasks: { id: string; title: string; done: boolean; priority?: Priority }[]; fingerprint?: string; modelId?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string>; origin?: CardOrigin; media?: CardMedia[] };
+export type Project = { id: string; name: string; tasks: { id: string; title: string; done: boolean; priority?: Priority }[]; fingerprint?: string; modelId?: string; links?: SmartLinks; embeds?: CardEmbed[]; customFields?: Record<string, string>; origin?: CardOrigin; media?: CardMedia[]; layout?: string[] };
 export type Artifact = {
   id: string;
   title: string;
@@ -94,6 +95,7 @@ export type Artifact = {
   embeds?: CardEmbed[];
   origin?: CardOrigin;
   media?: CardMedia[];
+  layout?: string[];
 };
 export type ColliderFile = { id: string; name: string; kind: "uploaded" | "generated"; url: string; ts: number; modelId?: string };
 export type GenerationItem = {
@@ -145,6 +147,20 @@ export type BoardConfig = {
 // of each type presents by default. Per-card customFields extend/override
 // these. Editable by the user AND by the model (setTypeFields).
 export type CardTypeFields = Record<LinkKind, string[]>;
+
+// What a card of each type SHOWS on its face, in order. Every element is a
+// field — the built-ins below and any custom attribute alike — so all of them
+// can be reordered or removed from the card edit screen. Fields are fixed
+// height and stack in sequence, so "where it goes" is its position in this
+// list. A per-card `layout` overrides the type default when set.
+export type CardLayout = Record<LinkKind, string[]>;
+export const BUILTIN_FIELDS = ["title", "countdown", "recurring", "status", "tags", "media", "body", "embeds", "origin"] as const;
+export const DEFAULT_CARD_LAYOUT: CardLayout = {
+  project:  ["title", "countdown", "body", "media", "embeds"],
+  reminder: ["title", "countdown", "recurring", "status", "tags", "media", "embeds"],
+  memory:   ["title", "tags", "body", "media", "embeds"],
+  artifact: ["title", "body", "media", "embeds"],
+};
 // Deliberately sparse. A field that is present but empty is dead weight on a
 // card — availability comes from the attribute registry and the model, not
 // from pre-seeding every card with blanks.
@@ -261,6 +277,7 @@ export type AppState = {
   smartBoard: BoardConfig;
   cardTypeFields: CardTypeFields;
   fieldDefs: Record<string, FieldDef>;
+  cardLayout: CardLayout;
   customAgents: { id: string; name: string; modelId: string; instructions: string }[];
   customInstructions: string;
   activeSkills: string[];
@@ -329,6 +346,8 @@ type Action =
   | { type: "setTypeFields"; kind: LinkKind; fields: string[] }
   | { type: "defineField"; def: FieldDef; cardTypes?: LinkKind[] }
   | { type: "removeFieldDef"; name: string }
+  | { type: "setCardLayout"; kind: LinkKind; layout: string[] }
+  | { type: "setCardOwnLayout"; ref: CardEmbed; layout: string[] | undefined }
   | { type: "setBoardConfig"; config: Partial<BoardConfig> }
   | { type: "reorderCards"; keys: string[] }
   | { type: "setDraft"; key: string; value: string }
@@ -662,6 +681,7 @@ function initialState(): AppState {
     smartBoard: { view: "board", groupBy: "status", sortBy: "manual", filter: "", order: {}, hideDone: false, circleField: "", page: 0 },
     cardTypeFields: { ...DEFAULT_CARD_TYPE_FIELDS },
     fieldDefs: { ...DEFAULT_FIELD_DEFS },
+    cardLayout: { ...DEFAULT_CARD_LAYOUT },
     customAgents: [],
     customInstructions: "",
     activeSkills: [],
@@ -832,7 +852,7 @@ function reducer(state: AppState, action: Action): AppState {
   switch (action.type) {
     case "hydrate": {
       const base = initialState();
-      return { ...base, ...action.state, cardPrompts: { ...base.cardPrompts, ...(action.state.cardPrompts || {}) }, chatMode: { ...base.chatMode, ...(action.state.chatMode || {}) }, webSearch: { ...base.webSearch, ...(action.state.webSearch || {}) }, smartBoard: { ...base.smartBoard, ...(action.state.smartBoard || {}) }, cardTypeFields: { ...base.cardTypeFields, ...(action.state.cardTypeFields || {}) }, fieldDefs: { ...base.fieldDefs, ...(action.state.fieldDefs || {}) }, drafts: { ...(action.state.drafts || {}) }, seen: { ...(action.state.seen || {}) }, hydrated: true };
+      return { ...base, ...action.state, cardPrompts: { ...base.cardPrompts, ...(action.state.cardPrompts || {}) }, chatMode: { ...base.chatMode, ...(action.state.chatMode || {}) }, webSearch: { ...base.webSearch, ...(action.state.webSearch || {}) }, smartBoard: { ...base.smartBoard, ...(action.state.smartBoard || {}) }, cardTypeFields: { ...base.cardTypeFields, ...(action.state.cardTypeFields || {}) }, fieldDefs: { ...base.fieldDefs, ...(action.state.fieldDefs || {}) }, cardLayout: { ...base.cardLayout, ...(action.state.cardLayout || {}) }, drafts: { ...(action.state.drafts || {}) }, seen: { ...(action.state.seen || {}) }, hydrated: true };
     }
     case "category": return { ...state, activeCategory: action.category };
     case "tier": return { ...state, tier: action.tier, credits: Math.max(state.credits, TIER_INFO[action.tier].pool) };
@@ -1020,6 +1040,10 @@ function reducer(state: AppState, action: Action): AppState {
       }
       return next;
     }
+    case "setCardLayout":
+      return { ...state, cardLayout: { ...state.cardLayout, [action.kind]: action.layout } };
+    case "setCardOwnLayout":
+      return mutateCard(state, action.ref, (item) => ({ ...item, layout: action.layout }));
     case "removeFieldDef": {
       const defs = { ...state.fieldDefs };
       delete defs[action.name];

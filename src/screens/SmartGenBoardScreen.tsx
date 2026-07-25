@@ -18,7 +18,7 @@ import {
   useCollider, newId, findCard,
   type AppState, type CardEmbed, type LinkKind, type Reminder,
   type BoardGroupBy, type BoardSortBy, type BoardView, type FieldDef, type FieldType,
-  type CardOrigin, type CardMedia,
+  type CardOrigin, type CardMedia, BUILTIN_FIELDS,
   collapsePriority,
 } from "../state";
 import { Glass } from "../components/Glass";
@@ -73,6 +73,7 @@ export type BoardCard = {
   customFields: Record<string, string>;
   origin?: CardOrigin;
   media?: CardMedia[];
+  layout?: string[];
 };
 
 function memoryTitle(content: string): string {
@@ -99,7 +100,7 @@ export function unifyCards(state: AppState): BoardCard[] {
       due: soonestUrgent,
       priority: soonestUrgent != null ? "high" : "none",
       progress: done ? "done" : "open",
-      tags: [], ts: 0, embeds: p.embeds || [], customFields: p.customFields || {}, origin: p.origin, media: p.media,
+      tags: [], ts: 0, embeds: p.embeds || [], customFields: p.customFields || {}, origin: p.origin, media: p.media, layout: p.layout,
     });
   }
   for (const r of state.reminders) {
@@ -107,7 +108,7 @@ export function unifyCards(state: AppState): BoardCard[] {
       ref: { kind: "reminder", id: r.id }, kind: "reminder", title: r.title, body: "",
       due: r.due, recurring: r.recurring, priority: collapsePriority(r.priority),
       progress: r.done ? "done" : "open",
-      tags: r.tags || [], projectId: r.projectId, ts: r.ts, embeds: r.embeds || [], customFields: r.customFields || {}, origin: r.origin, media: r.media,
+      tags: r.tags || [], projectId: r.projectId, ts: r.ts, embeds: r.embeds || [], customFields: r.customFields || {}, origin: r.origin, media: r.media, layout: r.layout,
     });
   }
   for (const m of state.memories) {
@@ -116,14 +117,14 @@ export function unifyCards(state: AppState): BoardCard[] {
       // text IS its title, and repeating it as body reads as a glitch.
       ref: { kind: "memory", id: m.id }, kind: "memory", title: memoryTitle(m.content), body: m.content.length > 84 ? m.content : "",
       priority: collapsePriority(m.priority), progress: "none",
-      tags: m.tags || [], projectId: m.projectId, ts: m.ts, embeds: m.embeds || [], customFields: m.customFields || {}, origin: m.origin, media: m.media,
+      tags: m.tags || [], projectId: m.projectId, ts: m.ts, embeds: m.embeds || [], customFields: m.customFields || {}, origin: m.origin, media: m.media, layout: m.layout,
     });
   }
   for (const a of state.artifacts) {
     cards.push({
       ref: { kind: "artifact", id: a.id }, kind: "artifact", title: a.title, body: a.content,
       priority: "none", progress: "none",
-      tags: [], projectId: a.projectId, ts: a.ts, embeds: a.embeds || [], customFields: a.customFields || {}, origin: a.origin, media: a.media,
+      tags: [], projectId: a.projectId, ts: a.ts, embeds: a.embeds || [], customFields: a.customFields || {}, origin: a.origin, media: a.media, layout: a.layout,
     });
   }
   return cards;
@@ -281,29 +282,26 @@ function KindBadge({ kind }: { kind: LinkKind }) {
   );
 }
 
-function BoardCardView({ card, now, all, onOpen, compact, onToggleDone, dragging }: {
+function BoardCardView({ card, now, all, onOpen, compact, onToggleDone, dragging, layout }: {
   card: BoardCard; now: number; all: BoardCard[]; onOpen: (ref: CardEmbed) => void; compact?: boolean;
-  onToggleDone?: (card: BoardCard) => void; dragging?: boolean;
+  onToggleDone?: (card: BoardCard) => void; dragging?: boolean; layout?: string[];
 }) {
   const color = KIND_COLORS[card.kind];
   const embedded = card.embeds.map((e) => all.find((c) => c.ref.kind === e.kind && c.ref.id === e.id)).filter(Boolean) as BoardCard[];
-  const fieldEntries = Object.entries(card.customFields).filter(([k, v]) => v?.trim() && k !== HIDE_COUNTDOWN_FIELD).slice(0, 3);
-  // Urgency's visual is the live countdown itself — status, not judgment.
-  // No red framing (borders are for selection/presentation, not
-  // communication), no glow, no panic. The countdown informs in a vacuum;
-  // hiding it is a per-card choice.
   const isUrgent = card.priority === "high";
   const hideCountdown = card.customFields[HIDE_COUNTDOWN_FIELD] === CHECKED;
   const isDone = card.progress === "done";
   const writtenStatus = (card.customFields["Status"] || "").trim();
-  return (
-    <Pressable onPress={() => onOpen(card.ref)}>
-      <View style={[local.card, dragging && local.cardDragging]}>
-        <View style={[local.cardAccent, { backgroundColor: color }]} />
-        <View style={{ flex: 1, padding: 11, gap: 6 }}>
-          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 7 }}>
-            {/* Done is the only state that changes anything — one checkbox,
-                right where the hand already is. */}
+  // The card face is just its layout, rendered in order. Every element is a
+  // field the user can move or remove — nothing is structurally privileged,
+  // and an element with nothing in it takes no space.
+  const order = card.layout || layout || ["title", "countdown", "recurring", "status", "tags", "media", "body", "embeds"];
+
+  const render = (key: string) => {
+    switch (key) {
+      case "title":
+        return (
+          <View key="title" style={{ flexDirection: "row", alignItems: "flex-start", gap: 7 }}>
             {onToggleDone && card.progress !== "none" ? (
               <Pressable onPress={() => onToggleDone(card)} hitSlop={8} style={{ marginTop: 1 }}>
                 <Ionicons name={isDone ? "checkbox" : "square-outline"} size={16} color={isDone ? "#3f7a52" : "rgba(22,22,26,0.3)"} />
@@ -317,68 +315,95 @@ function BoardCardView({ card, now, all, onOpen, compact, onToggleDone, dragging
             {isUrgent && <Text style={local.urgentWord}>URGENT</Text>}
             {card.customFields["Critical"] === CHECKED && <Text style={local.criticalWord}>CRITICAL</Text>}
           </View>
-          {/* Images live on the card, not behind a tap — a photo IS the
-              content when there is one. */}
-          {!compact && !!card.media?.length && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
-              {card.media.filter((m) => m.kind === "image").slice(0, 3).map((m, i) => (
-                <Image key={i} source={{ uri: m.url }} style={local.cardImage} resizeMode="cover" />
-              ))}
-              {card.media.filter((m) => m.kind !== "image").slice(0, 2).map((m, i) => (
-                <View key={`d${i}`} style={local.docPill}>
-                  <Ionicons name={m.kind === "video" ? "videocam-outline" : "document-outline"} size={10} color="rgba(22,22,26,0.6)" />
-                  <Text style={local.docPillText} numberOfLines={1}>{m.name || m.kind}</Text>
-                </View>
-              ))}
+        );
+      case "countdown":
+        if (card.due == null || (isUrgent && hideCountdown)) return null;
+        return <View key="countdown" style={{ flexDirection: "row" }}><CountdownChip due={card.due} now={now} onLight /></View>;
+      case "recurring":
+        if (!card.recurring) return null;
+        return (
+          <View key="recurring" style={{ flexDirection: "row" }}>
+            <View style={[local.chip, { borderColor: "rgba(109,90,168,0.3)", backgroundColor: "rgba(109,90,168,0.09)" }]}>
+              <Ionicons name="repeat-outline" size={10} color="#6d5aa8" />
+              <Text style={[local.chipText, { color: "#6d5aa8" }]}>{card.recurring}</Text>
             </View>
-          )}
-          {!compact && !!card.body && card.kind !== "reminder" && (
-            <Text style={local.cardBody} numberOfLines={2}>{card.body}</Text>
-          )}
-          {/* Only what's actually there gets space. */}
-          {(card.due != null || card.recurring || card.tags.length > 0 || !!writtenStatus) && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, alignItems: "center" }}>
-              {card.due != null && !(isUrgent && hideCountdown) && <CountdownChip due={card.due} now={now} onLight />}
-              {card.recurring && (
-                <View style={[local.chip, { borderColor: "rgba(109,90,168,0.3)", backgroundColor: "rgba(109,90,168,0.09)" }]}>
-                  <Ionicons name="repeat-outline" size={10} color="#6d5aa8" />
-                  <Text style={[local.chipText, { color: "#6d5aa8" }]}>{card.recurring}</Text>
-                </View>
-              )}
-              {!!writtenStatus && (
-                <View style={[local.chip, { borderColor: "rgba(22,22,26,0.14)", backgroundColor: "rgba(22,22,26,0.05)" }]}>
-                  <Text style={[local.chipText, { color: "rgba(22,22,26,0.6)" }]}>{writtenStatus}</Text>
-                </View>
-              )}
-              {card.tags.slice(0, 3).map((t) => (
-                <Text key={t} style={local.tagText}>#{t}</Text>
-              ))}
+          </View>
+        );
+      case "status":
+        if (!writtenStatus) return null;
+        return (
+          <View key="status" style={{ flexDirection: "row" }}>
+            <View style={[local.chip, { borderColor: "rgba(22,22,26,0.14)", backgroundColor: "rgba(22,22,26,0.05)" }]}>
+              <Text style={[local.chipText, { color: "rgba(22,22,26,0.6)" }]}>{writtenStatus}</Text>
             </View>
-          )}
-          {!compact && fieldEntries.length > 0 && (
-            <View style={{ gap: 1 }}>
-              {fieldEntries.map(([k, v]) => (
-                <Text key={k} style={local.fieldLine} numberOfLines={1}>
-                  <Text style={{ color: "rgba(22,22,26,0.42)" }}>{k}: </Text>{v}
-                </Text>
-              ))}
-            </View>
-          )}
-          {/* Embedded cards — physically inside their host, tappable through
-              to their own detail. The form lives in the deadline card, the
-              recipe in the dinner reminder — reference at the point of
-              relevance, no app-hopping. */}
-          {embedded.length > 0 && (
-            <View style={{ gap: 4, marginTop: 1 }}>
-              {embedded.map((e) => (
-                <Pressable key={`${e.ref.kind}:${e.ref.id}`} onPress={() => onOpen(e.ref)} style={local.cardEmbedRow}>
-                  <Ionicons name={KIND_ICONS[e.kind]} size={11} color={KIND_COLORS[e.kind]} />
-                  <Text style={local.cardEmbedTitle} numberOfLines={1}>{e.title}</Text>
-                  {e.due != null && <CountdownChip due={e.due} now={now} onLight />}
-                </Pressable>
-              ))}
-            </View>
-          )}
+          </View>
+        );
+      case "tags":
+        if (!card.tags.length) return null;
+        return (
+          <View key="tags" style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+            {card.tags.slice(0, 4).map((t) => <Text key={t} style={local.tagText}>#{t}</Text>)}
+          </View>
+        );
+      case "media": {
+        if (compact || !card.media?.length) return null;
+        const imgs = card.media.filter((m) => m.kind === "image").slice(0, 3);
+        const docs = card.media.filter((m) => m.kind !== "image").slice(0, 2);
+        return (
+          <View key="media" style={{ flexDirection: "row", flexWrap: "wrap", gap: 5 }}>
+            {imgs.map((m, i) => <Image key={i} source={{ uri: m.url }} style={local.cardImage} resizeMode="cover" />)}
+            {docs.map((m, i) => (
+              <View key={`d${i}`} style={local.docPill}>
+                <Ionicons name={m.kind === "video" ? "videocam-outline" : "document-outline"} size={10} color="rgba(22,22,26,0.6)" />
+                <Text style={local.docPillText} numberOfLines={1}>{m.name || m.kind}</Text>
+              </View>
+            ))}
+          </View>
+        );
+      }
+      case "body":
+        if (compact || !card.body || card.kind === "reminder") return null;
+        return <Text key="body" style={local.cardBody} numberOfLines={2}>{card.body}</Text>;
+      case "origin":
+        if (!card.origin) return null;
+        return (
+          <Text key="origin" style={local.fieldLine} numberOfLines={1}>
+            <Text style={{ color: "rgba(22,22,26,0.42)" }}>from </Text>{card.origin.title}
+          </Text>
+        );
+      case "embeds":
+        if (!embedded.length) return null;
+        return (
+          <View key="embeds" style={{ gap: 4 }}>
+            {embedded.map((e) => (
+              <Pressable key={`${e.ref.kind}:${e.ref.id}`} onPress={() => onOpen(e.ref)} style={local.cardEmbedRow}>
+                <Ionicons name={KIND_ICONS[e.kind]} size={11} color={KIND_COLORS[e.kind]} />
+                <Text style={local.cardEmbedTitle} numberOfLines={1}>{e.title}</Text>
+                {e.due != null && <CountdownChip due={e.due} now={now} onLight />}
+              </Pressable>
+            ))}
+          </View>
+        );
+      default: {
+        // Any custom attribute, shown only when it holds something.
+        const v = (card.customFields[key] || "").trim();
+        if (!v || key === HIDE_COUNTDOWN_FIELD) return null;
+        if (key === "Critical") return null; // already marked beside the title
+        return (
+          <Text key={key} style={local.fieldLine} numberOfLines={1}>
+            <Text style={{ color: "rgba(22,22,26,0.42)" }}>{key}: </Text>{v}
+          </Text>
+        );
+      }
+    }
+  };
+
+  return (
+    <Pressable onPress={() => onOpen(card.ref)}>
+      <View style={[local.card, dragging && local.cardDragging]}>
+        <View style={[local.cardAccent, { backgroundColor: color }]} />
+        <View style={{ flex: 1, padding: 11, gap: 6 }}>
+          {order.map(render).filter(Boolean)}
         </View>
       </View>
     </Pressable>
@@ -956,7 +981,7 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
                     <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 30, minHeight: 90 }}>
                       {c.cards.map((card) => (
                         <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
-                          <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} />
+                          <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} layout={state.cardLayout?.[card.kind]} />
                         </DraggableCard>
                       ))}
                       {c.cards.length === 0 && <Text style={local.emptyCol}>Drop here</Text>}
@@ -979,7 +1004,7 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
                       {c.cards.map((card) => (
                         <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
                           <View style={{ width: colW * 0.86 }}>
-                            <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} />
+                            <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} layout={state.cardLayout?.[card.kind]} />
                           </View>
                         </DraggableCard>
                       ))}
@@ -996,7 +1021,7 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
                   <View key={c.key} style={{ gap: 8 }}>
                     <ColumnHeader color={c.color} label={c.label} count={c.cards.length} />
                     {c.cards.map((card) => (
-                      <BoardCardView key={cardKey(card)} card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
+                      <BoardCardView key={cardKey(card)} card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact layout={state.cardLayout?.[card.kind]} />
                     ))}
                   </View>
                 ))}
@@ -1021,7 +1046,7 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
                       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingBottom: 30, minHeight: 90 }}>
                         {dayCards.map((card) => (
                           <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
-                            <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
+                            <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact layout={state.cardLayout?.[card.kind]} />
                           </DraggableCard>
                         ))}
                         {dayCards.length === 0 && <Text style={local.emptyCol}>Drop here</Text>}
@@ -1066,7 +1091,7 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
                   <View style={{ gap: 8 }}>
                     {visible.filter(inCircle).map((card) => (
                       <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
-                        <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
+                        <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact layout={state.cardLayout?.[card.kind]} />
                       </DraggableCard>
                     ))}
                     {!visible.some(inCircle) && <Text style={local.emptyCol}>Drop here</Text>}
@@ -1076,7 +1101,7 @@ export function SmartGenBoardScreen({ goBack }: { goBack: () => void }) {
                   <Text style={[local.colTitle, { textAlign: "center", opacity: 0.6 }]}>OUT</Text>
                   {visible.filter((c) => !inCircle(c)).map((card) => (
                     <DraggableCard key={cardKey(card)} card={card} ctx={dragCtx}>
-                      <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact />
+                      <BoardCardView card={card} now={now} all={allCards} onOpen={openDetail} onToggleDone={toggleDone} compact layout={state.cardLayout?.[card.kind]} />
                     </DraggableCard>
                   ))}
                 </View>
@@ -1278,6 +1303,24 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
     else if (cardRef.kind === "project") dispatch({ type: "updateProject", project: { ...item, name: t.trim() || item.name } });
     else dispatch({ type: "updateArtifact", artifact: { ...item, title: t.trim() || item.title, content: b } });
   };
+  // Layout is per-card once touched, falling back to the type default.
+  const layout: string[] = item?.layout || state.cardLayout?.[cardRef.kind] || [];
+  const setLayout = (next: string[]) => dispatch({ type: "setCardOwnLayout", ref: cardRef, layout: next });
+  const moveField = (i: number, delta: number) => {
+    const j = i + delta;
+    if (j < 0 || j >= layout.length) return;
+    const next = [...layout];
+    [next[i], next[j]] = [next[j], next[i]];
+    setLayout(next);
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  };
+  // Everything available but not currently placed — built-ins plus this
+  // card's own attributes, so a removed field can always be put back.
+  const hiddenFields = [
+    ...BUILTIN_FIELDS.filter((f) => !layout.includes(f)),
+    ...Object.keys({ ...Object.fromEntries((state.cardTypeFields[cardRef.kind] || []).map((k) => [k, ""])), ...(item?.customFields || {}) })
+      .filter((f) => !layout.includes(f) && f !== HIDE_COUNTDOWN_FIELD),
+  ];
   const media: CardMedia[] = item?.media || [];
   const addMedia = (m: CardMedia) => dispatch({ type: "setCardMedia", ref: cardRef, media: [...media, m] });
   const setField = (k: string, v: string) => {
@@ -1459,6 +1502,54 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
               </View>
             )}
 
+            {/* Card layout — every element on the face, in order, movable and
+                removable. Photos are a field like any other, so they sit
+                wherever the user puts them. Changes apply to this card; the
+                "all cards of this type" button pushes the same order to the
+                type default. */}
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Text style={local.sectionLabel}>CARD LAYOUT</Text>
+              <View style={{ flex: 1 }} />
+              {!!item.layout && (
+                <Pressable onPress={() => dispatch({ type: "setCardOwnLayout", ref: cardRef, layout: undefined })} style={local.quickChip}>
+                  <Text style={local.quickChipText}>Reset</Text>
+                </Pressable>
+              )}
+              <Pressable
+                onPress={() => { dispatch({ type: "setCardLayout", kind: cardRef.kind, layout }); toast(`Applied to all ${cardRef.kind} cards`); }}
+                style={local.quickChip}
+              >
+                <Text style={local.quickChipText}>Apply to all {cardRef.kind}s</Text>
+              </Pressable>
+            </View>
+            <View style={{ gap: 4 }}>
+              {layout.map((f, i) => (
+                <View key={f} style={local.layoutRow}>
+                  <Ionicons name="reorder-three-outline" size={14} color="rgba(238,241,246,0.35)" />
+                  <Text style={[local.fieldName, { flex: 1, maxWidth: undefined }]} numberOfLines={1}>{fieldLabel(f)}</Text>
+                  <Pressable onPress={() => moveField(i, -1)} disabled={i === 0} hitSlop={6} style={i === 0 ? { opacity: 0.25 } : undefined}>
+                    <Ionicons name="chevron-up" size={15} color="rgba(238,241,246,0.7)" />
+                  </Pressable>
+                  <Pressable onPress={() => moveField(i, 1)} disabled={i === layout.length - 1} hitSlop={6} style={i === layout.length - 1 ? { opacity: 0.25 } : undefined}>
+                    <Ionicons name="chevron-down" size={15} color="rgba(238,241,246,0.7)" />
+                  </Pressable>
+                  <Pressable onPress={() => setLayout(layout.filter((x) => x !== f))} hitSlop={6}>
+                    <Ionicons name="close-circle-outline" size={15} color="rgba(255,255,255,0.35)" />
+                  </Pressable>
+                </View>
+              ))}
+              {hiddenFields.length > 0 && (
+                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 5, marginTop: 2 }}>
+                  {hiddenFields.map((f) => (
+                    <Pressable key={f} onPress={() => setLayout([...layout, f])} style={[local.typeChip, { flexDirection: "row", alignItems: "center", gap: 4 }]}>
+                      <Ionicons name="add" size={10} color="rgba(238,241,246,0.6)" />
+                      <Text style={local.typeChipText}>{fieldLabel(f)}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              )}
+            </View>
+
             {/* Photos and documents live on the card. Adding one is two taps,
                 and it renders on the card face, not behind a menu. */}
             <View style={{ flexDirection: "row", alignItems: "center" }}>
@@ -1610,6 +1701,16 @@ function CardDetailModal({ cardRef, allCards, now, onClose, onOpenOther }: {
       )}
     </Modal>
   );
+}
+
+// Field keys are shown to the user, so the built-ins get plain names rather
+// than their internal identifiers.
+const FIELD_LABELS: Record<string, string> = {
+  title: "Title & done", countdown: "Countdown", recurring: "Repeats", status: "Status",
+  tags: "Tags", media: "Photos & files", body: "Description", embeds: "Embedded cards", origin: "Origin",
+};
+function fieldLabel(key: string): string {
+  return FIELD_LABELS[key] || key;
 }
 
 // ── Origin preview ──────────────────────────────────────────────────────────
@@ -1942,6 +2043,7 @@ const local = StyleSheet.create(withFont({
   originRow: { flexDirection: "row", alignItems: "center", gap: 6, paddingVertical: 7, paddingHorizontal: 9, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.04)" },
   originText: { flex: 1, color: "rgba(238,241,246,0.7)", fontSize: 10.5, fontWeight: "600", fontFamily: fontFamilyForWeight(600) },
   pageBody: { marginTop: 12, backgroundColor: "rgba(247,246,243,0.94)", borderRadius: 12, padding: 14 },
+  layoutRow: { flexDirection: "row", alignItems: "center", gap: 8, paddingVertical: 6, paddingHorizontal: 9, borderRadius: 9, backgroundColor: "rgba(255,255,255,0.04)" },
   typeChip: { paddingHorizontal: 7, paddingVertical: 4, borderRadius: 7, backgroundColor: "rgba(255,255,255,0.04)", borderWidth: 1, borderColor: "rgba(255,255,255,0.1)" },
   typeChipText: { color: "rgba(238,241,246,0.65)", fontSize: 9.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
   quickChipText: { color: "rgba(238,241,246,0.75)", fontSize: 10.5, fontWeight: "700", fontFamily: fontFamilyForWeight(700) },
