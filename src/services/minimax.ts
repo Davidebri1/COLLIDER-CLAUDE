@@ -8,7 +8,7 @@
 // Slug verified live against the key's /v1/models listing (minimaxai/minimax-m3
 // exists; a completion round-trips) — not guessed.
 import type { ChatMessage } from "../state";
-import { callOpenRouter, readSSEStream, webSearch } from "./chat";
+import { callGoogleModel, callOpenRouter, readSSEStream, webSearch } from "./chat";
 
 const NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions";
 export const MINIMAX_MODEL = "minimaxai/minimax-m3";
@@ -68,8 +68,17 @@ export async function callMiniMax(messages: any[], opts: MiniMaxOptions = {}): P
     }
     return readSSEStream(res, opts.onToken);
   }
+  // Fallback order, in full: MiniMax via NVIDIA → the identical MiniMax via
+  // OpenRouter (a change of wire, not of judge) → Gemini 3.6 Flash. Only the
+  // third step is a different model, and it is only ever reached when MiniMax
+  // is unreachable on both of its hosts.
   try {
     return await callOpenRouter("minimax/minimax-m3", messages, opts.onToken, { temperature: opts.temperature, maxTokens: opts.maxTokens ?? 4096 });
+  } catch (e) {
+    lastErr = e;
+  }
+  try {
+    return await callGoogleModel("gemini-3.6-flash", messages, opts.onToken, { temperature: opts.temperature, maxTokens: opts.maxTokens ?? 4096 });
   } catch {
     throw lastErr || new Error("MiniMax unavailable");
   }
